@@ -150,6 +150,107 @@
     font-size: 14px;
     text-align: center;
   }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .stat-label {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
+  .home-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 700px) {
+    .home-columns { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .panel h2 {
+    font-size: 13px;
+    margin: 0 0 12px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .list-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: var(--color-bg);
+  }
+
+  .list-item.flag-high {
+    border-left: 3px solid var(--color-danger);
+  }
+
+  .list-item-title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .list-item-sub {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+  }
+
+  .list-item-empty {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    padding: 8px 10px;
+  }
+
+  .days-badge, .badge-type {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    background: var(--color-border);
+    color: var(--color-text);
+  }
+
+  .days-badge.days-urgent { background: var(--color-danger); color: #fff; }
+  .days-badge.days-soon { background: #f59e0b; color: #fff; }
 </style>
 </head>
 <body>
@@ -178,7 +279,21 @@
 <main>
   <section class="screen active" id="screen-accueil">
     <h1>Accueil</h1>
-    <div class="placeholder">Récap à construire à l'étape 4.</div>
+    <div class="stats-grid" id="accueil-stats"></div>
+    <div class="home-columns">
+      <div class="panel">
+        <h2>Échéances proches</h2>
+        <div class="list-panel" id="accueil-echeances"></div>
+      </div>
+      <div class="panel">
+        <h2>Rappels actifs</h2>
+        <div class="list-panel" id="accueil-rappels"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Tâches prioritaires</h2>
+      <div class="list-panel" id="accueil-priorites"></div>
+    </div>
   </section>
 
   <section class="screen" id="screen-pipeline">
@@ -377,7 +492,7 @@
 
   async function refreshFromStorage() {
     appData = await storageAdapter.load();
-    renderStorageStatus();
+    renderAll();
   }
 
   storageAdapter.subscribe(refreshFromStorage);
@@ -523,7 +638,7 @@
       }
       throw err;
     }
-    renderStorageStatus();
+    renderAll();
     return appData;
   }
 
@@ -638,6 +753,153 @@
     });
   }
 
+  // ---------------------------------------------------------------------
+  // Écran d'accueil (étape 4, voir PROJET.md §5.1).
+  // ---------------------------------------------------------------------
+
+  function escapeHtml(str) {
+    return String(str ?? "").replace(/[&<>"']/g, (c) => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+    ));
+  }
+
+  function daysBetween(dateStr) {
+    if (!dateStr) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr);
+    target.setHours(0, 0, 0, 0);
+    return Math.round((target - today) / 86400000);
+  }
+
+  function formatDate(dateStr) {
+    return dateStr ? new Date(dateStr).toLocaleDateString("fr-FR") : "—";
+  }
+
+  function joursRestantsLabel(days) {
+    if (days === null) return "";
+    if (days < 0) return `en retard de ${Math.abs(days)} j`;
+    if (days === 0) return "aujourd'hui";
+    return `dans ${days} j`;
+  }
+
+  function joursRestantsClass(days) {
+    if (days === null) return "";
+    if (days <= 0) return "days-urgent";
+    if (days <= 3) return "days-soon";
+    return "";
+  }
+
+  // Trigger relatif -> champ date de l'AO parent dont il dépend (§4.4).
+  const RAPPEL_FIELD_BY_TRIGGER = {
+    "X jours avant échéance remise": "date_remise",
+    "X jours avant visite": "date_visite",
+    "X jours avant prise d'effet": "date_prise_effet",
+  };
+
+  function isRappelActive(rappel, relatedAO) {
+    if (!rappel || !rappel.actif) return false;
+    if (rappel.declenchement === "Sur date manuelle") {
+      return !!rappel.date && daysBetween(rappel.date) <= 0;
+    }
+    if (!relatedAO) return false;
+    const field = RAPPEL_FIELD_BY_TRIGGER[rappel.declenchement];
+    const targetDate = field && relatedAO[field];
+    if (!targetDate || rappel.jours_avant == null) return false;
+    const days = daysBetween(targetDate);
+    return days !== null && days <= Number(rappel.jours_avant);
+  }
+
+  function collectActiveReminders(data) {
+    const items = [];
+    data.aos.forEach((ao) => {
+      if (isRappelActive(ao.rappel, ao)) {
+        items.push({ type: "AO", label: ao.nom_projet, message: ao.rappel.message, entity: ao });
+      }
+    });
+    data.taches.forEach((t) => {
+      const relatedAO = t.ao_lie ? data.aos.find((a) => a.id === t.ao_lie) : null;
+      if (isRappelActive(t.rappel, relatedAO)) {
+        items.push({ type: "Tâche", label: t.tache, message: t.rappel.message, entity: t });
+      }
+    });
+    data.contacts.forEach((c) => {
+      if (isRappelActive(c.rappel, null)) {
+        items.push({ type: "Contact", label: c.nom, message: c.rappel.message, entity: c });
+      }
+    });
+    return items;
+  }
+
+  function renderAccueil() {
+    const data = appData;
+
+    const aoEnCours = data.aos.filter((a) => a.resultat === "En cours").length;
+    const echeancesAO = data.aos
+      .map((a) => ({ ao: a, days: daysBetween(a.date_remise) }))
+      .filter((x) => x.days !== null);
+    const echeances7j = echeancesAO.filter((x) => x.days >= 0 && x.days <= 7).length;
+    const tachesOuvertes = data.taches.filter((t) => t.statut !== "Terminé").length;
+    const aoEnAttente = data.aos.filter((a) => a.phase === "⏳ En attente de réponse").length;
+
+    document.getElementById("accueil-stats").innerHTML = [
+      ["AO en cours", aoEnCours],
+      ["Échéances < 7 j", echeances7j],
+      ["Tâches ouvertes", tachesOuvertes],
+      ["AO en attente de réponse", aoEnAttente],
+    ].map(([label, value]) => `
+      <div class="stat-card">
+        <div class="stat-value">${value}</div>
+        <div class="stat-label">${escapeHtml(label)}</div>
+      </div>
+    `).join("");
+
+    const upcoming = echeancesAO.filter((x) => x.days <= 30).sort((a, b) => a.days - b.days);
+    document.getElementById("accueil-echeances").innerHTML = upcoming.length
+      ? upcoming.map(({ ao, days }) => `
+          <div class="list-item">
+            <div>
+              <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
+              <div class="list-item-sub">${escapeHtml(ao.type_client)} · remise le ${formatDate(ao.date_remise)}</div>
+            </div>
+            <span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>
+          </div>
+        `).join("")
+      : `<div class="list-item-empty">Aucune échéance dans les 30 prochains jours.</div>`;
+
+    const activeReminders = collectActiveReminders(data);
+    document.getElementById("accueil-rappels").innerHTML = activeReminders.length
+      ? activeReminders.map((r) => `
+          <div class="list-item">
+            <div>
+              <div class="list-item-title">${escapeHtml(r.label || "(sans titre)")}</div>
+              <div class="list-item-sub">${escapeHtml(r.message || "")}</div>
+            </div>
+            <span class="badge-type">${escapeHtml(r.type)}</span>
+          </div>
+        `).join("")
+      : `<div class="list-item-empty">Aucun rappel actif aujourd'hui.</div>`;
+
+    const highPriority = data.taches
+      .filter((t) => t.priorite === "Haute" && t.statut !== "Terminé")
+      .sort((a, b) => (a.echeance || "").localeCompare(b.echeance || ""));
+    document.getElementById("accueil-priorites").innerHTML = highPriority.length
+      ? highPriority.map((t) => `
+          <div class="list-item flag-high">
+            <div>
+              <div class="list-item-title">🚩 ${escapeHtml(t.tache || "(sans titre)")}</div>
+              <div class="list-item-sub">${escapeHtml(t.assigne_a || "")}${t.echeance ? " · échéance " + formatDate(t.echeance) : ""}</div>
+            </div>
+          </div>
+        `).join("")
+      : `<div class="list-item-empty">Aucune tâche prioritaire en cours.</div>`;
+  }
+
+  function renderAll() {
+    renderStorageStatus();
+    renderAccueil();
+  }
+
   document.getElementById("btn-export").addEventListener("click", () => {
     downloadJSON(appData);
   });
@@ -712,6 +974,7 @@
     addTache, updateTache, deleteTache,
     addContact, updateContact, deleteContact,
     RecordConflictError,
+    renderAll, renderAccueil, collectActiveReminders, isRappelActive, daysBetween,
   };
 })();
 </script>
