@@ -251,6 +251,201 @@
 
   .days-badge.days-urgent { background: var(--color-danger); color: #fff; }
   .days-badge.days-soon { background: #f59e0b; color: #fff; }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: center;
+  }
+
+  .btn-primary, .btn-secondary, .btn-danger {
+    border: none;
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .btn-primary { background: var(--color-primary); color: #fff; }
+  .btn-primary:hover { background: var(--color-primary-hover); }
+
+  .btn-secondary { background: var(--color-bg); border: 1px solid var(--color-border); color: var(--color-text); }
+  .btn-secondary:hover { background: var(--color-border); }
+
+  .btn-danger { background: #fff; border: 1px solid var(--color-danger); color: var(--color-danger); }
+  .btn-danger:hover { background: var(--color-danger); color: #fff; }
+
+  .btn-small { padding: 4px 10px; font-size: 12px; }
+  .btn-icon { border: none; background: transparent; cursor: pointer; font-size: 13px; color: var(--color-text-muted); }
+
+  select, input[type="text"], input[type="number"], input[type="date"], input[type="url"], textarea {
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  textarea { resize: vertical; }
+
+  .kanban-board {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+  }
+
+  .kanban-column {
+    min-width: 240px;
+    max-width: 240px;
+    flex-shrink: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 10px;
+  }
+
+  .kanban-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .kanban-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 40px;
+  }
+
+  .kanban-cards.drag-over {
+    background: var(--color-bg);
+    outline: 2px dashed var(--color-primary);
+    border-radius: 6px;
+  }
+
+  .kanban-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 10px;
+    cursor: grab;
+  }
+
+  .kanban-card.dragging { opacity: 0.4; }
+
+  .kanban-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    gap: 6px;
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 12px;
+    overflow-y: auto;
+    z-index: 100;
+  }
+
+  .modal-overlay[hidden] { display: none; }
+
+  .modal {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    max-width: 640px;
+    width: 100%;
+    padding: 20px;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .modal-header h2 { margin: 0; font-size: 17px; }
+
+  .modal-close {
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    cursor: pointer;
+    color: var(--color-text-muted);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  #ao-form label, #ao-form .block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
+  #ao-form .block { margin-bottom: 12px; }
+
+  fieldset {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    padding: 10px 12px;
+  }
+
+  legend {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    padding: 0 4px;
+  }
+
+  .checkbox-group, .checkbox-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 13px;
+    align-items: center;
+  }
+
+  .checkbox-inline { display: inline-flex; gap: 6px; }
+
+  .fichier-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .fichier-row input { flex: 1; }
+
+  .modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+  }
+
+  .modal-footer-right { display: flex; gap: 8px; }
 </style>
 </head>
 <body>
@@ -298,7 +493,13 @@
 
   <section class="screen" id="screen-pipeline">
     <h1>Pipeline</h1>
-    <div class="placeholder">Vue Kanban à construire à l'étape 5.</div>
+    <div class="toolbar">
+      <button type="button" class="btn-primary" id="btn-new-ao">+ Nouvel AO</button>
+      <select id="filter-type_client"></select>
+      <select id="filter-type_marche"></select>
+      <input type="text" id="filter-assigne_a" placeholder="Filtrer par assigné…">
+    </div>
+    <div class="kanban-board" id="kanban-board"></div>
   </section>
 
   <section class="screen" id="screen-todo">
@@ -316,6 +517,105 @@
     <div class="placeholder">Statistiques à construire à l'étape 9.</div>
   </section>
 </main>
+
+<div class="modal-overlay" id="ao-modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="ao-modal-title">Nouvel AO</h2>
+      <button type="button" class="modal-close" id="ao-modal-close">✕</button>
+    </div>
+    <form id="ao-form">
+      <div class="form-grid">
+        <label>Nom du projet
+          <input type="text" id="f-nom_projet" required>
+        </label>
+        <label>Type de client
+          <select id="f-type_client"></select>
+        </label>
+        <label>Phase
+          <select id="f-phase"></select>
+        </label>
+        <label>Type
+          <select id="f-type"></select>
+        </label>
+        <label>Assigné à
+          <input type="text" id="f-assigne_a" placeholder="Mathis, …">
+        </label>
+        <label>Valeur estimée (k€)
+          <input type="number" id="f-valeur_estimee_keur" step="0.1">
+        </label>
+        <label>AMO
+          <input type="text" id="f-amo">
+        </label>
+        <label>Concurrence
+          <input type="text" id="f-concurrence">
+        </label>
+        <label>Lieu
+          <input type="text" id="f-lieu">
+        </label>
+        <label>Date de remise
+          <input type="date" id="f-date_remise">
+        </label>
+        <label>Date de visite
+          <input type="date" id="f-date_visite">
+        </label>
+        <label>Date de prise d'effet
+          <input type="date" id="f-date_prise_effet">
+        </label>
+        <label>Résultat
+          <select id="f-resultat"></select>
+        </label>
+        <label>Motif (si perdu)
+          <input type="text" id="f-motif">
+        </label>
+      </div>
+
+      <fieldset>
+        <legend>Type de marché</legend>
+        <div class="checkbox-group" id="f-type_marche"></div>
+      </fieldset>
+
+      <label class="block">Notes
+        <textarea id="f-notes" rows="3"></textarea>
+      </label>
+
+      <fieldset>
+        <legend>Fichiers (liens)</legend>
+        <div id="f-fichiers-list"></div>
+        <button type="button" class="btn-secondary btn-small" id="f-fichiers-add">+ Ajouter un lien</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Rappel</legend>
+        <div class="form-grid">
+          <label>Déclenchement
+            <select id="f-rappel-declenchement"></select>
+          </label>
+          <label id="f-rappel-date-wrap">Date
+            <input type="date" id="f-rappel-date">
+          </label>
+          <label id="f-rappel-jours-wrap">Jours avant
+            <input type="number" id="f-rappel-jours_avant" min="0">
+          </label>
+          <label>Message
+            <input type="text" id="f-rappel-message">
+          </label>
+        </div>
+        <label class="checkbox-inline">
+          <input type="checkbox" id="f-rappel-actif"> Rappel actif
+        </label>
+      </fieldset>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-danger" id="ao-form-delete" hidden>Supprimer</button>
+        <div class="modal-footer-right">
+          <button type="button" class="btn-secondary" id="ao-form-cancel">Annuler</button>
+          <button type="submit" class="btn-primary">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -574,6 +874,7 @@
       id: generateId(),
       nom_projet: "",
       type_client: "Habitat",
+      assigne_a: "",
       phase: "A venir",
       type: "Appel d'offres",
       type_marche: [],
@@ -895,9 +1196,294 @@
       : `<div class="list-item-empty">Aucune tâche prioritaire en cours.</div>`;
   }
 
+  // ---------------------------------------------------------------------
+  // Pipeline Kanban (étape 5, voir PROJET.md §5.2).
+  // ---------------------------------------------------------------------
+
+  const pipelineFilters = { type_client: "", type_marche: "", assigne_a: "" };
+  let draggedAOId = null;
+  let currentEditingAO = null;
+
+  function populateSelect(selectEl, options, withEmptyOption) {
+    const emptyOpt = withEmptyOption ? `<option value="">${escapeHtml(withEmptyOption)}</option>` : "";
+    selectEl.innerHTML = emptyOpt + options.map((o) => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join("");
+  }
+
+  function renderPipelineFilters() {
+    const tcSel = document.getElementById("filter-type_client");
+    const tmSel = document.getElementById("filter-type_marche");
+    if (!tcSel.options.length) populateSelect(tcSel, TYPE_CLIENT_OPTIONS, "Tous types de client");
+    if (!tmSel.options.length) populateSelect(tmSel, TYPE_MARCHE_OPTIONS, "Tous types de marché");
+  }
+
+  function aoMatchesFilters(ao) {
+    if (pipelineFilters.type_client && ao.type_client !== pipelineFilters.type_client) return false;
+    if (pipelineFilters.type_marche && !(ao.type_marche || []).includes(pipelineFilters.type_marche)) return false;
+    if (pipelineFilters.assigne_a && !(ao.assigne_a || "").toLowerCase().includes(pipelineFilters.assigne_a.toLowerCase())) return false;
+    return true;
+  }
+
+  function renderAOCard(ao) {
+    const days = daysBetween(ao.date_remise);
+    const marche = (ao.type_marche || []).join(", ");
+    return `
+      <div class="kanban-card" draggable="true" data-id="${ao.id}">
+        <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
+        <div class="list-item-sub">${escapeHtml(ao.type_client)}${marche ? " · " + escapeHtml(marche) : ""}</div>
+        <div class="kanban-card-footer">
+          ${days !== null ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : "<span></span>"}
+          ${ao.assigne_a ? `<span class="badge-type">${escapeHtml(ao.assigne_a)}</span>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPipeline() {
+    renderPipelineFilters();
+    const board = document.getElementById("kanban-board");
+    const filtered = appData.aos.filter(aoMatchesFilters);
+
+    board.innerHTML = PHASE_OPTIONS.map((phase) => {
+      const cards = filtered.filter((ao) => ao.phase === phase);
+      return `
+        <div class="kanban-column">
+          <div class="kanban-column-header">
+            <span>${escapeHtml(phase)}</span>
+            <span class="badge-type">${cards.length}</span>
+          </div>
+          <div class="kanban-cards" data-phase="${escapeHtml(phase)}">
+            ${cards.map(renderAOCard).join("")}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    document.querySelectorAll(".kanban-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        const ao = appData.aos.find((a) => a.id === card.dataset.id);
+        if (ao) openAOForm(ao);
+      });
+      card.addEventListener("dragstart", () => {
+        draggedAOId = card.dataset.id;
+        card.classList.add("dragging");
+      });
+      card.addEventListener("dragend", () => {
+        card.classList.remove("dragging");
+        draggedAOId = null;
+      });
+    });
+
+    document.querySelectorAll(".kanban-cards").forEach((col) => {
+      col.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        col.classList.add("drag-over");
+      });
+      col.addEventListener("dragleave", () => col.classList.remove("drag-over"));
+      col.addEventListener("drop", async (event) => {
+        event.preventDefault();
+        col.classList.remove("drag-over");
+        const newPhase = col.dataset.phase;
+        const id = draggedAOId;
+        if (!id) return;
+        const ao = appData.aos.find((a) => a.id === id);
+        if (!ao || ao.phase === newPhase) return;
+        try {
+          await updateAO(id, { phase: newPhase }, ao.last_modified);
+        } catch (err) {
+          if (err instanceof RecordConflictError) {
+            alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+            await refreshFromStorage();
+          } else {
+            alert("Erreur : " + err.message);
+          }
+        }
+      });
+    });
+  }
+
+  document.getElementById("filter-type_client").addEventListener("change", (e) => {
+    pipelineFilters.type_client = e.target.value;
+    renderPipeline();
+  });
+  document.getElementById("filter-type_marche").addEventListener("change", (e) => {
+    pipelineFilters.type_marche = e.target.value;
+    renderPipeline();
+  });
+  document.getElementById("filter-assigne_a").addEventListener("input", (e) => {
+    pipelineFilters.assigne_a = e.target.value;
+    renderPipeline();
+  });
+  document.getElementById("btn-new-ao").addEventListener("click", () => openAOForm(null));
+
+  // --- Formulaire AO (création / édition) ---
+
+  function fichierRow(url) {
+    const row = document.createElement("div");
+    row.className = "fichier-row";
+    const input = document.createElement("input");
+    input.type = "url";
+    input.className = "f-fichier-input";
+    input.placeholder = "https://…";
+    input.value = url || "";
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn-icon";
+    removeBtn.textContent = "✕";
+    removeBtn.addEventListener("click", () => row.remove());
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    return row;
+  }
+
+  function updateRappelFieldsVisibility() {
+    const isManual = document.getElementById("f-rappel-declenchement").value === "Sur date manuelle";
+    document.getElementById("f-rappel-date-wrap").style.display = isManual ? "" : "none";
+    document.getElementById("f-rappel-jours-wrap").style.display = isManual ? "none" : "";
+  }
+
+  function openAOForm(ao) {
+    currentEditingAO = ao || null;
+    document.getElementById("ao-modal-title").textContent = ao ? "Modifier l'AO" : "Nouvel AO";
+    document.getElementById("ao-form-delete").hidden = !ao;
+
+    populateSelect(document.getElementById("f-type_client"), TYPE_CLIENT_OPTIONS);
+    populateSelect(document.getElementById("f-phase"), PHASE_OPTIONS);
+    populateSelect(document.getElementById("f-type"), TYPE_AO_OPTIONS);
+    populateSelect(document.getElementById("f-resultat"), RESULTAT_OPTIONS);
+    populateSelect(document.getElementById("f-rappel-declenchement"), DECLENCHEMENT_OPTIONS);
+
+    const marcheContainer = document.getElementById("f-type_marche");
+    marcheContainer.innerHTML = TYPE_MARCHE_OPTIONS.map((m) => `
+      <label class="checkbox-inline"><input type="checkbox" class="f-type_marche-item" value="${escapeHtml(m)}"> ${escapeHtml(m)}</label>
+    `).join("");
+
+    const data = ao || {};
+    document.getElementById("f-nom_projet").value = data.nom_projet || "";
+    document.getElementById("f-type_client").value = data.type_client || TYPE_CLIENT_OPTIONS[0];
+    document.getElementById("f-phase").value = data.phase || PHASE_OPTIONS[0];
+    document.getElementById("f-type").value = data.type || TYPE_AO_OPTIONS[0];
+    document.getElementById("f-assigne_a").value = data.assigne_a || "";
+    document.getElementById("f-valeur_estimee_keur").value = data.valeur_estimee_keur ?? "";
+    document.getElementById("f-amo").value = data.amo || "";
+    document.getElementById("f-concurrence").value = data.concurrence || "";
+    document.getElementById("f-lieu").value = data.lieu || "";
+    document.getElementById("f-date_remise").value = data.date_remise || "";
+    document.getElementById("f-date_visite").value = data.date_visite || "";
+    document.getElementById("f-date_prise_effet").value = data.date_prise_effet || "";
+    document.getElementById("f-resultat").value = data.resultat || RESULTAT_OPTIONS[0];
+    document.getElementById("f-motif").value = data.motif || "";
+    document.getElementById("f-notes").value = data.notes || "";
+
+    const selectedMarche = new Set(data.type_marche || []);
+    marcheContainer.querySelectorAll(".f-type_marche-item").forEach((cb) => {
+      cb.checked = selectedMarche.has(cb.value);
+    });
+
+    const fichiersList = document.getElementById("f-fichiers-list");
+    fichiersList.innerHTML = "";
+    (data.fichiers || []).forEach((url) => fichiersList.appendChild(fichierRow(url)));
+
+    const rappel = data.rappel || {};
+    document.getElementById("f-rappel-declenchement").value = rappel.declenchement || DECLENCHEMENT_OPTIONS[0];
+    document.getElementById("f-rappel-date").value = rappel.date || "";
+    document.getElementById("f-rappel-jours_avant").value = rappel.jours_avant ?? "";
+    document.getElementById("f-rappel-message").value = rappel.message || "";
+    document.getElementById("f-rappel-actif").checked = !!data.rappel && rappel.actif !== false;
+
+    updateRappelFieldsVisibility();
+    document.getElementById("ao-modal-overlay").hidden = false;
+  }
+
+  function closeAOForm() {
+    document.getElementById("ao-modal-overlay").hidden = true;
+    currentEditingAO = null;
+  }
+
+  document.getElementById("f-rappel-declenchement").addEventListener("change", updateRappelFieldsVisibility);
+  document.getElementById("ao-modal-close").addEventListener("click", closeAOForm);
+  document.getElementById("ao-form-cancel").addEventListener("click", closeAOForm);
+  document.getElementById("ao-modal-overlay").addEventListener("click", (event) => {
+    if (event.target.id === "ao-modal-overlay") closeAOForm();
+  });
+  document.getElementById("f-fichiers-add").addEventListener("click", () => {
+    document.getElementById("f-fichiers-list").appendChild(fichierRow());
+  });
+
+  document.getElementById("ao-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const selectedMarche = Array.from(document.querySelectorAll(".f-type_marche-item:checked")).map((cb) => cb.value);
+    const fichiers = Array.from(document.querySelectorAll(".f-fichier-input")).map((i) => i.value.trim()).filter(Boolean);
+    const rappelActif = document.getElementById("f-rappel-actif").checked;
+    const rappel = rappelActif ? createRappel({
+      declenchement: document.getElementById("f-rappel-declenchement").value,
+      date: document.getElementById("f-rappel-date").value || null,
+      jours_avant: document.getElementById("f-rappel-jours_avant").value ? Number(document.getElementById("f-rappel-jours_avant").value) : null,
+      message: document.getElementById("f-rappel-message").value.trim(),
+      actif: true,
+    }) : null;
+
+    const changes = {
+      nom_projet: document.getElementById("f-nom_projet").value.trim(),
+      type_client: document.getElementById("f-type_client").value,
+      phase: document.getElementById("f-phase").value,
+      type: document.getElementById("f-type").value,
+      assigne_a: document.getElementById("f-assigne_a").value.trim(),
+      type_marche: selectedMarche,
+      valeur_estimee_keur: document.getElementById("f-valeur_estimee_keur").value
+        ? Number(document.getElementById("f-valeur_estimee_keur").value) : null,
+      amo: document.getElementById("f-amo").value.trim(),
+      concurrence: document.getElementById("f-concurrence").value.trim(),
+      lieu: document.getElementById("f-lieu").value.trim(),
+      date_remise: document.getElementById("f-date_remise").value || null,
+      date_visite: document.getElementById("f-date_visite").value || null,
+      date_prise_effet: document.getElementById("f-date_prise_effet").value || null,
+      resultat: document.getElementById("f-resultat").value,
+      motif: document.getElementById("f-motif").value.trim(),
+      notes: document.getElementById("f-notes").value.trim(),
+      fichiers,
+      rappel,
+    };
+
+    try {
+      if (currentEditingAO) {
+        await updateAO(currentEditingAO.id, changes, currentEditingAO.last_modified);
+      } else {
+        await addAO(changes);
+      }
+      closeAOForm();
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées, réessaie.");
+        await refreshFromStorage();
+        closeAOForm();
+      } else {
+        alert("Erreur lors de l'enregistrement : " + err.message);
+      }
+    }
+  });
+
+  document.getElementById("ao-form-delete").addEventListener("click", async () => {
+    if (!currentEditingAO) return;
+    const label = currentEditingAO.nom_projet || "(sans nom)";
+    if (!confirm(`Supprimer l'AO "${label}" ? Cette action est irréversible (les tâches et contacts liés sont conservés mais délinkés).`)) return;
+    try {
+      await deleteAO(currentEditingAO.id, currentEditingAO.last_modified);
+      closeAOForm();
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+        closeAOForm();
+      } else {
+        alert("Erreur lors de la suppression : " + err.message);
+      }
+    }
+  });
+
   function renderAll() {
     renderStorageStatus();
     renderAccueil();
+    renderPipeline();
   }
 
   document.getElementById("btn-export").addEventListener("click", () => {
@@ -975,6 +1561,7 @@
     addContact, updateContact, deleteContact,
     RecordConflictError,
     renderAll, renderAccueil, collectActiveReminders, isRappelActive, daysBetween,
+    renderPipeline, openAOForm,
   };
 })();
 </script>

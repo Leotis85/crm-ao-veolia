@@ -86,6 +86,7 @@ Repris du Pipeline Notion existant, enrichi.
 | `id` | identifiant unique | généré automatiquement |
 | `nom_projet` | texte | titre de l'AO |
 | `type_client` | liste | Habitat, Collectivité, Santé, Enseignement, Tertiaire, Autre |
+| `assigne_a` | texte | ajouté à l'étape 5 : nécessaire pour l'affichage et le filtre par personne sur les cartes Kanban (§5.2), absent du schéma initial |
 | `phase` | liste | voir valeurs ci-dessous |
 | `type` | liste | Appel d'offres, Renouvellement, Avenant, Sollicitation directe, Proposition travaux |
 | `type_marche` | multi-liste | P1, P2, P3, CPE, R1, R2, GTR, Gaz |
