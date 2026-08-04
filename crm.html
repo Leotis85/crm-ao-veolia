@@ -474,6 +474,41 @@
     display: block;
     margin-bottom: 6px;
   }
+
+  .reminder-wrap { position: relative; }
+
+  .reminder-panel {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    width: 300px;
+    max-height: 360px;
+    overflow-y: auto;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    z-index: 50;
+  }
+
+  .reminder-panel[hidden] { display: none; }
+
+  .reminder-panel-header {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .reminder-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
@@ -491,9 +526,15 @@
     <button id="btn-export">⬇ Exporter</button>
     <button id="btn-import">⬆ Importer</button>
     <input type="file" id="file-import" accept="application/json" hidden>
-    <button id="reminder-bell" title="Rappels">
-      🔔<span id="reminder-count">0</span>
-    </button>
+    <div class="reminder-wrap">
+      <button id="reminder-bell" title="Rappels">
+        🔔<span id="reminder-count">0</span>
+      </button>
+      <div class="reminder-panel" id="reminder-panel" hidden>
+        <div class="reminder-panel-header">Rappels actifs</div>
+        <div class="list-panel" id="reminder-panel-list"></div>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -1311,6 +1352,74 @@
     return items;
   }
 
+  // ---------------------------------------------------------------------
+  // Moteur de rappels (étape 8, voir PROJET.md §5.6) — cloche + traitement.
+  // ---------------------------------------------------------------------
+
+  function renderReminderItem(item) {
+    return `
+      <div class="list-item reminder-item">
+        <div>
+          <div class="list-item-title">${escapeHtml(item.label || "(sans titre)")}</div>
+          <div class="list-item-sub">${escapeHtml(item.message || "")}</div>
+        </div>
+        <div class="reminder-item-actions">
+          <span class="badge-type">${escapeHtml(item.type)}</span>
+          <button type="button" class="btn-small btn-secondary reminder-treat-btn">✓ Traité</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function wireReminderItemEvents(container, items) {
+    container.querySelectorAll(".reminder-treat-btn").forEach((btn, idx) => {
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        markReminderTreated(items[idx]);
+      });
+    });
+  }
+
+  async function markReminderTreated(item) {
+    const changes = { rappel: { ...item.entity.rappel, actif: false } };
+    try {
+      if (item.type === "AO") await updateAO(item.entity.id, changes, item.entity.last_modified);
+      else if (item.type === "Tâche") await updateTache(item.entity.id, changes, item.entity.last_modified);
+      else if (item.type === "Contact") await updateContact(item.entity.id, changes, item.entity.last_modified);
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cet élément a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+      } else {
+        alert("Erreur : " + err.message);
+      }
+    }
+  }
+
+  function renderReminderBell() {
+    const items = collectActiveReminders(appData);
+    const countEl = document.getElementById("reminder-count");
+    countEl.textContent = items.length;
+    countEl.style.display = items.length ? "" : "none";
+
+    const panelList = document.getElementById("reminder-panel-list");
+    panelList.innerHTML = items.length
+      ? items.map(renderReminderItem).join("")
+      : `<div class="list-item-empty">Aucun rappel actif.</div>`;
+    wireReminderItemEvents(panelList, items);
+  }
+
+  document.getElementById("reminder-bell").addEventListener("click", (event) => {
+    event.stopPropagation();
+    document.getElementById("reminder-panel").hidden = !document.getElementById("reminder-panel").hidden;
+  });
+  document.addEventListener("click", (event) => {
+    const panel = document.getElementById("reminder-panel");
+    if (!panel.hidden && !panel.contains(event.target) && event.target.id !== "reminder-bell") {
+      panel.hidden = true;
+    }
+  });
+
   function renderAccueil() {
     const data = appData;
 
@@ -1348,17 +1457,11 @@
       : `<div class="list-item-empty">Aucune échéance dans les 30 prochains jours.</div>`;
 
     const activeReminders = collectActiveReminders(data);
-    document.getElementById("accueil-rappels").innerHTML = activeReminders.length
-      ? activeReminders.map((r) => `
-          <div class="list-item">
-            <div>
-              <div class="list-item-title">${escapeHtml(r.label || "(sans titre)")}</div>
-              <div class="list-item-sub">${escapeHtml(r.message || "")}</div>
-            </div>
-            <span class="badge-type">${escapeHtml(r.type)}</span>
-          </div>
-        `).join("")
+    const rappelsEl = document.getElementById("accueil-rappels");
+    rappelsEl.innerHTML = activeReminders.length
+      ? activeReminders.map(renderReminderItem).join("")
       : `<div class="list-item-empty">Aucun rappel actif aujourd'hui.</div>`;
+    wireReminderItemEvents(rappelsEl, activeReminders);
 
     const highPriority = data.taches
       .filter((t) => t.priorite === "Haute" && t.statut !== "Terminé")
@@ -2067,6 +2170,7 @@
 
   function renderAll() {
     renderStorageStatus();
+    renderReminderBell();
     renderAccueil();
     renderPipeline();
     renderTodo();
@@ -2155,6 +2259,7 @@
     renderPipeline, openAOForm,
     renderTodo, openTacheForm, sortTaches,
     renderContacts, openContactForm,
+    renderReminderBell, markReminderTreated,
   };
 })();
 </script>
