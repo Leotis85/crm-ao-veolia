@@ -382,6 +382,21 @@
     gap: 6px;
   }
 
+  .kanban-card-footer-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .badge-resultat {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    color: #fff;
+    font-weight: 600;
+  }
+
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -493,6 +508,11 @@
   }
 
   .contact-item, .clickable-item { cursor: pointer; }
+
+  #f-c-ao-search {
+    width: 100%;
+    margin-bottom: 8px;
+  }
 
   .checkbox-group.scrollable {
     display: block;
@@ -1000,6 +1020,7 @@
 
       <fieldset>
         <legend>AO associés</legend>
+        <input type="text" id="f-c-ao-search" placeholder="Rechercher un AO…">
         <div class="checkbox-group scrollable" id="f-c-ao_lies"></div>
       </fieldset>
 
@@ -1231,6 +1252,23 @@
   // Une fois l'offre en Négociation (et au-delà), la date de remise est
   // forcément passée : ce n'est plus un retard à signaler (accueil + pipeline).
   const PHASE_POST_REMISE_INDEX = PHASE_OPTIONS.indexOf("🤝 Négociation");
+  // Phases terminales : déplacer une carte ici doit synchroniser `resultat`
+  // (utilisé tel quel par le Reporting), pas seulement changer sa colonne.
+  const PHASE_TO_RESULTAT = {
+    "✅ Gagné": "Gagné",
+    "❌ Perdu": "Perdu",
+    "🚫 Abandonné": "Abandonné",
+  };
+  function resultatForPhase(phase, currentResultat) {
+    if (PHASE_TO_RESULTAT[phase]) return PHASE_TO_RESULTAT[phase];
+    // On sort d'une phase terminale vers une phase active : le résultat
+    // précédent n'est plus d'actualité, on repasse "En cours".
+    const wasTerminal = Object.values(PHASE_TO_RESULTAT).includes(currentResultat);
+    return wasTerminal ? "En cours" : currentResultat;
+  }
+  // Palette de statut partagée (carte Kanban + Reporting) : jamais thématique.
+  const RESULTAT_STATUS_ORDER = ["Gagné", "Perdu", "Abandonné", "En cours"];
+  const RESULTAT_STATUS_COLORS = { "Gagné": "#0ca30c", "Perdu": "#d03b3b", "Abandonné": "#fab219", "En cours": "#898781" };
   const TYPE_CLIENT_OPTIONS = ["Habitat", "Collectivité", "Santé", "Enseignement", "Tertiaire", "Autre"];
   const TYPE_AO_OPTIONS = ["Appel d'offres", "Renouvellement", "Avenant", "Sollicitation directe", "Proposition travaux"];
   const TYPE_MARCHE_OPTIONS = ["P1", "P2", "P3", "CPE", "R1", "R2"];
@@ -1720,12 +1758,18 @@
     const showDeadline = phaseIndex === -1 || phaseIndex < PHASE_POST_REMISE_INDEX;
     const days = showDeadline ? daysBetween(ao.date_remise) : null;
     const marche = (ao.type_marche || []).join(", ");
+    const resultatBadge = ao.resultat && ao.resultat !== "En cours"
+      ? `<span class="badge-resultat" style="background:${RESULTAT_STATUS_COLORS[ao.resultat]}">${escapeHtml(ao.resultat)}</span>`
+      : "";
     return `
       <div class="kanban-card" draggable="true" data-id="${ao.id}">
         <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
         <div class="list-item-sub">${escapeHtml(ao.type_client)}${marche ? " · " + escapeHtml(marche) : ""}</div>
         <div class="kanban-card-footer">
-          ${days !== null ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : "<span></span>"}
+          <span class="kanban-card-footer-left">
+            ${days !== null ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : ""}
+            ${resultatBadge}
+          </span>
           ${ao.assigne_a ? `<span class="badge-type">${escapeHtml(ao.assigne_a)}</span>` : ""}
         </div>
       </div>
@@ -1782,7 +1826,8 @@
         const ao = appData.aos.find((a) => a.id === id);
         if (!ao || ao.phase === newPhase) return;
         try {
-          await updateAO(id, { phase: newPhase }, ao.last_modified);
+          const newResultat = resultatForPhase(newPhase, ao.resultat);
+          await updateAO(id, { phase: newPhase, resultat: newResultat }, ao.last_modified);
         } catch (err) {
           if (err instanceof RecordConflictError) {
             alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
@@ -2322,6 +2367,7 @@
           <label class="checkbox-inline"><input type="checkbox" class="f-c-ao-item" value="${a.id}" ${selected.has(a.id) ? "checked" : ""}> ${escapeHtml(a.nom_projet || "(sans nom)")}</label>
         `).join("")
       : `<div class="list-item-empty">Aucun AO créé pour l'instant.</div>`;
+    document.getElementById("f-c-ao-search").value = "";
 
     const rappel = data.rappel || {};
     document.getElementById("f-c-rappel-date").value = rappel.date || "";
@@ -2335,6 +2381,13 @@
     document.getElementById("contact-modal-overlay").hidden = true;
     currentEditingContact = null;
   }
+
+  document.getElementById("f-c-ao-search").addEventListener("input", (event) => {
+    const q = event.target.value.trim().toLowerCase();
+    document.querySelectorAll("#f-c-ao_lies label").forEach((label) => {
+      label.style.display = !q || label.textContent.toLowerCase().includes(q) ? "" : "none";
+    });
+  });
 
   document.getElementById("contact-modal-close").addEventListener("click", closeContactForm);
   document.getElementById("contact-form-cancel").addEventListener("click", closeContactForm);
@@ -2411,9 +2464,6 @@
   // Gagné=good, Perdu=critical, Abandonné=warning, En cours=neutre.
   // ---------------------------------------------------------------------
 
-  const REPORT_STATUS_ORDER = ["Gagné", "Perdu", "Abandonné", "En cours"];
-  const REPORT_STATUS_COLORS = { "Gagné": "#0ca30c", "Perdu": "#d03b3b", "Abandonné": "#fab219", "En cours": "#898781" };
-
   function formatKeur(v) {
     return `${Math.round(v).toLocaleString("fr-FR")} k€`;
   }
@@ -2440,7 +2490,7 @@
       .map((client) => {
         const subset = aos.filter((a) => a.type_client === client);
         const counts = {};
-        REPORT_STATUS_ORDER.forEach((s) => { counts[s] = subset.filter((a) => a.resultat === s).length; });
+        RESULTAT_STATUS_ORDER.forEach((s) => { counts[s] = subset.filter((a) => a.resultat === s).length; });
         return { label: client, total: subset.length, counts };
       })
       .filter((x) => x.total > 0);
@@ -2451,7 +2501,7 @@
       const key = a.date_remise.slice(0, 7);
       if (!monthlyBuckets.has(key)) {
         const counts = {};
-        REPORT_STATUS_ORDER.forEach((s) => { counts[s] = 0; });
+        RESULTAT_STATUS_ORDER.forEach((s) => { counts[s] = 0; });
         monthlyBuckets.set(key, counts);
       }
       const bucket = monthlyBuckets.get(key);
@@ -2491,9 +2541,9 @@
   }
 
   function renderStatusLegend(containerId) {
-    document.getElementById(containerId).innerHTML = REPORT_STATUS_ORDER.map((s) => `
+    document.getElementById(containerId).innerHTML = RESULTAT_STATUS_ORDER.map((s) => `
       <span class="legend-item">
-        <span class="legend-swatch" style="background:${REPORT_STATUS_COLORS[s]}"></span>${escapeHtml(s)}
+        <span class="legend-swatch" style="background:${RESULTAT_STATUS_COLORS[s]}"></span>${escapeHtml(s)}
       </span>
     `).join("");
   }
@@ -2541,9 +2591,9 @@
       <div class="stacked-bar-row">
         <div class="bar-row-label">${escapeHtml(item.label)}</div>
         <div class="stacked-bar-track">
-          ${REPORT_STATUS_ORDER.filter((s) => item.counts[s] > 0).map((s) => `
+          ${RESULTAT_STATUS_ORDER.filter((s) => item.counts[s] > 0).map((s) => `
             <div class="segment" tabindex="0" data-label="${escapeHtml(item.label)}" data-status="${escapeHtml(s)}" data-value="${item.counts[s]}"
-                 style="width:${(item.counts[s] / item.total) * 100}%; background:${REPORT_STATUS_COLORS[s]}"></div>
+                 style="width:${(item.counts[s] / item.total) * 100}%; background:${RESULTAT_STATUS_COLORS[s]}"></div>
           `).join("")}
         </div>
         <div class="bar-row-value">${item.total}</div>
@@ -2563,9 +2613,9 @@
       <div class="monthly-col-wrap">
         <div class="monthly-total-label">${m.total}</div>
         <div class="monthly-col">
-          ${REPORT_STATUS_ORDER.filter((s) => m.counts[s] > 0).map((s) => `
+          ${RESULTAT_STATUS_ORDER.filter((s) => m.counts[s] > 0).map((s) => `
             <div class="segment" tabindex="0" data-label="${escapeHtml(m.label)}" data-status="${escapeHtml(s)}" data-value="${m.counts[s]}"
-                 style="height:${Math.max((m.counts[s] / maxTotal) * 160, 3)}px; background:${REPORT_STATUS_COLORS[s]}"></div>
+                 style="height:${Math.max((m.counts[s] / maxTotal) * 160, 3)}px; background:${RESULTAT_STATUS_COLORS[s]}"></div>
           `).join("")}
         </div>
         <div class="monthly-month-label">${escapeHtml(m.label)}</div>
