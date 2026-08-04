@@ -94,6 +94,34 @@
     display: none;
   }
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .header-actions button {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .header-actions button:hover {
+    background: var(--color-bg);
+  }
+
+  #storage-status {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 8px 16px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
   main {
     max-width: 1100px;
     margin: 24px auto;
@@ -127,7 +155,7 @@
 <body>
 
 <header>
-  <span class="app-title">CRM AO</span>
+  <span class="app-title">VEOLIA CRM</span>
   <nav id="main-nav">
     <button data-screen="accueil" class="active">Accueil</button>
     <button data-screen="pipeline">Pipeline</button>
@@ -135,10 +163,17 @@
     <button data-screen="contacts">Contacts</button>
     <button data-screen="reporting">Reporting</button>
   </nav>
-  <button id="reminder-bell" title="Rappels">
-    🔔<span id="reminder-count">0</span>
-  </button>
+  <div class="header-actions">
+    <button id="btn-export">⬇ Exporter</button>
+    <button id="btn-import">⬆ Importer</button>
+    <input type="file" id="file-import" accept="application/json" hidden>
+    <button id="reminder-bell" title="Rappels">
+      🔔<span id="reminder-count">0</span>
+    </button>
+  </div>
 </header>
+
+<div id="storage-status">Chargement des données…</div>
 
 <main>
   <section class="screen active" id="screen-accueil">
@@ -195,8 +230,192 @@
     return adapter;
   }
 
-  // Adaptateur actif. Branché à l'étape 2 (LocalStorageAdapter).
-  let storageAdapter = null;
+  // ---------------------------------------------------------------------
+  // LocalStorageAdapter (étape 2).
+  //
+  // Stocke le blob complet des données sous une seule clé localStorage.
+  // L'anti-conflit (§6) se fait au niveau du blob entier : chaque adaptateur
+  // retient le `lastModified` vu à son dernier load()/save(). Si la valeur en
+  // localStorage a changé depuis (écriture depuis un autre onglet), save()
+  // refuse d'écraser et lève StorageConflictError — l'appelant doit alors
+  // recharger (load) avant de retenter.
+  // ---------------------------------------------------------------------
+
+  const STORAGE_KEY = "crm_ao_data_v1";
+  const USER_KEY = "crm_ao_current_user";
+
+  function getCurrentUser() {
+    let user = localStorage.getItem(USER_KEY);
+    if (!user) {
+      user = (window.prompt("Ton prénom, pour identifier tes modifications :") || "").trim();
+      if (user) localStorage.setItem(USER_KEY, user);
+    }
+    return user || "Inconnu";
+  }
+
+  function emptyData() {
+    return {
+      aos: [],
+      taches: [],
+      contacts: [],
+      _meta: { lastModified: null, modifiedBy: null },
+    };
+  }
+
+  class StorageConflictError extends Error {
+    constructor() {
+      super("Les données ont été modifiées ailleurs entre-temps. Recharge avant de réessayer.");
+      this.name = "StorageConflictError";
+    }
+  }
+
+  class LocalStorageAdapter {
+    constructor(key = STORAGE_KEY) {
+      this.key = key;
+      this._lastKnownModified = undefined;
+      this._listeners = new Set();
+      window.addEventListener("storage", (event) => {
+        if (event.key === this.key) {
+          this._listeners.forEach((cb) => cb());
+        }
+      });
+    }
+
+    _read() {
+      const raw = localStorage.getItem(this.key);
+      const data = raw ? JSON.parse(raw) : emptyData();
+      if (!data._meta) data._meta = { lastModified: null, modifiedBy: null };
+      return data;
+    }
+
+    async load() {
+      const data = this._read();
+      this._lastKnownModified = data._meta.lastModified;
+      return data;
+    }
+
+    async save(data) {
+      const current = this._read();
+      if (this._lastKnownModified !== undefined && current._meta.lastModified !== this._lastKnownModified) {
+        throw new StorageConflictError();
+      }
+      const toStore = {
+        ...data,
+        _meta: {
+          lastModified: new Date().toISOString(),
+          modifiedBy: getCurrentUser(),
+        },
+      };
+      localStorage.setItem(this.key, JSON.stringify(toStore));
+      this._lastKnownModified = toStore._meta.lastModified;
+      return toStore._meta;
+    }
+
+    subscribe(cb) {
+      this._listeners.add(cb);
+      return () => this._listeners.delete(cb);
+    }
+
+    async meta() {
+      return this._read()._meta;
+    }
+  }
+
+  // Adaptateur actif.
+  const storageAdapter = assertStorageAdapter(new LocalStorageAdapter());
+
+  // ---------------------------------------------------------------------
+  // Export / import JSON manuel (filet de sécurité, §6).
+  // ---------------------------------------------------------------------
+
+  function isValidCrmData(data) {
+    return data && Array.isArray(data.aos) && Array.isArray(data.taches) && Array.isArray(data.contacts);
+  }
+
+  function downloadJSON(data) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `crm-ao-export-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function readJSONFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          resolve(JSON.parse(reader.result));
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // État applicatif + statut de stockage.
+  // ---------------------------------------------------------------------
+
+  let appData = emptyData();
+  const statusEl = document.getElementById("storage-status");
+
+  function renderStorageStatus() {
+    const meta = appData._meta || {};
+    const counts = `${appData.aos.length} AO · ${appData.taches.length} tâches · ${appData.contacts.length} contacts`;
+    const saved = meta.lastModified
+      ? `dernière sauvegarde ${new Date(meta.lastModified).toLocaleString("fr-FR")} par ${meta.modifiedBy}`
+      : "aucune donnée enregistrée pour l'instant";
+    statusEl.textContent = `${counts} — ${saved}`;
+  }
+
+  async function refreshFromStorage() {
+    appData = await storageAdapter.load();
+    renderStorageStatus();
+  }
+
+  storageAdapter.subscribe(refreshFromStorage);
+  refreshFromStorage();
+
+  document.getElementById("btn-export").addEventListener("click", () => {
+    downloadJSON(appData);
+  });
+
+  document.getElementById("btn-import").addEventListener("click", () => {
+    document.getElementById("file-import").click();
+  });
+
+  document.getElementById("file-import").addEventListener("change", async (event) => {
+    const file = event.target.files[0];
+    event.target.value = "";
+    if (!file) return;
+
+    let imported;
+    try {
+      imported = await readJSONFile(file);
+    } catch (err) {
+      alert("Fichier JSON invalide : impossible de le lire.");
+      return;
+    }
+    if (!isValidCrmData(imported)) {
+      alert("Ce fichier ne correspond pas au format attendu (aos / taches / contacts).");
+      return;
+    }
+    if (!confirm("Importer ce fichier va remplacer toutes les données actuelles. Continuer ?")) {
+      return;
+    }
+
+    await storageAdapter.load();
+    await storageAdapter.save(imported);
+    await refreshFromStorage();
+    alert("Import terminé.");
+  });
 
   // ---------------------------------------------------------------------
   // Routage simple entre les écrans.
@@ -218,7 +437,12 @@
     if (btn) showScreen(btn.dataset.screen);
   });
 
-  window.CRM = { assertStorageAdapter, showScreen };
+  window.CRM = {
+    assertStorageAdapter,
+    showScreen,
+    storageAdapter,
+    getData: () => appData,
+  };
 })();
 </script>
 
