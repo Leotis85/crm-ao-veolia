@@ -294,10 +294,29 @@
   textarea { resize: vertical; }
 
   .kanban-top-scroll {
-    overflow-x: auto;
+    overflow-x: scroll;
     overflow-y: hidden;
-    height: 16px;
-    margin-bottom: 4px;
+    height: 14px;
+    margin-bottom: 6px;
+    scrollbar-width: thin;
+  }
+
+  .kanban-top-scroll::-webkit-scrollbar {
+    height: 10px;
+  }
+
+  .kanban-top-scroll::-webkit-scrollbar-track {
+    background: var(--color-bg);
+    border-radius: 999px;
+  }
+
+  .kanban-top-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 999px;
+  }
+
+  .kanban-top-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
   }
 
   .kanban-top-scroll-spacer {
@@ -473,7 +492,7 @@
     color: var(--color-text-muted);
   }
 
-  .contact-item { cursor: pointer; }
+  .contact-item, .clickable-item { cursor: pointer; }
 
   .checkbox-group.scrollable {
     display: block;
@@ -1050,6 +1069,9 @@
     "A venir", "Étude", "Finalisation", "🤝 Négociation",
     "⏳ En attente de réponse", "✅ Gagné", "❌ Perdu", "🚫 Abandonné",
   ];
+  // Une fois l'offre en Négociation (et au-delà), la date de remise est
+  // forcément passée : ce n'est plus un retard à signaler (accueil + pipeline).
+  const PHASE_POST_REMISE_INDEX = PHASE_OPTIONS.indexOf("🤝 Négociation");
   const TYPE_CLIENT_OPTIONS = ["Habitat", "Collectivité", "Santé", "Enseignement", "Tertiaire", "Autre"];
   const TYPE_AO_OPTIONS = ["Appel d'offres", "Renouvellement", "Avenant", "Sollicitation directe", "Proposition travaux"];
   const TYPE_MARCHE_OPTIONS = ["P1", "P2", "P3", "CPE", "R1", "R2"];
@@ -1372,7 +1394,7 @@
 
   function renderReminderItem(item) {
     return `
-      <div class="list-item reminder-item">
+      <div class="list-item reminder-item clickable-item">
         <div>
           <div class="list-item-title">${escapeHtml(item.label || "(sans titre)")}</div>
           <div class="list-item-sub">${escapeHtml(item.message || "")}</div>
@@ -1385,7 +1407,16 @@
     `;
   }
 
+  function openReminderEntityForm(item) {
+    if (item.type === "AO") openAOForm(item.entity);
+    else if (item.type === "Tâche") openTacheForm(item.entity);
+    else if (item.type === "Contact") openContactForm(item.entity);
+  }
+
   function wireReminderItemEvents(container, items) {
+    container.querySelectorAll(".reminder-item").forEach((row, idx) => {
+      row.addEventListener("click", () => openReminderEntityForm(items[idx]));
+    });
     container.querySelectorAll(".reminder-treat-btn").forEach((btn, idx) => {
       btn.addEventListener("click", (event) => {
         event.stopPropagation();
@@ -1439,6 +1470,10 @@
 
     const aoEnCours = data.aos.filter((a) => a.resultat === "En cours").length;
     const echeancesAO = data.aos
+      .filter((a) => {
+        const idx = PHASE_OPTIONS.indexOf(a.phase);
+        return idx === -1 || idx < PHASE_POST_REMISE_INDEX;
+      })
       .map((a) => ({ ao: a, days: daysBetween(a.date_remise) }))
       .filter((x) => x.days !== null);
     const echeances7j = echeancesAO.filter((x) => x.days >= 0 && x.days <= 7).length;
@@ -1458,9 +1493,10 @@
     `).join("");
 
     const upcoming = echeancesAO.filter((x) => x.days <= 30).sort((a, b) => a.days - b.days);
-    document.getElementById("accueil-echeances").innerHTML = upcoming.length
+    const echeancesEl = document.getElementById("accueil-echeances");
+    echeancesEl.innerHTML = upcoming.length
       ? upcoming.map(({ ao, days }) => `
-          <div class="list-item">
+          <div class="list-item clickable-item" data-id="${ao.id}">
             <div>
               <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
               <div class="list-item-sub">${escapeHtml(ao.type_client)} · remise le ${formatDate(ao.date_remise)}</div>
@@ -1469,6 +1505,12 @@
           </div>
         `).join("")
       : `<div class="list-item-empty">Aucune échéance dans les 30 prochains jours.</div>`;
+    echeancesEl.querySelectorAll(".clickable-item").forEach((row) => {
+      row.addEventListener("click", () => {
+        const ao = data.aos.find((a) => a.id === row.dataset.id);
+        if (ao) openAOForm(ao);
+      });
+    });
 
     const activeReminders = collectActiveReminders(data);
     const rappelsEl = document.getElementById("accueil-rappels");
@@ -1480,16 +1522,11 @@
     const highPriority = data.taches
       .filter((t) => t.priorite === "Haute" && t.statut !== "Terminé")
       .sort((a, b) => (a.echeance || "").localeCompare(b.echeance || ""));
-    document.getElementById("accueil-priorites").innerHTML = highPriority.length
-      ? highPriority.map((t) => `
-          <div class="list-item flag-high">
-            <div>
-              <div class="list-item-title">🚩 ${escapeHtml(t.tache || "(sans titre)")}</div>
-              <div class="list-item-sub">${escapeHtml(t.assigne_a || "")}${t.echeance ? " · échéance " + formatDate(t.echeance) : ""}</div>
-            </div>
-          </div>
-        `).join("")
+    const prioritesEl = document.getElementById("accueil-priorites");
+    prioritesEl.innerHTML = highPriority.length
+      ? highPriority.map((t) => renderTacheItem(t)).join("")
       : `<div class="list-item-empty">Aucune tâche prioritaire en cours.</div>`;
+    wireTacheItemEvents(prioritesEl);
   }
 
   // ---------------------------------------------------------------------
@@ -1518,10 +1555,6 @@
     if (pipelineFilters.assigne_a && !(ao.assigne_a || "").toLowerCase().includes(pipelineFilters.assigne_a.toLowerCase())) return false;
     return true;
   }
-
-  // Une fois l'offre en Négociation (et au-delà), la date de remise est
-  // forcément dans le passé : ce n'est plus un retard, ne pas l'afficher.
-  const PHASE_POST_REMISE_INDEX = PHASE_OPTIONS.indexOf("🤝 Négociation");
 
   function renderAOCard(ao) {
     const phaseIndex = PHASE_OPTIONS.indexOf(ao.phase);
@@ -1602,8 +1635,20 @@
       });
     });
 
+    syncKanbanTopScrollWidth();
+  }
+
+  // Le Pipeline est masqué (display:none) au premier rendu (c'est l'écran
+  // Accueil qui est actif par défaut) : à ce moment-là board.scrollWidth
+  // vaut 0 et la barre du haut resterait bloquée sans largeur. Un
+  // ResizeObserver se resynchronise dès que le tableau redevient visible
+  // (changement d'onglet), se redimensionne, ou que son contenu change.
+  function syncKanbanTopScrollWidth() {
+    const board = document.getElementById("kanban-board");
     document.getElementById("kanban-top-scroll-spacer").style.width = board.scrollWidth + "px";
   }
+
+  new ResizeObserver(syncKanbanTopScrollWidth).observe(document.getElementById("kanban-board"));
 
   document.getElementById("kanban-top-scroll").addEventListener("scroll", () => {
     document.getElementById("kanban-board").scrollLeft = document.getElementById("kanban-top-scroll").scrollLeft;
