@@ -505,6 +505,146 @@
     margin-bottom: 6px;
   }
 
+  .stat-sub {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+  }
+
+  /* --- Reporting : légende de statut, barres, graphique mensuel --- */
+
+  .status-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-bottom: 14px;
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  .bar-chart, .stacked-bar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .bar-row, .stacked-bar-row {
+    display: grid;
+    grid-template-columns: 130px 1fr 34px;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bar-row-label {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .bar-row-track {
+    height: 16px;
+    background: var(--color-bg);
+    border-radius: 4px;
+  }
+
+  .bar-row-fill {
+    height: 100%;
+    background: #2a78d6;
+    border-radius: 0 4px 4px 0;
+    min-width: 3px;
+  }
+
+  .stacked-bar-track {
+    height: 18px;
+    display: flex;
+    gap: 2px;
+  }
+
+  .stacked-bar-track .segment:last-child {
+    border-radius: 0 4px 4px 0;
+  }
+
+  .bar-row-value {
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .monthly-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    height: 200px;
+    padding-top: 20px;
+    overflow-x: auto;
+  }
+
+  .monthly-col-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 36px;
+    flex-shrink: 0;
+  }
+
+  .monthly-col {
+    width: 26px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 160px;
+    gap: 2px;
+  }
+
+  .monthly-col .segment:first-child {
+    border-radius: 4px 4px 0 0;
+  }
+
+  .monthly-total-label {
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .monthly-month-label {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  .bar-row:focus-visible, .stacked-bar-row .segment:focus-visible, .monthly-col .segment:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+
+  .chart-tooltip {
+    position: fixed;
+    background: var(--color-text);
+    color: #fff;
+    font-size: 11px;
+    padding: 6px 9px;
+    border-radius: 6px;
+    pointer-events: none;
+    z-index: 200;
+    white-space: nowrap;
+  }
+
+  .chart-tooltip[hidden] { display: none; }
+
   .reminder-wrap { position: relative; }
 
   .reminder-panel {
@@ -628,9 +768,28 @@
 
   <section class="screen" id="screen-reporting">
     <h1>Reporting</h1>
-    <div class="placeholder">Statistiques à construire à l'étape 9.</div>
+    <div class="stats-grid" id="reporting-stats"></div>
+
+    <div class="panel">
+      <h2>Répartition par type de marché</h2>
+      <div class="bar-chart" id="reporting-marche"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Répartition et taux de réussite par type de client</h2>
+      <div class="status-legend" id="reporting-client-legend"></div>
+      <div class="stacked-bar-list" id="reporting-client"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Évolution mensuelle des dépôts</h2>
+      <div class="status-legend" id="reporting-monthly-legend"></div>
+      <div class="monthly-chart" id="reporting-monthly"></div>
+    </div>
   </section>
 </main>
+
+<div class="chart-tooltip" id="chart-tooltip" hidden></div>
 
 <div class="modal-overlay" id="ao-modal-overlay" hidden>
   <div class="modal">
@@ -2242,6 +2401,189 @@
     }
   });
 
+  // ---------------------------------------------------------------------
+  // Reporting (étape 9, voir PROJET.md §5.5).
+  //
+  // "Déposés" = AO avec un résultat tranché suite à un dépôt effectif
+  // (Gagné + Perdu) ; "Abandonné" et "En cours" n'entrent pas dans le taux
+  // de réussite (pas de dépôt concurrentiel abouti). Les graphiques par
+  // statut réutilisent la palette de statut fixe (jamais thématique) :
+  // Gagné=good, Perdu=critical, Abandonné=warning, En cours=neutre.
+  // ---------------------------------------------------------------------
+
+  const REPORT_STATUS_ORDER = ["Gagné", "Perdu", "Abandonné", "En cours"];
+  const REPORT_STATUS_COLORS = { "Gagné": "#0ca30c", "Perdu": "#d03b3b", "Abandonné": "#fab219", "En cours": "#898781" };
+
+  function formatKeur(v) {
+    return `${Math.round(v).toLocaleString("fr-FR")} k€`;
+  }
+
+  function formatMonthLabel(key) {
+    const [y, m] = key.split("-").map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
+  }
+
+  function computeReportingData(data) {
+    const aos = data.aos;
+    const gagnes = aos.filter((a) => a.resultat === "Gagné");
+    const perdus = aos.filter((a) => a.resultat === "Perdu");
+    const deposes = gagnes.length + perdus.length;
+    const tauxReussite = deposes > 0 ? Math.round((gagnes.length / deposes) * 100) : null;
+    const montantGagne = gagnes.reduce((sum, a) => sum + (Number(a.valeur_estimee_keur) || 0), 0);
+
+    const parTypeMarche = TYPE_MARCHE_OPTIONS
+      .map((tag) => ({ label: tag, value: aos.filter((a) => (a.type_marche || []).includes(tag)).length }))
+      .filter((x) => x.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    const parTypeClient = TYPE_CLIENT_OPTIONS
+      .map((client) => {
+        const subset = aos.filter((a) => a.type_client === client);
+        const counts = {};
+        REPORT_STATUS_ORDER.forEach((s) => { counts[s] = subset.filter((a) => a.resultat === s).length; });
+        return { label: client, total: subset.length, counts };
+      })
+      .filter((x) => x.total > 0);
+
+    const monthlyBuckets = new Map();
+    aos.forEach((a) => {
+      if (!a.date_remise) return;
+      const key = a.date_remise.slice(0, 7);
+      if (!monthlyBuckets.has(key)) {
+        const counts = {};
+        REPORT_STATUS_ORDER.forEach((s) => { counts[s] = 0; });
+        monthlyBuckets.set(key, counts);
+      }
+      const bucket = monthlyBuckets.get(key);
+      bucket[a.resultat] = (bucket[a.resultat] || 0) + 1;
+    });
+    const monthKeys = Array.from(monthlyBuckets.keys()).sort().slice(-12);
+    const evolutionMensuelle = monthKeys.map((key) => {
+      const counts = monthlyBuckets.get(key);
+      return { label: formatMonthLabel(key), counts, total: Object.values(counts).reduce((a, b) => a + b, 0) };
+    });
+
+    return { gagnesCount: gagnes.length, deposes, tauxReussite, montantGagne, parTypeMarche, parTypeClient, evolutionMensuelle };
+  }
+
+  function showChartTooltip(target, text) {
+    const tip = document.getElementById("chart-tooltip");
+    tip.textContent = text;
+    const rect = target.getBoundingClientRect();
+    tip.style.left = rect.left + rect.width / 2 + "px";
+    tip.style.top = rect.top - 8 + "px";
+    tip.style.transform = "translate(-50%, -100%)";
+    tip.hidden = false;
+  }
+
+  function hideChartTooltip() {
+    document.getElementById("chart-tooltip").hidden = true;
+  }
+
+  function wireChartTooltips(container, selector, textFn) {
+    container.querySelectorAll(selector).forEach((el) => {
+      const show = () => showChartTooltip(el, textFn(el));
+      el.addEventListener("mouseenter", show);
+      el.addEventListener("focus", show);
+      el.addEventListener("mouseleave", hideChartTooltip);
+      el.addEventListener("blur", hideChartTooltip);
+    });
+  }
+
+  function renderStatusLegend(containerId) {
+    document.getElementById(containerId).innerHTML = REPORT_STATUS_ORDER.map((s) => `
+      <span class="legend-item">
+        <span class="legend-swatch" style="background:${REPORT_STATUS_COLORS[s]}"></span>${escapeHtml(s)}
+      </span>
+    `).join("");
+  }
+
+  function renderReportingStats(r) {
+    document.getElementById("reporting-stats").innerHTML = [
+      [r.tauxReussite !== null ? r.tauxReussite + "%" : "—", "Taux de réussite", `${r.gagnesCount} gagné(s) / ${r.deposes} déposé(s)`],
+      [formatKeur(r.montantGagne), "Montant gagné", `sur ${r.gagnesCount} AO gagné(s)`],
+      [String(r.deposes), "AO déposés", "gagnés + perdus"],
+    ].map(([value, label, sub]) => `
+      <div class="stat-card">
+        <div class="stat-value">${escapeHtml(value)}</div>
+        <div class="stat-label">${escapeHtml(label)}</div>
+        <div class="stat-sub">${escapeHtml(sub)}</div>
+      </div>
+    `).join("");
+  }
+
+  function renderMarcheChart(items) {
+    const el = document.getElementById("reporting-marche");
+    if (!items.length) {
+      el.innerHTML = `<div class="list-item-empty">Aucune donnée.</div>`;
+      return;
+    }
+    const max = Math.max(...items.map((i) => i.value));
+    el.innerHTML = items.map((item) => `
+      <div class="bar-row" tabindex="0" data-label="${escapeHtml(item.label)}" data-value="${item.value}">
+        <div class="bar-row-label">${escapeHtml(item.label)}</div>
+        <div class="bar-row-track">
+          <div class="bar-row-fill" style="width:${Math.max((item.value / max) * 100, 4)}%"></div>
+        </div>
+        <div class="bar-row-value">${item.value}</div>
+      </div>
+    `).join("");
+    wireChartTooltips(el, ".bar-row", (row) => `${row.dataset.label} : ${row.dataset.value}`);
+  }
+
+  function renderClientChart(items) {
+    const el = document.getElementById("reporting-client");
+    if (!items.length) {
+      el.innerHTML = `<div class="list-item-empty">Aucune donnée.</div>`;
+      return;
+    }
+    el.innerHTML = items.map((item) => `
+      <div class="stacked-bar-row">
+        <div class="bar-row-label">${escapeHtml(item.label)}</div>
+        <div class="stacked-bar-track">
+          ${REPORT_STATUS_ORDER.filter((s) => item.counts[s] > 0).map((s) => `
+            <div class="segment" tabindex="0" data-label="${escapeHtml(item.label)}" data-status="${escapeHtml(s)}" data-value="${item.counts[s]}"
+                 style="width:${(item.counts[s] / item.total) * 100}%; background:${REPORT_STATUS_COLORS[s]}"></div>
+          `).join("")}
+        </div>
+        <div class="bar-row-value">${item.total}</div>
+      </div>
+    `).join("");
+    wireChartTooltips(el, ".segment", (seg) => `${seg.dataset.label} — ${seg.dataset.status} : ${seg.dataset.value}`);
+  }
+
+  function renderMonthlyChart(months) {
+    const el = document.getElementById("reporting-monthly");
+    if (!months.length) {
+      el.innerHTML = `<div class="list-item-empty">Aucune donnée (aucune date de remise renseignée).</div>`;
+      return;
+    }
+    const maxTotal = Math.max(...months.map((m) => m.total));
+    el.innerHTML = months.map((m) => `
+      <div class="monthly-col-wrap">
+        <div class="monthly-total-label">${m.total}</div>
+        <div class="monthly-col">
+          ${REPORT_STATUS_ORDER.filter((s) => m.counts[s] > 0).map((s) => `
+            <div class="segment" tabindex="0" data-label="${escapeHtml(m.label)}" data-status="${escapeHtml(s)}" data-value="${m.counts[s]}"
+                 style="height:${Math.max((m.counts[s] / maxTotal) * 160, 3)}px; background:${REPORT_STATUS_COLORS[s]}"></div>
+          `).join("")}
+        </div>
+        <div class="monthly-month-label">${escapeHtml(m.label)}</div>
+      </div>
+    `).join("");
+    wireChartTooltips(el, ".segment", (seg) => `${seg.dataset.label} — ${seg.dataset.status} : ${seg.dataset.value}`);
+  }
+
+  function renderReporting() {
+    const r = computeReportingData(appData);
+    renderReportingStats(r);
+    renderMarcheChart(r.parTypeMarche);
+    renderStatusLegend("reporting-client-legend");
+    renderClientChart(r.parTypeClient);
+    renderStatusLegend("reporting-monthly-legend");
+    renderMonthlyChart(r.evolutionMensuelle);
+  }
+
   function renderAll() {
     renderStorageStatus();
     renderReminderBell();
@@ -2249,6 +2591,7 @@
     renderPipeline();
     renderTodo();
     renderContacts();
+    renderReporting();
     if (!document.getElementById("ao-modal-overlay").hidden && currentEditingAO) {
       renderAOTachesSection(currentEditingAO);
       renderAOContactsSection(currentEditingAO);
@@ -2334,6 +2677,7 @@
     renderTodo, openTacheForm, sortTaches,
     renderContacts, openContactForm,
     renderReminderBell, markReminderTreated,
+    renderReporting, computeReportingData,
   };
 })();
 </script>
