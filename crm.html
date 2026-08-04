@@ -281,7 +281,7 @@
   .btn-small { padding: 4px 10px; font-size: 12px; }
   .btn-icon { border: none; background: transparent; cursor: pointer; font-size: 13px; color: var(--color-text-muted); }
 
-  select, input[type="text"], input[type="number"], input[type="date"], input[type="url"], textarea {
+  select, input[type="text"], input[type="number"], input[type="date"], input[type="url"], input[type="email"], textarea {
     border: 1px solid var(--color-border);
     border-radius: 6px;
     padding: 7px 10px;
@@ -461,6 +461,19 @@
     text-decoration: line-through;
     color: var(--color-text-muted);
   }
+
+  .contact-item { cursor: pointer; }
+
+  .checkbox-group.scrollable {
+    display: block;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+
+  .checkbox-group.scrollable label {
+    display: block;
+    margin-bottom: 6px;
+  }
 </style>
 </head>
 <body>
@@ -532,7 +545,11 @@
 
   <section class="screen" id="screen-contacts">
     <h1>Contacts</h1>
-    <div class="placeholder">Annuaire à construire à l'étape 7.</div>
+    <div class="toolbar">
+      <button type="button" class="btn-primary" id="btn-new-contact">+ Nouveau contact</button>
+      <input type="text" id="filter-contact-search" placeholder="Rechercher un nom ou un organisme…">
+    </div>
+    <div class="list-panel" id="contacts-list"></div>
   </section>
 
   <section class="screen" id="screen-reporting">
@@ -635,6 +652,12 @@
         <button type="button" class="btn-secondary btn-small" id="ao-taches-add">+ Ajouter une tâche</button>
       </fieldset>
 
+      <fieldset id="ao-contacts-section" hidden>
+        <legend>Contacts liés</legend>
+        <div class="list-panel" id="ao-contacts-list"></div>
+        <button type="button" class="btn-secondary btn-small" id="ao-contacts-add">+ Nouveau contact</button>
+      </fieldset>
+
       <div class="modal-footer">
         <button type="button" class="btn-danger" id="ao-form-delete" hidden>Supprimer</button>
         <div class="modal-footer-right">
@@ -703,6 +726,69 @@
         <button type="button" class="btn-danger" id="tache-form-delete" hidden>Supprimer</button>
         <div class="modal-footer-right">
           <button type="button" class="btn-secondary" id="tache-form-cancel">Annuler</button>
+          <button type="submit" class="btn-primary">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="contact-modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="contact-modal-title">Nouveau contact</h2>
+      <button type="button" class="modal-close" id="contact-modal-close">✕</button>
+    </div>
+    <form id="contact-form">
+      <div class="form-grid">
+        <label>Nom
+          <input type="text" id="f-c-nom" required>
+        </label>
+        <label>Fonction
+          <input type="text" id="f-c-fonction">
+        </label>
+        <label>Organisme
+          <input type="text" id="f-c-organisme">
+        </label>
+        <label>Téléphone
+          <input type="text" id="f-c-telephone">
+        </label>
+        <label>Email
+          <input type="email" id="f-c-email">
+        </label>
+        <label>Adresse
+          <input type="text" id="f-c-adresse">
+        </label>
+      </div>
+
+      <label class="block">Notes
+        <textarea id="f-c-notes" rows="3"></textarea>
+      </label>
+
+      <fieldset>
+        <legend>AO associés</legend>
+        <div class="checkbox-group scrollable" id="f-c-ao_lies"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Rappel de relance</legend>
+        <div class="form-grid">
+          <label>Date
+            <input type="date" id="f-c-rappel-date">
+          </label>
+          <label>Message
+            <input type="text" id="f-c-rappel-message" placeholder="Relancer le 15…">
+          </label>
+        </div>
+        <label class="checkbox-inline">
+          <input type="checkbox" id="f-c-rappel-actif"> Rappel actif
+        </label>
+      </fieldset>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-danger" id="contact-form-delete" hidden>Supprimer</button>
+        <div class="modal-footer-right">
+          <button type="button" class="btn-secondary" id="contact-form-cancel">Annuler</button>
           <button type="submit" class="btn-primary">Enregistrer</button>
         </div>
       </div>
@@ -1486,6 +1572,9 @@
     document.getElementById("ao-taches-section").hidden = !ao;
     if (ao) renderAOTachesSection(ao);
 
+    document.getElementById("ao-contacts-section").hidden = !ao;
+    if (ao) renderAOContactsSection(ao);
+
     updateRappelFieldsVisibility();
     document.getElementById("ao-modal-overlay").hidden = false;
   }
@@ -1806,13 +1895,185 @@
     }
   });
 
+  // ---------------------------------------------------------------------
+  // Contacts (étape 7, voir PROJET.md §5.4) — annuaire + fiche détail.
+  // ---------------------------------------------------------------------
+
+  let contactSearch = "";
+  let currentEditingContact = null;
+
+  function renderContactItem(contact) {
+    const aoCount = (contact.ao_lies || []).length;
+    const sub = [contact.fonction, contact.organisme].filter(Boolean).map(escapeHtml).join(" · ");
+    return `
+      <div class="list-item contact-item" data-id="${contact.id}">
+        <div>
+          <div class="list-item-title">${escapeHtml(contact.nom || "(sans nom)")}</div>
+          <div class="list-item-sub">${sub}</div>
+        </div>
+        ${aoCount ? `<span class="badge-type">${aoCount} AO</span>` : ""}
+      </div>
+    `;
+  }
+
+  function wireContactItemEvents(container) {
+    container.querySelectorAll(".contact-item").forEach((row) => {
+      row.addEventListener("click", () => {
+        const contact = appData.contacts.find((c) => c.id === row.dataset.id);
+        if (contact) openContactForm(contact);
+      });
+    });
+  }
+
+  function contactMatchesSearch(c) {
+    if (!contactSearch) return true;
+    const q = contactSearch.toLowerCase();
+    return (c.nom || "").toLowerCase().includes(q) || (c.organisme || "").toLowerCase().includes(q);
+  }
+
+  function renderContacts() {
+    const listEl = document.getElementById("contacts-list");
+    const filtered = appData.contacts
+      .filter(contactMatchesSearch)
+      .slice()
+      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+    listEl.innerHTML = filtered.length
+      ? filtered.map(renderContactItem).join("")
+      : `<div class="list-item-empty">Aucun contact.</div>`;
+    wireContactItemEvents(listEl);
+  }
+
+  function renderAOContactsSection(ao) {
+    const container = document.getElementById("ao-contacts-list");
+    const linked = appData.contacts
+      .filter((c) => (c.ao_lies || []).includes(ao.id))
+      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+    container.innerHTML = linked.length
+      ? linked.map(renderContactItem).join("")
+      : `<div class="list-item-empty">Aucun contact lié.</div>`;
+    wireContactItemEvents(container);
+  }
+
+  document.getElementById("filter-contact-search").addEventListener("input", (e) => {
+    contactSearch = e.target.value;
+    renderContacts();
+  });
+  document.getElementById("btn-new-contact").addEventListener("click", () => openContactForm(null));
+  document.getElementById("ao-contacts-add").addEventListener("click", () => {
+    if (currentEditingAO) openContactForm(null, currentEditingAO.id);
+  });
+
+  // --- Formulaire Contact (création / édition) ---
+
+  function openContactForm(contact, presetAoId) {
+    currentEditingContact = contact || null;
+    document.getElementById("contact-modal-title").textContent = contact ? "Modifier le contact" : "Nouveau contact";
+    document.getElementById("contact-form-delete").hidden = !contact;
+
+    const data = contact || {};
+    document.getElementById("f-c-nom").value = data.nom || "";
+    document.getElementById("f-c-fonction").value = data.fonction || "";
+    document.getElementById("f-c-organisme").value = data.organisme || "";
+    document.getElementById("f-c-telephone").value = data.telephone || "";
+    document.getElementById("f-c-email").value = data.email || "";
+    document.getElementById("f-c-adresse").value = data.adresse || "";
+    document.getElementById("f-c-notes").value = data.notes || "";
+
+    const aoContainer = document.getElementById("f-c-ao_lies");
+    const selected = new Set(data.ao_lies || (presetAoId ? [presetAoId] : []));
+    aoContainer.innerHTML = appData.aos.length
+      ? appData.aos.map((a) => `
+          <label class="checkbox-inline"><input type="checkbox" class="f-c-ao-item" value="${a.id}" ${selected.has(a.id) ? "checked" : ""}> ${escapeHtml(a.nom_projet || "(sans nom)")}</label>
+        `).join("")
+      : `<div class="list-item-empty">Aucun AO créé pour l'instant.</div>`;
+
+    const rappel = data.rappel || {};
+    document.getElementById("f-c-rappel-date").value = rappel.date || "";
+    document.getElementById("f-c-rappel-message").value = rappel.message || "";
+    document.getElementById("f-c-rappel-actif").checked = !!data.rappel && rappel.actif !== false;
+
+    document.getElementById("contact-modal-overlay").hidden = false;
+  }
+
+  function closeContactForm() {
+    document.getElementById("contact-modal-overlay").hidden = true;
+    currentEditingContact = null;
+  }
+
+  document.getElementById("contact-modal-close").addEventListener("click", closeContactForm);
+  document.getElementById("contact-form-cancel").addEventListener("click", closeContactForm);
+  document.getElementById("contact-modal-overlay").addEventListener("click", (event) => {
+    if (event.target.id === "contact-modal-overlay") closeContactForm();
+  });
+
+  document.getElementById("contact-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const selectedAO = Array.from(document.querySelectorAll(".f-c-ao-item:checked")).map((cb) => cb.value);
+    const rappelActif = document.getElementById("f-c-rappel-actif").checked;
+    const rappel = rappelActif ? createRappel({
+      declenchement: "Sur date manuelle",
+      date: document.getElementById("f-c-rappel-date").value || null,
+      message: document.getElementById("f-c-rappel-message").value.trim(),
+      actif: true,
+    }) : null;
+
+    const changes = {
+      nom: document.getElementById("f-c-nom").value.trim(),
+      fonction: document.getElementById("f-c-fonction").value.trim(),
+      organisme: document.getElementById("f-c-organisme").value.trim(),
+      telephone: document.getElementById("f-c-telephone").value.trim(),
+      email: document.getElementById("f-c-email").value.trim(),
+      adresse: document.getElementById("f-c-adresse").value.trim(),
+      notes: document.getElementById("f-c-notes").value.trim(),
+      ao_lies: selectedAO,
+      rappel,
+    };
+
+    try {
+      if (currentEditingContact) {
+        await updateContact(currentEditingContact.id, changes, currentEditingContact.last_modified);
+      } else {
+        await addContact(changes);
+      }
+      closeContactForm();
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Ce contact a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées, réessaie.");
+        await refreshFromStorage();
+        closeContactForm();
+      } else {
+        alert("Erreur lors de l'enregistrement : " + err.message);
+      }
+    }
+  });
+
+  document.getElementById("contact-form-delete").addEventListener("click", async () => {
+    if (!currentEditingContact) return;
+    const label = currentEditingContact.nom || "(sans nom)";
+    if (!confirm(`Supprimer le contact "${label}" ?`)) return;
+    try {
+      await deleteContact(currentEditingContact.id, currentEditingContact.last_modified);
+      closeContactForm();
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Ce contact a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+        closeContactForm();
+      } else {
+        alert("Erreur lors de la suppression : " + err.message);
+      }
+    }
+  });
+
   function renderAll() {
     renderStorageStatus();
     renderAccueil();
     renderPipeline();
     renderTodo();
+    renderContacts();
     if (!document.getElementById("ao-modal-overlay").hidden && currentEditingAO) {
       renderAOTachesSection(currentEditingAO);
+      renderAOContactsSection(currentEditingAO);
     }
   }
 
@@ -1893,6 +2154,7 @@
     renderAll, renderAccueil, collectActiveReminders, isRappelActive, daysBetween,
     renderPipeline, openAOForm,
     renderTodo, openTacheForm, sortTaches,
+    renderContacts, openContactForm,
   };
 })();
 </script>
