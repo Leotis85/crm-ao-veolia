@@ -446,6 +446,21 @@
   }
 
   .modal-footer-right { display: flex; gap: 8px; }
+
+  .todo-item { cursor: pointer; }
+
+  .todo-item-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .todo-check { width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+
+  .list-item-title.done {
+    text-decoration: line-through;
+    color: var(--color-text-muted);
+  }
 </style>
 </head>
 <body>
@@ -504,7 +519,15 @@
 
   <section class="screen" id="screen-todo">
     <h1>ToDo</h1>
-    <div class="placeholder">Vue tâches à construire à l'étape 6.</div>
+    <div class="toolbar">
+      <button type="button" class="btn-primary" id="btn-new-tache">+ Nouvelle tâche</button>
+      <select id="filter-tache-ao"></select>
+      <input type="text" id="filter-tache-assigne" placeholder="Filtrer par assigné…">
+      <label class="checkbox-inline">
+        <input type="checkbox" id="filter-tache-hide-done" checked> Masquer les tâches terminées
+      </label>
+    </div>
+    <div class="list-panel" id="todo-list"></div>
   </section>
 
   <section class="screen" id="screen-contacts">
@@ -606,10 +629,80 @@
         </label>
       </fieldset>
 
+      <fieldset id="ao-taches-section" hidden>
+        <legend>Tâches liées</legend>
+        <div class="list-panel" id="ao-taches-list"></div>
+        <button type="button" class="btn-secondary btn-small" id="ao-taches-add">+ Ajouter une tâche</button>
+      </fieldset>
+
       <div class="modal-footer">
         <button type="button" class="btn-danger" id="ao-form-delete" hidden>Supprimer</button>
         <div class="modal-footer-right">
           <button type="button" class="btn-secondary" id="ao-form-cancel">Annuler</button>
+          <button type="submit" class="btn-primary">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="tache-modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="tache-modal-title">Nouvelle tâche</h2>
+      <button type="button" class="modal-close" id="tache-modal-close">✕</button>
+    </div>
+    <form id="tache-form">
+      <div class="form-grid">
+        <label>Tâche
+          <input type="text" id="f-t-tache" required>
+        </label>
+        <label>AO lié
+          <select id="f-t-ao_lie"></select>
+        </label>
+        <label>Statut
+          <select id="f-t-statut"></select>
+        </label>
+        <label>Priorité
+          <select id="f-t-priorite"></select>
+        </label>
+        <label>Assigné à
+          <input type="text" id="f-t-assigne_a" placeholder="Mathis, …">
+        </label>
+        <label>Échéance
+          <input type="date" id="f-t-echeance">
+        </label>
+      </div>
+
+      <label class="block">Notes
+        <textarea id="f-t-notes" rows="3"></textarea>
+      </label>
+
+      <fieldset>
+        <legend>Rappel</legend>
+        <div class="form-grid">
+          <label>Déclenchement
+            <select id="f-t-rappel-declenchement"></select>
+          </label>
+          <label id="f-t-rappel-date-wrap">Date
+            <input type="date" id="f-t-rappel-date">
+          </label>
+          <label id="f-t-rappel-jours-wrap">Jours avant
+            <input type="number" id="f-t-rappel-jours_avant" min="0">
+          </label>
+          <label>Message
+            <input type="text" id="f-t-rappel-message">
+          </label>
+        </div>
+        <label class="checkbox-inline">
+          <input type="checkbox" id="f-t-rappel-actif"> Rappel actif
+        </label>
+      </fieldset>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-danger" id="tache-form-delete" hidden>Supprimer</button>
+        <div class="modal-footer-right">
+          <button type="button" class="btn-secondary" id="tache-form-cancel">Annuler</button>
           <button type="submit" class="btn-primary">Enregistrer</button>
         </div>
       </div>
@@ -818,7 +911,7 @@
   ];
   const TYPE_CLIENT_OPTIONS = ["Habitat", "Collectivité", "Santé", "Enseignement", "Tertiaire", "Autre"];
   const TYPE_AO_OPTIONS = ["Appel d'offres", "Renouvellement", "Avenant", "Sollicitation directe", "Proposition travaux"];
-  const TYPE_MARCHE_OPTIONS = ["P1", "P2", "P3", "CPE", "R1", "R2", "GTR", "Gaz"];
+  const TYPE_MARCHE_OPTIONS = ["P1", "P2", "P3", "CPE", "R1", "R2"];
   const RESULTAT_OPTIONS = ["En cours", "Gagné", "Perdu", "Abandonné"];
   const STATUT_TACHE_OPTIONS = ["Pas commencé", "En cours", "Terminé"];
   const PRIORITE_OPTIONS = ["Normale", "Haute"];
@@ -1390,6 +1483,9 @@
     document.getElementById("f-rappel-message").value = rappel.message || "";
     document.getElementById("f-rappel-actif").checked = !!data.rappel && rappel.actif !== false;
 
+    document.getElementById("ao-taches-section").hidden = !ao;
+    if (ao) renderAOTachesSection(ao);
+
     updateRappelFieldsVisibility();
     document.getElementById("ao-modal-overlay").hidden = false;
   }
@@ -1480,10 +1576,244 @@
     }
   });
 
+  // ---------------------------------------------------------------------
+  // ToDo (étape 6, voir PROJET.md §5.3) — vue globale + tâches par AO.
+  // ---------------------------------------------------------------------
+
+  const todoFilters = { ao: "", assigne_a: "", hideDone: true };
+  let currentEditingTache = null;
+
+  function sortTaches(list) {
+    return [...list].sort((a, b) => {
+      const aHigh = a.priorite === "Haute" && a.statut !== "Terminé";
+      const bHigh = b.priorite === "Haute" && b.statut !== "Terminé";
+      if (aHigh !== bHigh) return aHigh ? -1 : 1;
+      const aEch = a.echeance || "9999-12-31";
+      const bEch = b.echeance || "9999-12-31";
+      return aEch.localeCompare(bEch);
+    });
+  }
+
+  function renderTacheItem(tache, options = {}) {
+    const ao = tache.ao_lie ? appData.aos.find((a) => a.id === tache.ao_lie) : null;
+    const days = daysBetween(tache.echeance);
+    const isDone = tache.statut === "Terminé";
+    const isHigh = tache.priorite === "Haute" && !isDone;
+    const subParts = [];
+    if (!options.hideAO && ao) subParts.push(escapeHtml(ao.nom_projet || "(sans nom)"));
+    if (tache.assigne_a) subParts.push(escapeHtml(tache.assigne_a));
+    return `
+      <div class="list-item todo-item${isHigh ? " flag-high" : ""}" data-id="${tache.id}">
+        <div class="todo-item-main">
+          <input type="checkbox" class="todo-check" data-id="${tache.id}" ${isDone ? "checked" : ""}>
+          <div>
+            <div class="list-item-title${isDone ? " done" : ""}">${isHigh ? "🚩 " : ""}${escapeHtml(tache.tache || "(sans titre)")}</div>
+            <div class="list-item-sub">${subParts.join(" · ")}</div>
+          </div>
+        </div>
+        ${days !== null ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : "<span></span>"}
+      </div>
+    `;
+  }
+
+  function wireTacheItemEvents(container) {
+    container.querySelectorAll(".todo-check").forEach((cb) => {
+      cb.addEventListener("click", (event) => event.stopPropagation());
+      cb.addEventListener("change", async () => {
+        const id = cb.dataset.id;
+        const tache = appData.taches.find((t) => t.id === id);
+        if (!tache) return;
+        const newStatut = cb.checked ? "Terminé" : "Pas commencé";
+        try {
+          await updateTache(id, { statut: newStatut }, tache.last_modified);
+        } catch (err) {
+          cb.checked = !cb.checked;
+          if (err instanceof RecordConflictError) {
+            alert("Cette tâche a été modifiée par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+            await refreshFromStorage();
+          } else {
+            alert("Erreur : " + err.message);
+          }
+        }
+      });
+    });
+    container.querySelectorAll(".todo-item").forEach((row) => {
+      row.addEventListener("click", () => {
+        const tache = appData.taches.find((t) => t.id === row.dataset.id);
+        if (tache) openTacheForm(tache);
+      });
+    });
+  }
+
+  function renderTodoFilters() {
+    const aoSel = document.getElementById("filter-tache-ao");
+    aoSel.innerHTML = `<option value="">Tous les AO</option>` +
+      appData.aos.map((a) => `<option value="${a.id}">${escapeHtml(a.nom_projet || "(sans nom)")}</option>`).join("");
+    aoSel.value = todoFilters.ao;
+  }
+
+  function tacheMatchesFilters(t) {
+    if (todoFilters.ao && t.ao_lie !== todoFilters.ao) return false;
+    if (todoFilters.assigne_a && !(t.assigne_a || "").toLowerCase().includes(todoFilters.assigne_a.toLowerCase())) return false;
+    if (todoFilters.hideDone && t.statut === "Terminé") return false;
+    return true;
+  }
+
+  function renderTodo() {
+    renderTodoFilters();
+    const listEl = document.getElementById("todo-list");
+    const filtered = sortTaches(appData.taches.filter(tacheMatchesFilters));
+    listEl.innerHTML = filtered.length
+      ? filtered.map((t) => renderTacheItem(t)).join("")
+      : `<div class="list-item-empty">Aucune tâche à afficher.</div>`;
+    wireTacheItemEvents(listEl);
+  }
+
+  function renderAOTachesSection(ao) {
+    const container = document.getElementById("ao-taches-list");
+    const linked = appData.taches.filter((t) => t.ao_lie === ao.id);
+    container.innerHTML = linked.length
+      ? sortTaches(linked).map((t) => renderTacheItem(t, { hideAO: true })).join("")
+      : `<div class="list-item-empty">Aucune tâche liée.</div>`;
+    wireTacheItemEvents(container);
+  }
+
+  document.getElementById("filter-tache-ao").addEventListener("change", (e) => {
+    todoFilters.ao = e.target.value;
+    renderTodo();
+  });
+  document.getElementById("filter-tache-assigne").addEventListener("input", (e) => {
+    todoFilters.assigne_a = e.target.value;
+    renderTodo();
+  });
+  document.getElementById("filter-tache-hide-done").addEventListener("change", (e) => {
+    todoFilters.hideDone = e.target.checked;
+    renderTodo();
+  });
+  document.getElementById("btn-new-tache").addEventListener("click", () => openTacheForm(null));
+  document.getElementById("ao-taches-add").addEventListener("click", () => {
+    if (currentEditingAO) openTacheForm(null, currentEditingAO.id);
+  });
+
+  // --- Formulaire Tâche (création / édition) ---
+
+  function updateTacheRappelFieldsVisibility() {
+    const isManual = document.getElementById("f-t-rappel-declenchement").value === "Sur date manuelle";
+    document.getElementById("f-t-rappel-date-wrap").style.display = isManual ? "" : "none";
+    document.getElementById("f-t-rappel-jours-wrap").style.display = isManual ? "none" : "";
+  }
+
+  function openTacheForm(tache, presetAoId) {
+    currentEditingTache = tache || null;
+    document.getElementById("tache-modal-title").textContent = tache ? "Modifier la tâche" : "Nouvelle tâche";
+    document.getElementById("tache-form-delete").hidden = !tache;
+
+    const aoSelect = document.getElementById("f-t-ao_lie");
+    aoSelect.innerHTML = `<option value="">Aucun</option>` +
+      appData.aos.map((a) => `<option value="${a.id}">${escapeHtml(a.nom_projet || "(sans nom)")}</option>`).join("");
+
+    populateSelect(document.getElementById("f-t-statut"), STATUT_TACHE_OPTIONS);
+    populateSelect(document.getElementById("f-t-priorite"), PRIORITE_OPTIONS);
+    populateSelect(document.getElementById("f-t-rappel-declenchement"), DECLENCHEMENT_OPTIONS);
+
+    const data = tache || {};
+    document.getElementById("f-t-tache").value = data.tache || "";
+    aoSelect.value = data.ao_lie || presetAoId || "";
+    document.getElementById("f-t-statut").value = data.statut || STATUT_TACHE_OPTIONS[0];
+    document.getElementById("f-t-assigne_a").value = data.assigne_a || "";
+    document.getElementById("f-t-priorite").value = data.priorite || PRIORITE_OPTIONS[0];
+    document.getElementById("f-t-echeance").value = data.echeance || "";
+    document.getElementById("f-t-notes").value = data.notes || "";
+
+    const rappel = data.rappel || {};
+    document.getElementById("f-t-rappel-declenchement").value = rappel.declenchement || DECLENCHEMENT_OPTIONS[0];
+    document.getElementById("f-t-rappel-date").value = rappel.date || "";
+    document.getElementById("f-t-rappel-jours_avant").value = rappel.jours_avant ?? "";
+    document.getElementById("f-t-rappel-message").value = rappel.message || "";
+    document.getElementById("f-t-rappel-actif").checked = !!data.rappel && rappel.actif !== false;
+
+    updateTacheRappelFieldsVisibility();
+    document.getElementById("tache-modal-overlay").hidden = false;
+  }
+
+  function closeTacheForm() {
+    document.getElementById("tache-modal-overlay").hidden = true;
+    currentEditingTache = null;
+  }
+
+  document.getElementById("f-t-rappel-declenchement").addEventListener("change", updateTacheRappelFieldsVisibility);
+  document.getElementById("tache-modal-close").addEventListener("click", closeTacheForm);
+  document.getElementById("tache-form-cancel").addEventListener("click", closeTacheForm);
+  document.getElementById("tache-modal-overlay").addEventListener("click", (event) => {
+    if (event.target.id === "tache-modal-overlay") closeTacheForm();
+  });
+
+  document.getElementById("tache-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const rappelActif = document.getElementById("f-t-rappel-actif").checked;
+    const rappel = rappelActif ? createRappel({
+      declenchement: document.getElementById("f-t-rappel-declenchement").value,
+      date: document.getElementById("f-t-rappel-date").value || null,
+      jours_avant: document.getElementById("f-t-rappel-jours_avant").value ? Number(document.getElementById("f-t-rappel-jours_avant").value) : null,
+      message: document.getElementById("f-t-rappel-message").value.trim(),
+      actif: true,
+    }) : null;
+
+    const changes = {
+      tache: document.getElementById("f-t-tache").value.trim(),
+      ao_lie: document.getElementById("f-t-ao_lie").value || null,
+      statut: document.getElementById("f-t-statut").value,
+      assigne_a: document.getElementById("f-t-assigne_a").value.trim(),
+      priorite: document.getElementById("f-t-priorite").value,
+      echeance: document.getElementById("f-t-echeance").value || null,
+      notes: document.getElementById("f-t-notes").value.trim(),
+      rappel,
+    };
+
+    try {
+      if (currentEditingTache) {
+        await updateTache(currentEditingTache.id, changes, currentEditingTache.last_modified);
+      } else {
+        await addTache(changes);
+      }
+      closeTacheForm();
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cette tâche a été modifiée par quelqu'un d'autre entre-temps. Les données ont été rechargées, réessaie.");
+        await refreshFromStorage();
+        closeTacheForm();
+      } else {
+        alert("Erreur lors de l'enregistrement : " + err.message);
+      }
+    }
+  });
+
+  document.getElementById("tache-form-delete").addEventListener("click", async () => {
+    if (!currentEditingTache) return;
+    const label = currentEditingTache.tache || "(sans titre)";
+    if (!confirm(`Supprimer la tâche "${label}" ?`)) return;
+    try {
+      await deleteTache(currentEditingTache.id, currentEditingTache.last_modified);
+      closeTacheForm();
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cette tâche a été modifiée par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+        closeTacheForm();
+      } else {
+        alert("Erreur lors de la suppression : " + err.message);
+      }
+    }
+  });
+
   function renderAll() {
     renderStorageStatus();
     renderAccueil();
     renderPipeline();
+    renderTodo();
+    if (!document.getElementById("ao-modal-overlay").hidden && currentEditingAO) {
+      renderAOTachesSection(currentEditingAO);
+    }
   }
 
   document.getElementById("btn-export").addEventListener("click", () => {
@@ -1562,6 +1892,7 @@
     RecordConflictError,
     renderAll, renderAccueil, collectActiveReminders, isRappelActive, daysBetween,
     renderPipeline, openAOForm,
+    renderTodo, openTacheForm, sortTaches,
   };
 })();
 </script>
