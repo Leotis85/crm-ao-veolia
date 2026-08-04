@@ -293,6 +293,17 @@
 
   textarea { resize: vertical; }
 
+  .kanban-top-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 16px;
+    margin-bottom: 4px;
+  }
+
+  .kanban-top-scroll-spacer {
+    height: 1px;
+  }
+
   .kanban-board {
     display: flex;
     gap: 12px;
@@ -567,6 +578,9 @@
       <select id="filter-type_client"></select>
       <select id="filter-type_marche"></select>
       <input type="text" id="filter-assigne_a" placeholder="Filtrer par assigné…">
+    </div>
+    <div class="kanban-top-scroll" id="kanban-top-scroll">
+      <div class="kanban-top-scroll-spacer" id="kanban-top-scroll-spacer"></div>
     </div>
     <div class="kanban-board" id="kanban-board"></div>
   </section>
@@ -1505,8 +1519,14 @@
     return true;
   }
 
+  // Une fois l'offre en Négociation (et au-delà), la date de remise est
+  // forcément dans le passé : ce n'est plus un retard, ne pas l'afficher.
+  const PHASE_POST_REMISE_INDEX = PHASE_OPTIONS.indexOf("🤝 Négociation");
+
   function renderAOCard(ao) {
-    const days = daysBetween(ao.date_remise);
+    const phaseIndex = PHASE_OPTIONS.indexOf(ao.phase);
+    const showDeadline = phaseIndex === -1 || phaseIndex < PHASE_POST_REMISE_INDEX;
+    const days = showDeadline ? daysBetween(ao.date_remise) : null;
     const marche = (ao.type_marche || []).join(", ");
     return `
       <div class="kanban-card" draggable="true" data-id="${ao.id}">
@@ -1581,7 +1601,16 @@
         }
       });
     });
+
+    document.getElementById("kanban-top-scroll-spacer").style.width = board.scrollWidth + "px";
   }
+
+  document.getElementById("kanban-top-scroll").addEventListener("scroll", () => {
+    document.getElementById("kanban-board").scrollLeft = document.getElementById("kanban-top-scroll").scrollLeft;
+  });
+  document.getElementById("kanban-board").addEventListener("scroll", () => {
+    document.getElementById("kanban-top-scroll").scrollLeft = document.getElementById("kanban-board").scrollLeft;
+  });
 
   document.getElementById("filter-type_client").addEventListener("change", (e) => {
     pipelineFilters.type_client = e.target.value;
