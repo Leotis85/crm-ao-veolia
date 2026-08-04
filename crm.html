@@ -383,6 +383,261 @@
   storageAdapter.subscribe(refreshFromStorage);
   refreshFromStorage();
 
+  // ---------------------------------------------------------------------
+  // Modèle de données (étape 3, voir PROJET.md §4).
+  //
+  // Trois entités : AO, Tâches, Contacts, chacune avec last_modified /
+  // modified_by (§6). Les relations (contacts_lies / taches_liees / ao_lie /
+  // ao_lies) sont dénormalisées des deux côtés et resynchronisées ici.
+  //
+  // Chaque mutation recharge l'état le plus frais depuis l'adaptateur avant
+  // d'écrire (verrouillage au niveau de l'enregistrement, pas du fichier
+  // global) : si l'enregistrement visé a changé depuis la version de base
+  // fournie par l'appelant, une RecordConflictError est levée sans écraser
+  // le travail de l'autre personne.
+  // ---------------------------------------------------------------------
+
+  const PHASE_OPTIONS = [
+    "A venir", "Étude", "Finalisation", "🤝 Négociation",
+    "⏳ En attente de réponse", "✅ Gagné", "❌ Perdu", "🚫 Abandonné",
+  ];
+  const TYPE_CLIENT_OPTIONS = ["Habitat", "Collectivité", "Santé", "Enseignement", "Tertiaire", "Autre"];
+  const TYPE_AO_OPTIONS = ["Appel d'offres", "Renouvellement", "Avenant", "Sollicitation directe", "Proposition travaux"];
+  const TYPE_MARCHE_OPTIONS = ["P1", "P2", "P3", "CPE", "R1", "R2", "GTR", "Gaz"];
+  const RESULTAT_OPTIONS = ["En cours", "Gagné", "Perdu", "Abandonné"];
+  const STATUT_TACHE_OPTIONS = ["Pas commencé", "En cours", "Terminé"];
+  const PRIORITE_OPTIONS = ["Normale", "Haute"];
+  const DECLENCHEMENT_OPTIONS = [
+    "Sur date manuelle", "X jours avant échéance remise", "X jours avant visite", "X jours avant prise d'effet",
+  ];
+
+  function generateId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return `id-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function stamp(record) {
+    record.last_modified = new Date().toISOString();
+    record.modified_by = getCurrentUser();
+    return record;
+  }
+
+  class RecordConflictError extends Error {
+    constructor(entityType, id) {
+      super(`Cet enregistrement (${entityType} #${id}) a été modifié par quelqu'un d'autre entre-temps.`);
+      this.name = "RecordConflictError";
+      this.entityType = entityType;
+      this.id = id;
+    }
+  }
+
+  function findOrThrow(list, id, label) {
+    const record = list.find((r) => r.id === id);
+    if (!record) throw new Error(`${label} ${id} introuvable.`);
+    return record;
+  }
+
+  function checkRecordConflict(record, entityType, id, baseLastModified) {
+    if (baseLastModified !== undefined && record.last_modified !== baseLastModified) {
+      throw new RecordConflictError(entityType, id);
+    }
+  }
+
+  function createRappel(partial = {}) {
+    return {
+      date: null,
+      declenchement: "Sur date manuelle",
+      jours_avant: null,
+      message: "",
+      actif: true,
+      ...partial,
+    };
+  }
+
+  function createAO(partial = {}) {
+    return stamp({
+      id: generateId(),
+      nom_projet: "",
+      type_client: "Habitat",
+      phase: "A venir",
+      type: "Appel d'offres",
+      type_marche: [],
+      valeur_estimee_keur: null,
+      amo: "",
+      concurrence: "",
+      date_remise: null,
+      date_visite: null,
+      date_prise_effet: null,
+      lieu: "",
+      notes: "",
+      fichiers: [],
+      resultat: "En cours",
+      motif: "",
+      rappel: null,
+      contacts_lies: [],
+      taches_liees: [],
+      ...partial,
+    });
+  }
+
+  function createTache(partial = {}) {
+    return stamp({
+      id: generateId(),
+      tache: "",
+      statut: "Pas commencé",
+      echeance: null,
+      assigne_a: "",
+      priorite: "Normale",
+      notes: "",
+      rappel: null,
+      ao_lie: null,
+      ...partial,
+    });
+  }
+
+  function createContact(partial = {}) {
+    return stamp({
+      id: generateId(),
+      nom: "",
+      fonction: "",
+      organisme: "",
+      telephone: "",
+      email: "",
+      adresse: "",
+      notes: "",
+      rappel: null,
+      ao_lies: [],
+      ...partial,
+    });
+  }
+
+  async function mutateData(mutateFn, attempt = 0) {
+    const freshData = await storageAdapter.load();
+    mutateFn(freshData);
+    appData = freshData;
+    try {
+      await storageAdapter.save(appData);
+    } catch (err) {
+      if (err instanceof StorageConflictError && attempt < 2) {
+        return mutateData(mutateFn, attempt + 1);
+      }
+      throw err;
+    }
+    renderStorageStatus();
+    return appData;
+  }
+
+  // --- AO ---
+
+  async function addAO(partial) {
+    return mutateData((data) => { data.aos.push(createAO(partial)); });
+  }
+
+  async function updateAO(id, changes, baseLastModified) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.aos, id, "AO");
+      checkRecordConflict(record, "ao", id, baseLastModified);
+      Object.assign(record, changes);
+      stamp(record);
+    });
+  }
+
+  async function deleteAO(id, baseLastModified) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.aos, id, "AO");
+      checkRecordConflict(record, "ao", id, baseLastModified);
+      data.aos = data.aos.filter((r) => r.id !== id);
+      data.taches.forEach((t) => { if (t.ao_lie === id) t.ao_lie = null; });
+      data.contacts.forEach((c) => { c.ao_lies = (c.ao_lies || []).filter((aid) => aid !== id); });
+    });
+  }
+
+  // --- Tâches ---
+
+  async function addTache(partial) {
+    return mutateData((data) => {
+      const tache = createTache(partial);
+      data.taches.push(tache);
+      if (tache.ao_lie) {
+        const ao = data.aos.find((a) => a.id === tache.ao_lie);
+        if (ao && !ao.taches_liees.includes(tache.id)) ao.taches_liees.push(tache.id);
+      }
+    });
+  }
+
+  async function updateTache(id, changes, baseLastModified) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.taches, id, "Tâche");
+      checkRecordConflict(record, "tache", id, baseLastModified);
+      const previousAoLie = record.ao_lie;
+      Object.assign(record, changes);
+      stamp(record);
+      if (previousAoLie !== record.ao_lie) {
+        if (previousAoLie) {
+          const prevAo = data.aos.find((a) => a.id === previousAoLie);
+          if (prevAo) prevAo.taches_liees = prevAo.taches_liees.filter((tid) => tid !== id);
+        }
+        if (record.ao_lie) {
+          const newAo = data.aos.find((a) => a.id === record.ao_lie);
+          if (newAo && !newAo.taches_liees.includes(id)) newAo.taches_liees.push(id);
+        }
+      }
+    });
+  }
+
+  async function deleteTache(id, baseLastModified) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.taches, id, "Tâche");
+      checkRecordConflict(record, "tache", id, baseLastModified);
+      data.taches = data.taches.filter((r) => r.id !== id);
+      if (record.ao_lie) {
+        const ao = data.aos.find((a) => a.id === record.ao_lie);
+        if (ao) ao.taches_liees = ao.taches_liees.filter((tid) => tid !== id);
+      }
+    });
+  }
+
+  // --- Contacts ---
+
+  async function addContact(partial) {
+    return mutateData((data) => {
+      const contact = createContact(partial);
+      data.contacts.push(contact);
+      (contact.ao_lies || []).forEach((aoId) => {
+        const ao = data.aos.find((a) => a.id === aoId);
+        if (ao && !ao.contacts_lies.includes(contact.id)) ao.contacts_lies.push(contact.id);
+      });
+    });
+  }
+
+  async function updateContact(id, changes, baseLastModified) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.contacts, id, "Contact");
+      checkRecordConflict(record, "contact", id, baseLastModified);
+      const previousAoLies = record.ao_lies || [];
+      Object.assign(record, changes);
+      stamp(record);
+      const newAoLies = record.ao_lies || [];
+      previousAoLies.filter((aid) => !newAoLies.includes(aid)).forEach((aid) => {
+        const ao = data.aos.find((a) => a.id === aid);
+        if (ao) ao.contacts_lies = ao.contacts_lies.filter((cid) => cid !== id);
+      });
+      newAoLies.filter((aid) => !previousAoLies.includes(aid)).forEach((aid) => {
+        const ao = data.aos.find((a) => a.id === aid);
+        if (ao && !ao.contacts_lies.includes(id)) ao.contacts_lies.push(id);
+      });
+    });
+  }
+
+  async function deleteContact(id, baseLastModified) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.contacts, id, "Contact");
+      checkRecordConflict(record, "contact", id, baseLastModified);
+      data.contacts = data.contacts.filter((r) => r.id !== id);
+      data.aos.forEach((ao) => { ao.contacts_lies = (ao.contacts_lies || []).filter((cid) => cid !== id); });
+    });
+  }
+
   document.getElementById("btn-export").addEventListener("click", () => {
     downloadJSON(appData);
   });
@@ -442,6 +697,21 @@
     showScreen,
     storageAdapter,
     getData: () => appData,
+    options: {
+      PHASE_OPTIONS,
+      TYPE_CLIENT_OPTIONS,
+      TYPE_AO_OPTIONS,
+      TYPE_MARCHE_OPTIONS,
+      RESULTAT_OPTIONS,
+      STATUT_TACHE_OPTIONS,
+      PRIORITE_OPTIONS,
+      DECLENCHEMENT_OPTIONS,
+    },
+    createAO, createTache, createContact, createRappel,
+    addAO, updateAO, deleteAO,
+    addTache, updateTache, deleteTache,
+    addContact, updateContact, deleteContact,
+    RecordConflictError,
   };
 })();
 </script>
