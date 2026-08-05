@@ -1751,6 +1751,17 @@
     return true;
   }
 
+  // Tri des cartes au sein d'une même colonne : date de remise la plus
+  // proche en premier ; celles sans date de remise renseignée en dernier.
+  function sortAOsForColumn(list) {
+    return [...list].sort((a, b) => {
+      if (!a.date_remise && !b.date_remise) return 0;
+      if (!a.date_remise) return 1;
+      if (!b.date_remise) return -1;
+      return a.date_remise.localeCompare(b.date_remise);
+    });
+  }
+
   function renderAOCard(ao) {
     const phaseIndex = PHASE_OPTIONS.indexOf(ao.phase);
     const showDeadline = phaseIndex === -1 || phaseIndex < PHASE_POST_REMISE_INDEX;
@@ -1775,7 +1786,7 @@
     const filtered = appData.aos.filter(aoMatchesFilters);
 
     board.innerHTML = PHASE_OPTIONS.map((phase) => {
-      const cards = filtered.filter((ao) => ao.phase === phase);
+      const cards = sortAOsForColumn(filtered.filter((ao) => ao.phase === phase));
       return `
         <div class="kanban-column">
           <div class="kanban-column-header">
