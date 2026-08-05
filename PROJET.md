@@ -100,7 +100,8 @@ Repris du Pipeline Notion existant, enrichi.
 | `notes` | texte long | |
 | `fichiers` | liste de liens | liens vers livrables (résumé de lecture, mémoire technique…) |
 | `resultat` | liste | En cours, Gagné, Perdu, Abandonné |
-| `motif` | texte | si perdu : prix, technique, etc. (alimente le reporting) |
+| `motif_categorie` | liste | ajouté ultérieurement : Prix, Technique, Mauvais environnement, Autre — saisie obligatoire via pop-up quand l'AO passe en Perdu (Kanban), alimente le graphe Reporting |
+| `motif` | texte | détail libre facultatif du motif de perte |
 | `rappel` | rappel | date + type de déclenchement (voir §4.4) |
 | `contacts_lies` | relation | vers un ou plusieurs Contacts |
 | `taches_liees` | relation | vers une ou plusieurs Tâches |

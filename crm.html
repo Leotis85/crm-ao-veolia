@@ -490,6 +490,12 @@
 
   .modal-footer-right { display: flex; gap: 8px; }
 
+  .motif-modal-intro {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin: 0 0 14px;
+  }
+
   .todo-item { cursor: pointer; }
 
   .todo-item-main {
@@ -804,6 +810,11 @@
       <div class="status-legend" id="reporting-monthly-legend"></div>
       <div class="monthly-chart" id="reporting-monthly"></div>
     </div>
+
+    <div class="panel">
+      <h2>Motifs de perte</h2>
+      <div class="bar-chart" id="reporting-motifs"></div>
+    </div>
   </section>
 </main>
 
@@ -856,7 +867,10 @@
         <label>Résultat
           <select id="f-resultat"></select>
         </label>
-        <label>Motif (si perdu)
+        <label>Motif de perte
+          <select id="f-motif-categorie"></select>
+        </label>
+        <label>Détail du motif (facultatif)
           <input type="text" id="f-motif">
         </label>
       </div>
@@ -1042,6 +1056,32 @@
         <div class="modal-footer-right">
           <button type="button" class="btn-secondary" id="contact-form-cancel">Annuler</button>
           <button type="submit" class="btn-primary">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="motif-modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Motif de perte</h2>
+    </div>
+    <form id="motif-form">
+      <p class="motif-modal-intro">
+        L'AO « <strong id="motif-modal-ao-name"></strong> » passe en Perdu.
+        Merci de préciser le motif avant de continuer.
+      </p>
+      <label>Motif
+        <select id="f-motif-categorie-popup" required></select>
+      </label>
+      <label class="block">Détail (facultatif)
+        <textarea id="f-motif-detail-popup" rows="2"></textarea>
+      </label>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="motif-form-cancel">Annuler (ne pas déplacer)</button>
+        <div class="modal-footer-right">
+          <button type="submit" class="btn-primary">Confirmer</button>
         </div>
       </div>
     </form>
@@ -1270,6 +1310,8 @@
   const TYPE_CLIENT_OPTIONS = ["Habitat", "Collectivité", "Santé", "Enseignement", "Tertiaire", "Autre"];
   // Liste fermée des personnes assignables (AO et Tâches).
   const ASSIGNE_OPTIONS = ["Maxime", "Mathis", "Maxime + Mathis"];
+  // Motif de perte : catégorie fermée (alimente le Reporting) + détail libre.
+  const MOTIF_OPTIONS = ["Prix", "Technique", "Mauvais environnement", "Autre"];
   const TYPE_AO_OPTIONS = ["Appel d'offres", "Renouvellement", "Avenant", "Sollicitation directe", "Proposition travaux"];
   const TYPE_MARCHE_OPTIONS = ["P1", "P2", "P3", "CPE", "R1", "R2"];
   const RESULTAT_OPTIONS = ["En cours", "Gagné", "Perdu", "Abandonné"];
@@ -1341,6 +1383,7 @@
       notes: "",
       fichiers: [],
       resultat: "En cours",
+      motif_categorie: "",
       motif: "",
       rappel: null,
       contacts_lies: [],
@@ -1842,17 +1885,13 @@
         if (!id) return;
         const ao = appData.aos.find((a) => a.id === id);
         if (!ao || ao.phase === newPhase) return;
-        try {
-          const newResultat = resultatForPhase(newPhase, ao.resultat);
-          await updateAO(id, { phase: newPhase, resultat: newResultat }, ao.last_modified);
-        } catch (err) {
-          if (err instanceof RecordConflictError) {
-            alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
-            await refreshFromStorage();
-          } else {
-            alert("Erreur : " + err.message);
-          }
+
+        if (newPhase === "❌ Perdu" && !ao.motif_categorie) {
+          openMotifModal(ao, newPhase);
+          return;
         }
+
+        await commitAOPhaseChange(ao, newPhase);
       });
     });
 
@@ -1927,6 +1966,7 @@
     populateSelect(document.getElementById("f-phase"), PHASE_OPTIONS);
     populateSelect(document.getElementById("f-type"), TYPE_AO_OPTIONS);
     populateSelect(document.getElementById("f-resultat"), RESULTAT_OPTIONS);
+    populateSelect(document.getElementById("f-motif-categorie"), MOTIF_OPTIONS, "— Aucun —");
     populateSelect(document.getElementById("f-rappel-declenchement"), DECLENCHEMENT_OPTIONS);
 
     const marcheContainer = document.getElementById("f-type_marche");
@@ -1948,6 +1988,7 @@
     document.getElementById("f-date_visite").value = data.date_visite || "";
     document.getElementById("f-date_prise_effet").value = data.date_prise_effet || "";
     document.getElementById("f-resultat").value = data.resultat || RESULTAT_OPTIONS[0];
+    document.getElementById("f-motif-categorie").value = data.motif_categorie || "";
     document.getElementById("f-motif").value = data.motif || "";
     document.getElementById("f-notes").value = data.notes || "";
 
@@ -2021,6 +2062,7 @@
       date_visite: document.getElementById("f-date_visite").value || null,
       date_prise_effet: document.getElementById("f-date_prise_effet").value || null,
       resultat: document.getElementById("f-resultat").value,
+      motif_categorie: document.getElementById("f-motif-categorie").value,
       motif: document.getElementById("f-motif").value.trim(),
       notes: document.getElementById("f-notes").value.trim(),
       fichiers,
@@ -2061,6 +2103,57 @@
         alert("Erreur lors de la suppression : " + err.message);
       }
     }
+  });
+
+  // --- Motif de perte : pop-up obligatoire au passage en Perdu ---
+
+  let pendingMotifAO = null;
+  let pendingMotifPhase = null;
+
+  async function commitAOPhaseChange(ao, newPhase, extraChanges = {}) {
+    try {
+      const newResultat = resultatForPhase(newPhase, ao.resultat);
+      await updateAO(ao.id, { phase: newPhase, resultat: newResultat, ...extraChanges }, ao.last_modified);
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+      } else {
+        alert("Erreur : " + err.message);
+      }
+    }
+  }
+
+  function openMotifModal(ao, newPhase) {
+    pendingMotifAO = ao;
+    pendingMotifPhase = newPhase;
+    document.getElementById("motif-modal-ao-name").textContent = ao.nom_projet || "(sans nom)";
+    populateSelect(document.getElementById("f-motif-categorie-popup"), MOTIF_OPTIONS, "— Choisir —");
+    document.getElementById("f-motif-categorie-popup").value = "";
+    document.getElementById("f-motif-detail-popup").value = "";
+    document.getElementById("motif-modal-overlay").hidden = false;
+  }
+
+  function closeMotifModal() {
+    document.getElementById("motif-modal-overlay").hidden = true;
+    pendingMotifAO = null;
+    pendingMotifPhase = null;
+  }
+
+  document.getElementById("motif-form-cancel").addEventListener("click", closeMotifModal);
+  document.getElementById("motif-modal-overlay").addEventListener("click", (event) => {
+    if (event.target.id === "motif-modal-overlay") closeMotifModal();
+  });
+
+  document.getElementById("motif-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const categorie = document.getElementById("f-motif-categorie-popup").value;
+    if (!categorie) return;
+    const detail = document.getElementById("f-motif-detail-popup").value.trim();
+    const ao = pendingMotifAO;
+    const newPhase = pendingMotifPhase;
+    closeMotifModal();
+    await commitAOPhaseChange(ao, newPhase, { motif_categorie: categorie, motif: detail });
   });
 
   // ---------------------------------------------------------------------
@@ -2533,7 +2626,16 @@
       return { label: formatMonthLabel(key), counts, total: Object.values(counts).reduce((a, b) => a + b, 0) };
     });
 
-    return { gagnesCount: gagnes.length, deposes, tauxReussite, montantGagne, parTypeMarche, parTypeClient, evolutionMensuelle };
+    const NON_RENSEIGNE = "Non renseigné";
+    const parMotifPerte = [...MOTIF_OPTIONS, NON_RENSEIGNE]
+      .map((cat) => ({
+        label: cat,
+        value: perdus.filter((a) => (a.motif_categorie || NON_RENSEIGNE) === cat).length,
+      }))
+      .filter((x) => x.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    return { gagnesCount: gagnes.length, deposes, tauxReussite, montantGagne, parTypeMarche, parTypeClient, evolutionMensuelle, parMotifPerte };
   }
 
   function showChartTooltip(target, text) {
@@ -2582,8 +2684,8 @@
     `).join("");
   }
 
-  function renderMarcheChart(items) {
-    const el = document.getElementById("reporting-marche");
+  function renderBarChart(containerId, items) {
+    const el = document.getElementById(containerId);
     if (!items.length) {
       el.innerHTML = `<div class="list-item-empty">Aucune donnée.</div>`;
       return;
@@ -2647,11 +2749,12 @@
   function renderReporting() {
     const r = computeReportingData(appData);
     renderReportingStats(r);
-    renderMarcheChart(r.parTypeMarche);
+    renderBarChart("reporting-marche", r.parTypeMarche);
     renderStatusLegend("reporting-client-legend");
     renderClientChart(r.parTypeClient);
     renderStatusLegend("reporting-monthly-legend");
     renderMonthlyChart(r.evolutionMensuelle);
+    renderBarChart("reporting-motifs", r.parMotifPerte);
   }
 
   function renderAll() {
@@ -2736,6 +2839,8 @@
       STATUT_TACHE_OPTIONS,
       PRIORITE_OPTIONS,
       DECLENCHEMENT_OPTIONS,
+      ASSIGNE_OPTIONS,
+      MOTIF_OPTIONS,
     },
     createAO, createTache, createContact, createRappel,
     addAO, updateAO, deleteAO,
@@ -2743,7 +2848,7 @@
     addContact, updateContact, deleteContact,
     RecordConflictError,
     renderAll, renderAccueil, collectActiveReminders, isRappelActive, daysBetween,
-    renderPipeline, openAOForm,
+    renderPipeline, openAOForm, commitAOPhaseChange, openMotifModal,
     renderTodo, openTacheForm, sortTaches,
     renderContacts, openContactForm,
     renderReminderBell, markReminderTreated,
