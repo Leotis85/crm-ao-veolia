@@ -115,7 +115,7 @@
   }
 
   #storage-status {
-    max-width: 1600px;
+    max-width: 1900px;
     margin: 0 auto;
     padding: 8px 24px;
     font-size: 12px;
@@ -123,7 +123,7 @@
   }
 
   main {
-    max-width: 1600px;
+    max-width: 1900px;
     margin: 24px auto;
     padding: 0 24px;
   }
@@ -669,6 +669,33 @@
 
   .chart-tooltip[hidden] { display: none; }
 
+  .pie-chart-wrap {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+  }
+
+  .pie-chart-svg { flex-shrink: 0; }
+
+  .pie-slice {
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .pie-slice:hover, .pie-slice:focus-visible {
+    opacity: 0.82;
+    outline: none;
+  }
+
+  .pie-chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text);
+  }
+
   .reminder-wrap { position: relative; }
 
   .reminder-panel {
@@ -813,7 +840,7 @@
 
     <div class="panel">
       <h2>Motifs de perte</h2>
-      <div class="bar-chart" id="reporting-motifs"></div>
+      <div id="reporting-motifs"></div>
     </div>
   </section>
 </main>
@@ -1312,6 +1339,15 @@
   const ASSIGNE_OPTIONS = ["Maxime", "Mathis", "Maxime + Mathis"];
   // Motif de perte : catégorie fermée (alimente le Reporting) + détail libre.
   const MOTIF_OPTIONS = ["Prix", "Technique", "Mauvais environnement", "Autre"];
+  // Couleurs du graphe circulaire des motifs de perte (palette catégorielle
+  // validée, ordre fixe) ; gris neutre pour le motif non renseigné.
+  const MOTIF_COLORS = {
+    "Prix": "#2a78d6",
+    "Technique": "#eb6834",
+    "Mauvais environnement": "#1baf7a",
+    "Autre": "#eda100",
+    "Non renseigné": "#898781",
+  };
   const TYPE_AO_OPTIONS = ["Appel d'offres", "Renouvellement", "Avenant", "Sollicitation directe", "Proposition travaux"];
   const TYPE_MARCHE_OPTIONS = ["P1", "P2", "P3", "CPE", "R1", "R2"];
   const RESULTAT_OPTIONS = ["En cours", "Gagné", "Perdu", "Abandonné"];
@@ -2703,6 +2739,80 @@
     wireChartTooltips(el, ".bar-row", (row) => `${row.dataset.label} : ${row.dataset.value}`);
   }
 
+  function polarToCartesian(cx, cy, r, angleDeg) {
+    const rad = (angleDeg - 90) * (Math.PI / 180);
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+
+  function describeSector(cx, cy, r, startAngle, endAngle) {
+    const startPoint = polarToCartesian(cx, cy, r, startAngle);
+    const endPoint = polarToCartesian(cx, cy, r, endAngle);
+    const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
+    return [
+      `M ${cx} ${cy}`,
+      `L ${startPoint.x} ${startPoint.y}`,
+      `A ${r} ${r} 0 ${largeArcFlag} 1 ${endPoint.x} ${endPoint.y}`,
+      "Z",
+    ].join(" ");
+  }
+
+  function renderMotifPieChart(items) {
+    const el = document.getElementById("reporting-motifs");
+    if (!items.length) {
+      el.innerHTML = `<div class="list-item-empty">Aucune donnée.</div>`;
+      return;
+    }
+    const total = items.reduce((sum, i) => sum + i.value, 0);
+    const size = 200;
+    const radius = size / 2;
+    const cx = radius;
+    const cy = radius;
+
+    let cumulativeAngle = 0;
+    const slices = items.map((item) => {
+      const angle = (item.value / total) * 360;
+      const startAngle = cumulativeAngle;
+      const endAngle = cumulativeAngle + angle;
+      cumulativeAngle = endAngle;
+      return {
+        ...item,
+        startAngle,
+        endAngle,
+        pct: Math.round((item.value / total) * 100),
+        color: MOTIF_COLORS[item.label] || "#898781",
+      };
+    });
+
+    const svgSlices = slices.map((s) => {
+      // Une seule catégorie à 100% : cercle plein plutôt qu'un secteur dégénéré.
+      const d = (s.endAngle - s.startAngle) >= 359.99
+        ? `M ${cx} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx - 0.01} ${cy - radius} Z`
+        : describeSector(cx, cy, radius, s.startAngle, s.endAngle);
+      return `
+        <path d="${d}" fill="${s.color}" stroke="var(--color-surface)" stroke-width="2"
+              tabindex="0" class="pie-slice"
+              data-label="${escapeHtml(s.label)}" data-value="${s.value}" data-pct="${s.pct}"></path>
+      `;
+    }).join("");
+
+    el.innerHTML = `
+      <div class="pie-chart-wrap">
+        <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" class="pie-chart-svg">
+          ${svgSlices}
+        </svg>
+        <div class="pie-chart-legend">
+          ${slices.map((s) => `
+            <div class="legend-item">
+              <span class="legend-swatch" style="background:${s.color}"></span>
+              ${escapeHtml(s.label)} — <strong>${s.value}</strong> (${s.pct}%)
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+    wireChartTooltips(el, ".pie-slice", (path) => `${path.dataset.label} : ${path.dataset.value} (${path.dataset.pct}%)`);
+  }
+
   function renderClientChart(items) {
     const el = document.getElementById("reporting-client");
     if (!items.length) {
@@ -2754,7 +2864,7 @@
     renderClientChart(r.parTypeClient);
     renderStatusLegend("reporting-monthly-legend");
     renderMonthlyChart(r.evolutionMensuelle);
-    renderBarChart("reporting-motifs", r.parMotifPerte);
+    renderMotifPieChart(r.parMotifPerte);
   }
 
   function renderAll() {
@@ -2852,7 +2962,7 @@
     renderTodo, openTacheForm, sortTaches,
     renderContacts, openContactForm,
     renderReminderBell, markReminderTreated,
-    renderReporting, computeReportingData,
+    renderReporting, computeReportingData, renderMotifPieChart,
   };
 })();
 </script>
