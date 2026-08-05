@@ -754,7 +754,7 @@
       <button type="button" class="btn-primary" id="btn-new-ao">+ Nouvel AO</button>
       <select id="filter-type_client"></select>
       <select id="filter-type_marche"></select>
-      <input type="text" id="filter-assigne_a" placeholder="Filtrer par assigné…">
+      <select id="filter-assigne_a"></select>
     </div>
     <div class="kanban-top-scroll" id="kanban-top-scroll">
       <div class="kanban-top-scroll-spacer" id="kanban-top-scroll-spacer"></div>
@@ -767,7 +767,7 @@
     <div class="toolbar">
       <button type="button" class="btn-primary" id="btn-new-tache">+ Nouvelle tâche</button>
       <select id="filter-tache-ao"></select>
-      <input type="text" id="filter-tache-assigne" placeholder="Filtrer par assigné…">
+      <select id="filter-tache-assigne"></select>
       <label class="checkbox-inline">
         <input type="checkbox" id="filter-tache-hide-done" checked> Masquer les tâches terminées
       </label>
@@ -830,7 +830,7 @@
           <select id="f-type"></select>
         </label>
         <label>Assigné à
-          <input type="text" id="f-assigne_a" placeholder="Mathis, …">
+          <select id="f-assigne_a"></select>
         </label>
         <label>Valeur estimée (k€)
           <input type="number" id="f-valeur_estimee_keur" step="0.1">
@@ -941,7 +941,7 @@
           <select id="f-t-priorite"></select>
         </label>
         <label>Assigné à
-          <input type="text" id="f-t-assigne_a" placeholder="Mathis, …">
+          <select id="f-t-assigne_a"></select>
         </label>
         <label>Échéance
           <input type="date" id="f-t-echeance">
@@ -1268,6 +1268,8 @@
   const RESULTAT_STATUS_ORDER = ["Gagné", "Perdu", "Abandonné", "En cours"];
   const RESULTAT_STATUS_COLORS = { "Gagné": "#0ca30c", "Perdu": "#d03b3b", "Abandonné": "#fab219", "En cours": "#898781" };
   const TYPE_CLIENT_OPTIONS = ["Habitat", "Collectivité", "Santé", "Enseignement", "Tertiaire", "Autre"];
+  // Liste fermée des personnes assignables (AO et Tâches).
+  const ASSIGNE_OPTIONS = ["Maxime", "Mathis", "Maxime + Mathis"];
   const TYPE_AO_OPTIONS = ["Appel d'offres", "Renouvellement", "Avenant", "Sollicitation directe", "Proposition travaux"];
   const TYPE_MARCHE_OPTIONS = ["P1", "P2", "P3", "CPE", "R1", "R2"];
   const RESULTAT_OPTIONS = ["En cours", "Gagné", "Perdu", "Abandonné"];
@@ -1737,28 +1739,39 @@
     selectEl.innerHTML = emptyOpt + options.map((o) => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join("");
   }
 
+  // Comme populateSelect, mais conserve une valeur existante hors liste
+  // (ex. donnée importée de l'ancien CRM) en l'ajoutant temporairement,
+  // pour ne jamais la perdre silencieusement à l'ouverture du formulaire.
+  function populateAssigneSelect(selectEl, currentValue) {
+    const extra = currentValue && !ASSIGNE_OPTIONS.includes(currentValue) ? [currentValue] : [];
+    populateSelect(selectEl, [...extra, ...ASSIGNE_OPTIONS], "— Non assigné —");
+    selectEl.value = currentValue || "";
+  }
+
   function renderPipelineFilters() {
     const tcSel = document.getElementById("filter-type_client");
     const tmSel = document.getElementById("filter-type_marche");
+    const asSel = document.getElementById("filter-assigne_a");
     if (!tcSel.options.length) populateSelect(tcSel, TYPE_CLIENT_OPTIONS, "Tous types de client");
     if (!tmSel.options.length) populateSelect(tmSel, TYPE_MARCHE_OPTIONS, "Tous types de marché");
+    if (!asSel.options.length) populateSelect(asSel, ASSIGNE_OPTIONS, "Tous les assignés");
   }
 
   function aoMatchesFilters(ao) {
     if (pipelineFilters.type_client && ao.type_client !== pipelineFilters.type_client) return false;
     if (pipelineFilters.type_marche && !(ao.type_marche || []).includes(pipelineFilters.type_marche)) return false;
-    if (pipelineFilters.assigne_a && !(ao.assigne_a || "").toLowerCase().includes(pipelineFilters.assigne_a.toLowerCase())) return false;
+    if (pipelineFilters.assigne_a && ao.assigne_a !== pipelineFilters.assigne_a) return false;
     return true;
   }
 
   // Tri des cartes au sein d'une même colonne : date de remise la plus
-  // proche en premier ; celles sans date de remise renseignée en dernier.
+  // récente (la plus lointaine) en premier ; celles sans date en dernier.
   function sortAOsForColumn(list) {
     return [...list].sort((a, b) => {
       if (!a.date_remise && !b.date_remise) return 0;
       if (!a.date_remise) return 1;
       if (!b.date_remise) return -1;
-      return a.date_remise.localeCompare(b.date_remise);
+      return b.date_remise.localeCompare(a.date_remise);
     });
   }
 
@@ -1873,7 +1886,7 @@
     pipelineFilters.type_marche = e.target.value;
     renderPipeline();
   });
-  document.getElementById("filter-assigne_a").addEventListener("input", (e) => {
+  document.getElementById("filter-assigne_a").addEventListener("change", (e) => {
     pipelineFilters.assigne_a = e.target.value;
     renderPipeline();
   });
@@ -1926,7 +1939,7 @@
     document.getElementById("f-type_client").value = data.type_client || TYPE_CLIENT_OPTIONS[0];
     document.getElementById("f-phase").value = data.phase || PHASE_OPTIONS[0];
     document.getElementById("f-type").value = data.type || TYPE_AO_OPTIONS[0];
-    document.getElementById("f-assigne_a").value = data.assigne_a || "";
+    populateAssigneSelect(document.getElementById("f-assigne_a"), data.assigne_a || "");
     document.getElementById("f-valeur_estimee_keur").value = data.valeur_estimee_keur ?? "";
     document.getElementById("f-amo").value = data.amo || "";
     document.getElementById("f-concurrence").value = data.concurrence || "";
@@ -1997,7 +2010,7 @@
       type_client: document.getElementById("f-type_client").value,
       phase: document.getElementById("f-phase").value,
       type: document.getElementById("f-type").value,
-      assigne_a: document.getElementById("f-assigne_a").value.trim(),
+      assigne_a: document.getElementById("f-assigne_a").value,
       type_marche: selectedMarche,
       valeur_estimee_keur: document.getElementById("f-valeur_estimee_keur").value
         ? Number(document.getElementById("f-valeur_estimee_keur").value) : null,
@@ -2124,11 +2137,14 @@
     aoSel.innerHTML = `<option value="">Tous les AO</option>` +
       appData.aos.map((a) => `<option value="${a.id}">${escapeHtml(a.nom_projet || "(sans nom)")}</option>`).join("");
     aoSel.value = todoFilters.ao;
+
+    const asSel = document.getElementById("filter-tache-assigne");
+    if (!asSel.options.length) populateSelect(asSel, ASSIGNE_OPTIONS, "Tous les assignés");
   }
 
   function tacheMatchesFilters(t) {
     if (todoFilters.ao && t.ao_lie !== todoFilters.ao) return false;
-    if (todoFilters.assigne_a && !(t.assigne_a || "").toLowerCase().includes(todoFilters.assigne_a.toLowerCase())) return false;
+    if (todoFilters.assigne_a && t.assigne_a !== todoFilters.assigne_a) return false;
     if (todoFilters.hideDone && t.statut === "Terminé") return false;
     return true;
   }
@@ -2156,7 +2172,7 @@
     todoFilters.ao = e.target.value;
     renderTodo();
   });
-  document.getElementById("filter-tache-assigne").addEventListener("input", (e) => {
+  document.getElementById("filter-tache-assigne").addEventListener("change", (e) => {
     todoFilters.assigne_a = e.target.value;
     renderTodo();
   });
@@ -2194,7 +2210,7 @@
     document.getElementById("f-t-tache").value = data.tache || "";
     aoSelect.value = data.ao_lie || presetAoId || "";
     document.getElementById("f-t-statut").value = data.statut || STATUT_TACHE_OPTIONS[0];
-    document.getElementById("f-t-assigne_a").value = data.assigne_a || "";
+    populateAssigneSelect(document.getElementById("f-t-assigne_a"), data.assigne_a || "");
     document.getElementById("f-t-priorite").value = data.priorite || PRIORITE_OPTIONS[0];
     document.getElementById("f-t-echeance").value = data.echeance || "";
     document.getElementById("f-t-notes").value = data.notes || "";
@@ -2237,7 +2253,7 @@
       tache: document.getElementById("f-t-tache").value.trim(),
       ao_lie: document.getElementById("f-t-ao_lie").value || null,
       statut: document.getElementById("f-t-statut").value,
-      assigne_a: document.getElementById("f-t-assigne_a").value.trim(),
+      assigne_a: document.getElementById("f-t-assigne_a").value,
       priorite: document.getElementById("f-t-priorite").value,
       echeance: document.getElementById("f-t-echeance").value || null,
       notes: document.getElementById("f-t-notes").value.trim(),
