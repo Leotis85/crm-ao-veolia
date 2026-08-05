@@ -390,6 +390,9 @@
     border-radius: 999px;
     white-space: nowrap;
     margin-bottom: 6px;
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
   }
 
   .modal-overlay {
@@ -1266,15 +1269,6 @@
   const RESULTAT_STATUS_COLORS = { "Gagné": "#0ca30c", "Perdu": "#d03b3b", "Abandonné": "#fab219", "En cours": "#898781" };
   const TYPE_CLIENT_OPTIONS = ["Habitat", "Collectivité", "Santé", "Enseignement", "Tertiaire", "Autre"];
   const TYPE_AO_OPTIONS = ["Appel d'offres", "Renouvellement", "Avenant", "Sollicitation directe", "Proposition travaux"];
-  // Code couleur du Type sur la carte Kanban : 5 premiers slots de la
-  // palette catégorielle validée, ordre fixe (jamais réordonné/cyclé).
-  const TYPE_AO_COLORS = {
-    "Appel d'offres": { bg: "#2a78d6", text: "#ffffff" },
-    "Renouvellement": { bg: "#eb6834", text: "#ffffff" },
-    "Avenant": { bg: "#1baf7a", text: "#0b0b0b" },
-    "Sollicitation directe": { bg: "#eda100", text: "#0b0b0b" },
-    "Proposition travaux": { bg: "#e87ba4", text: "#0b0b0b" },
-  };
   const TYPE_MARCHE_OPTIONS = ["P1", "P2", "P3", "CPE", "R1", "R2"];
   const RESULTAT_OPTIONS = ["En cours", "Gagné", "Perdu", "Abandonné"];
   const STATUT_TACHE_OPTIONS = ["Pas commencé", "En cours", "Terminé"];
@@ -1762,10 +1756,9 @@
     const showDeadline = phaseIndex === -1 || phaseIndex < PHASE_POST_REMISE_INDEX;
     const days = showDeadline ? daysBetween(ao.date_remise) : null;
     const marche = (ao.type_marche || []).join(", ");
-    const typeColor = TYPE_AO_COLORS[ao.type];
     return `
       <div class="kanban-card" draggable="true" data-id="${ao.id}">
-        ${typeColor ? `<span class="badge-type-ao" style="background:${typeColor.bg}; color:${typeColor.text}">${escapeHtml(ao.type)}</span>` : ""}
+        ${ao.type ? `<span class="badge-type-ao">${escapeHtml(ao.type)}</span>` : ""}
         <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
         <div class="list-item-sub">${escapeHtml(ao.type_client)}${marche ? " · " + escapeHtml(marche) : ""}</div>
         <div class="kanban-card-footer">
