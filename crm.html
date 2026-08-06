@@ -534,15 +534,17 @@
     overflow-y: auto;
   }
 
-  .checkbox-group.scrollable label {
+  .checkbox-group.scrollable label.checkbox-inline {
     display: flex;
+    flex-wrap: nowrap;
     align-items: flex-start;
     gap: 6px;
     margin-bottom: 6px;
+    width: 100%;
     text-align: left;
   }
 
-  .checkbox-group.scrollable label input[type="checkbox"] {
+  .checkbox-group.scrollable label.checkbox-inline input[type="checkbox"] {
     flex-shrink: 0;
     margin-top: 2px;
   }
