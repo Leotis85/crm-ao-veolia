@@ -1393,6 +1393,7 @@
 
   async function refreshFromStorage() {
     appData = await storageAdapter.load();
+    normalizeData(appData);
     renderAll();
   }
 
@@ -1562,8 +1563,24 @@
     });
   }
 
+  // Comble les champs manquants d'un enregistrement (ex. AO importé d'un
+  // ancien export qui ne connaissait pas encore taches_liees/motif_categorie)
+  // avec les valeurs par défaut du schéma actuel, sans jamais toucher aux
+  // champs déjà présents (id, last_modified... restent ceux du record réel).
+  function normalizeRecord(record, factory) {
+    return { ...factory({}), ...record };
+  }
+
+  function normalizeData(data) {
+    data.aos = data.aos.map((ao) => normalizeRecord(ao, createAO));
+    data.taches = data.taches.map((t) => normalizeRecord(t, createTache));
+    data.contacts = data.contacts.map((c) => normalizeRecord(c, createContact));
+    return data;
+  }
+
   async function mutateData(mutateFn, attempt = 0) {
     const freshData = await storageAdapter.load();
+    normalizeData(freshData);
     mutateFn(freshData);
     appData = freshData;
     try {
@@ -1611,7 +1628,10 @@
       data.taches.push(tache);
       if (tache.ao_lie) {
         const ao = data.aos.find((a) => a.id === tache.ao_lie);
-        if (ao && !ao.taches_liees.includes(tache.id)) ao.taches_liees.push(tache.id);
+        if (ao) {
+          ao.taches_liees = ao.taches_liees || [];
+          if (!ao.taches_liees.includes(tache.id)) ao.taches_liees.push(tache.id);
+        }
       }
     });
   }
@@ -1626,11 +1646,14 @@
       if (previousAoLie !== record.ao_lie) {
         if (previousAoLie) {
           const prevAo = data.aos.find((a) => a.id === previousAoLie);
-          if (prevAo) prevAo.taches_liees = prevAo.taches_liees.filter((tid) => tid !== id);
+          if (prevAo) prevAo.taches_liees = (prevAo.taches_liees || []).filter((tid) => tid !== id);
         }
         if (record.ao_lie) {
           const newAo = data.aos.find((a) => a.id === record.ao_lie);
-          if (newAo && !newAo.taches_liees.includes(id)) newAo.taches_liees.push(id);
+          if (newAo) {
+            newAo.taches_liees = newAo.taches_liees || [];
+            if (!newAo.taches_liees.includes(id)) newAo.taches_liees.push(id);
+          }
         }
       }
     });
@@ -1643,7 +1666,7 @@
       data.taches = data.taches.filter((r) => r.id !== id);
       if (record.ao_lie) {
         const ao = data.aos.find((a) => a.id === record.ao_lie);
-        if (ao) ao.taches_liees = ao.taches_liees.filter((tid) => tid !== id);
+        if (ao) ao.taches_liees = (ao.taches_liees || []).filter((tid) => tid !== id);
       }
     });
   }
@@ -1656,7 +1679,10 @@
       data.contacts.push(contact);
       (contact.ao_lies || []).forEach((aoId) => {
         const ao = data.aos.find((a) => a.id === aoId);
-        if (ao && !ao.contacts_lies.includes(contact.id)) ao.contacts_lies.push(contact.id);
+        if (ao) {
+          ao.contacts_lies = ao.contacts_lies || [];
+          if (!ao.contacts_lies.includes(contact.id)) ao.contacts_lies.push(contact.id);
+        }
       });
     });
   }
@@ -1671,11 +1697,14 @@
       const newAoLies = record.ao_lies || [];
       previousAoLies.filter((aid) => !newAoLies.includes(aid)).forEach((aid) => {
         const ao = data.aos.find((a) => a.id === aid);
-        if (ao) ao.contacts_lies = ao.contacts_lies.filter((cid) => cid !== id);
+        if (ao) ao.contacts_lies = (ao.contacts_lies || []).filter((cid) => cid !== id);
       });
       newAoLies.filter((aid) => !previousAoLies.includes(aid)).forEach((aid) => {
         const ao = data.aos.find((a) => a.id === aid);
-        if (ao && !ao.contacts_lies.includes(id)) ao.contacts_lies.push(id);
+        if (ao) {
+          ao.contacts_lies = ao.contacts_lies || [];
+          if (!ao.contacts_lies.includes(id)) ao.contacts_lies.push(id);
+        }
       });
     });
   }
