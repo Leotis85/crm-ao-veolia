@@ -855,6 +855,16 @@
 
   .calendar-task-chip.multi-day {
     border-radius: 0;
+    height: 16px;
+    box-sizing: border-box;
+    padding-top: 0;
+    padding-bottom: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .calendar-task-chip.multi-day .calendar-task-chip-title {
+    line-height: 1;
   }
 
   .calendar-task-chip.multi-day.segment-start {
@@ -1162,9 +1172,6 @@
         </label>
         <label>Assigné à
           <select id="f-t-assigne_a"></select>
-        </label>
-        <label>Date de début (facultatif, pour étaler sur plusieurs jours)
-          <input type="date" id="f-t-date_debut">
         </label>
         <label>Échéance
           <input type="date" id="f-t-echeance">
@@ -2574,10 +2581,22 @@
     const handle = isEnd
       ? `<span class="calendar-chip-resize-handle" data-id="${t.id}" title="Glisser pour étirer l'échéance"></span>`
       : "";
+
+    let content = "";
+    if (showTitle && isMulti) {
+      // Une seule ligne sur le premier segment (titre + AO), pour que tous
+      // les segments de la barre partagent exactement la même hauteur.
+      const parts = [`${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}`];
+      if (ao) parts.push(escapeHtml(ao.nom_projet || "(sans nom)"));
+      content = `<div class="calendar-task-chip-title">${parts.join(" · ")}</div>`;
+    } else if (showTitle) {
+      content = `<div class="calendar-task-chip-title">${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}</div>` +
+        (ao ? `<div class="calendar-task-chip-ao">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>` : "");
+    }
+
     return `
       <div class="${classes.join(" ")}" data-id="${t.id}" draggable="true" title="${escapeHtml(t.tache || "")} — ${escapeHtml(t.statut)}">
-        ${showTitle ? `<div class="calendar-task-chip-title">${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}</div>` : ""}
-        ${showTitle && ao ? `<div class="calendar-task-chip-ao">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>` : ""}
+        ${content}
         ${handle}
       </div>
     `;
@@ -2814,7 +2833,6 @@
     document.getElementById("f-t-statut").value = data.statut || STATUT_TACHE_OPTIONS[0];
     populateAssigneSelect(document.getElementById("f-t-assigne_a"), data.assigne_a || "");
     document.getElementById("f-t-priorite").value = data.priorite || PRIORITE_OPTIONS[0];
-    document.getElementById("f-t-date_debut").value = data.date_debut || "";
     document.getElementById("f-t-echeance").value = data.echeance || "";
     document.getElementById("f-t-notes").value = data.notes || "";
 
@@ -2852,8 +2870,11 @@
       actif: true,
     }) : null;
 
+    // date_debut n'est pas exposé dans le formulaire (réglable uniquement par
+    // glisser-étirer dans le calendrier) : on préserve la valeur existante et
+    // on la re-valide juste contre la nouvelle échéance si elle a changé.
     const dates = normalizeTacheDates(
-      document.getElementById("f-t-date_debut").value || null,
+      (currentEditingTache && currentEditingTache.date_debut) || null,
       document.getElementById("f-t-echeance").value || null,
     );
 
