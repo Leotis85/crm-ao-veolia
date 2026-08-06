@@ -115,7 +115,7 @@
   }
 
   #storage-status {
-    max-width: 1900px;
+    max-width: 1800px;
     margin: 0 auto;
     padding: 8px 24px;
     font-size: 12px;
@@ -123,7 +123,7 @@
   }
 
   main {
-    max-width: 1900px;
+    max-width: 1800px;
     margin: 24px auto;
     padding: 0 24px;
   }
@@ -730,6 +730,98 @@
     gap: 6px;
     flex-shrink: 0;
   }
+
+  .calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .calendar-month-label {
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: capitalize;
+    min-width: 150px;
+    text-align: center;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--color-border);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .calendar-weekday {
+    background: var(--color-surface);
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .calendar-cell {
+    background: var(--color-surface);
+    min-height: 100px;
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .calendar-cell-outside {
+    background: var(--color-bg);
+  }
+
+  .calendar-cell-outside .calendar-cell-daynum {
+    color: var(--color-text-muted);
+  }
+
+  .calendar-cell-today {
+    box-shadow: inset 0 0 0 2px var(--color-primary);
+  }
+
+  .calendar-cell-daynum {
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .calendar-cell-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow-y: auto;
+    max-height: 88px;
+  }
+
+  .calendar-task-chip {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--color-bg);
+    border-left: 3px solid var(--color-primary);
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calendar-task-chip.flag-high {
+    border-left-color: var(--color-danger);
+  }
+
+  .calendar-task-chip.done {
+    text-decoration: line-through;
+    color: var(--color-text-muted);
+    border-left-color: var(--color-border);
+  }
 </style>
 </head>
 <body>
@@ -805,7 +897,18 @@
         <input type="checkbox" id="filter-tache-hide-done" checked> Masquer les tâches terminées
       </label>
     </div>
-    <div class="list-panel" id="todo-list"></div>
+    <div class="calendar-nav">
+      <button type="button" class="btn-secondary btn-small" id="calendar-prev">◀</button>
+      <span class="calendar-month-label" id="calendar-month-label"></span>
+      <button type="button" class="btn-secondary btn-small" id="calendar-next">▶</button>
+      <button type="button" class="btn-secondary btn-small" id="calendar-today">Aujourd'hui</button>
+    </div>
+    <div id="todo-calendar"></div>
+
+    <div class="panel">
+      <h2>Tâches sans échéance</h2>
+      <div class="list-panel" id="todo-undated-list"></div>
+    </div>
   </section>
 
   <section class="screen" id="screen-contacts">
@@ -2278,14 +2381,119 @@
     return true;
   }
 
+  // --- Calendrier mensuel (remplace la vue liste sur l'écran ToDo) ---
+
+  function startOfMonth(date) {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  }
+
+  let calendarMonth = startOfMonth(new Date());
+
+  function localDateKey(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  // Grille complète (jours du mois + jours de bordure des mois voisins
+  // pour compléter les semaines), toujours un multiple de 7 cases.
+  function getMonthGridDays(year, month) {
+    const firstOfMonth = new Date(year, month, 1);
+    const startWeekday = (firstOfMonth.getDay() + 6) % 7; // Lundi = 0
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const days = [];
+    for (let i = startWeekday - 1; i >= 0; i--) {
+      days.push({ date: new Date(year, month, -i), inMonth: false });
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push({ date: new Date(year, month, day), inMonth: true });
+    }
+    while (days.length % 7 !== 0) {
+      const next = new Date(days[days.length - 1].date);
+      next.setDate(next.getDate() + 1);
+      days.push({ date: next, inMonth: false });
+    }
+    return days;
+  }
+
+  function renderCalendarTaskChip(t) {
+    const isDone = t.statut === "Terminé";
+    const isHigh = t.priorite === "Haute" && !isDone;
+    return `
+      <div class="calendar-task-chip${isDone ? " done" : ""}${isHigh ? " flag-high" : ""}" data-id="${t.id}">
+        ${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}
+      </div>
+    `;
+  }
+
+  function renderTodoCalendar(filteredTaches) {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    document.getElementById("calendar-month-label").textContent =
+      calendarMonth.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+
+    const tasksByDate = new Map();
+    filteredTaches.forEach((t) => {
+      if (!t.echeance) return;
+      if (!tasksByDate.has(t.echeance)) tasksByDate.set(t.echeance, []);
+      tasksByDate.get(t.echeance).push(t);
+    });
+    tasksByDate.forEach((list, key) => tasksByDate.set(key, sortTaches(list)));
+
+    const todayKey = localDateKey(new Date());
+    const weekdayHeaders = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+    const headerHtml = weekdayHeaders.map((d) => `<div class="calendar-weekday">${d}</div>`).join("");
+
+    const cellsHtml = getMonthGridDays(year, month).map(({ date, inMonth }) => {
+      const key = localDateKey(date);
+      const dayTasks = tasksByDate.get(key) || [];
+      const classes = ["calendar-cell"];
+      if (!inMonth) classes.push("calendar-cell-outside");
+      if (key === todayKey) classes.push("calendar-cell-today");
+      return `
+        <div class="${classes.join(" ")}">
+          <div class="calendar-cell-daynum">${date.getDate()}</div>
+          <div class="calendar-cell-tasks">${dayTasks.map(renderCalendarTaskChip).join("")}</div>
+        </div>
+      `;
+    }).join("");
+
+    const calendarEl = document.getElementById("todo-calendar");
+    calendarEl.innerHTML = `<div class="calendar-grid">${headerHtml}${cellsHtml}</div>`;
+    calendarEl.querySelectorAll(".calendar-task-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const t = appData.taches.find((x) => x.id === chip.dataset.id);
+        if (t) openTacheForm(t);
+      });
+    });
+  }
+
+  document.getElementById("calendar-prev").addEventListener("click", () => {
+    calendarMonth.setMonth(calendarMonth.getMonth() - 1);
+    renderTodo();
+  });
+  document.getElementById("calendar-next").addEventListener("click", () => {
+    calendarMonth.setMonth(calendarMonth.getMonth() + 1);
+    renderTodo();
+  });
+  document.getElementById("calendar-today").addEventListener("click", () => {
+    calendarMonth = startOfMonth(new Date());
+    renderTodo();
+  });
+
   function renderTodo() {
     renderTodoFilters();
-    const listEl = document.getElementById("todo-list");
-    const filtered = sortTaches(appData.taches.filter(tacheMatchesFilters));
-    listEl.innerHTML = filtered.length
-      ? filtered.map((t) => renderTacheItem(t)).join("")
-      : `<div class="list-item-empty">Aucune tâche à afficher.</div>`;
-    wireTacheItemEvents(listEl);
+    const filtered = appData.taches.filter(tacheMatchesFilters);
+
+    renderTodoCalendar(filtered);
+
+    const undatedEl = document.getElementById("todo-undated-list");
+    const undated = sortTaches(filtered.filter((t) => !t.echeance));
+    undatedEl.innerHTML = undated.length
+      ? undated.map((t) => renderTacheItem(t)).join("")
+      : `<div class="list-item-empty">Aucune tâche sans échéance.</div>`;
+    wireTacheItemEvents(undatedEl);
   }
 
   function renderAOTachesSection(ao) {
@@ -2959,7 +3167,7 @@
     RecordConflictError,
     renderAll, renderAccueil, collectActiveReminders, isRappelActive, daysBetween,
     renderPipeline, openAOForm, commitAOPhaseChange, openMotifModal,
-    renderTodo, openTacheForm, sortTaches,
+    renderTodo, openTacheForm, sortTaches, getMonthGridDays, localDateKey,
     renderContacts, openContactForm,
     renderReminderBell, markReminderTreated,
     renderReporting, computeReportingData, renderMotifPieChart,
