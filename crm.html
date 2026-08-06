@@ -803,6 +803,7 @@
     flex-direction: column;
     gap: 3px;
     overflow-y: auto;
+    overflow-x: visible;
     max-height: 88px;
   }
 
@@ -859,6 +860,8 @@
     box-sizing: border-box;
     padding-top: 0;
     padding-bottom: 0;
+    padding-left: 0;
+    padding-right: 0;
     display: flex;
     align-items: center;
   }
@@ -867,19 +870,29 @@
     line-height: 1;
   }
 
+  /* Chaque segment déborde jusqu'au bord réel de sa cellule (annule le
+     padding de 6px de .calendar-cell) sauf sur son extrémité propre
+     (début/fin de la tâche), pour que la barre paraisse continue d'une
+     cellule à l'autre — il ne reste que le hairline de 1px de la grille. */
+  .calendar-task-chip.multi-day:not(.segment-start) {
+    border-left: none;
+    margin-left: -6px;
+  }
+
+  .calendar-task-chip.multi-day:not(.segment-end) {
+    margin-right: -6px;
+  }
+
   .calendar-task-chip.multi-day.segment-start {
+    padding-left: 6px;
     border-top-left-radius: 4px;
     border-bottom-left-radius: 4px;
   }
 
   .calendar-task-chip.multi-day.segment-end {
+    padding-right: 12px;
     border-top-right-radius: 4px;
     border-bottom-right-radius: 4px;
-  }
-
-  .calendar-task-chip.multi-day:not(.segment-start) {
-    border-left: none;
-    padding-left: 6px;
   }
 
   .calendar-chip-resize-handle {
