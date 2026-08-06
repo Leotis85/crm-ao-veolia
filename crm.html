@@ -187,6 +187,16 @@
     .home-columns { grid-template-columns: 1fr; }
   }
 
+  .reporting-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 700px) {
+    .reporting-columns { grid-template-columns: 1fr; }
+  }
+
   .panel {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -556,13 +566,13 @@
     flex-shrink: 0;
   }
 
-  .bar-chart, .stacked-bar-list {
+  .stacked-bar-list {
     display: flex;
     flex-direction: column;
     gap: 10px;
   }
 
-  .bar-row, .stacked-bar-row {
+  .stacked-bar-row {
     display: grid;
     grid-template-columns: 130px 1fr 34px;
     align-items: center;
@@ -576,19 +586,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .bar-row-track {
-    height: 16px;
-    background: var(--color-bg);
-    border-radius: 4px;
-  }
-
-  .bar-row-fill {
-    height: 100%;
-    background: #2a78d6;
-    border-radius: 0 4px 4px 0;
-    min-width: 3px;
   }
 
   .stacked-bar-track {
@@ -650,7 +647,7 @@
     white-space: nowrap;
   }
 
-  .bar-row:focus-visible, .stacked-bar-row .segment:focus-visible, .monthly-col .segment:focus-visible {
+  .stacked-bar-row .segment:focus-visible, .monthly-col .segment:focus-visible {
     outline: 2px solid var(--color-primary);
     outline-offset: 1px;
   }
@@ -797,7 +794,7 @@
 
   .calendar-cell {
     background: var(--color-surface);
-    min-height: 130px;
+    min-height: 110px;
     padding: 8px;
     display: flex;
     flex-direction: column;
@@ -888,12 +885,12 @@
   .calendar-bar-segment {
     position: relative;
     box-sizing: border-box;
-    height: 19px;
+    height: 22px;
     padding: 0 14px 0 7px;
     border-radius: 4px;
     background: var(--color-primary);
     color: #fff;
-    font-size: 11px;
+    font-size: 13px;
     display: flex;
     align-items: center;
     cursor: grab;
@@ -1063,26 +1060,23 @@
     <h1>Reporting</h1>
     <div class="stats-grid" id="reporting-stats"></div>
 
-    <div class="panel">
-      <h2>Répartition par type de marché</h2>
-      <div class="bar-chart" id="reporting-marche"></div>
-    </div>
+    <div class="reporting-columns">
+      <div class="panel">
+        <h2>Répartition et taux de réussite par type de client</h2>
+        <div class="status-legend" id="reporting-client-legend"></div>
+        <div class="stacked-bar-list" id="reporting-client"></div>
+      </div>
 
-    <div class="panel">
-      <h2>Répartition et taux de réussite par type de client</h2>
-      <div class="status-legend" id="reporting-client-legend"></div>
-      <div class="stacked-bar-list" id="reporting-client"></div>
+      <div class="panel">
+        <h2>Motifs de perte</h2>
+        <div id="reporting-motifs"></div>
+      </div>
     </div>
 
     <div class="panel">
       <h2>Évolution mensuelle des dépôts</h2>
       <div class="status-legend" id="reporting-monthly-legend"></div>
       <div class="monthly-chart" id="reporting-monthly"></div>
-    </div>
-
-    <div class="panel">
-      <h2>Motifs de perte</h2>
-      <div id="reporting-motifs"></div>
     </div>
   </section>
 </main>
@@ -3238,17 +3232,16 @@
   }
 
   function computeReportingData(data) {
-    const aos = data.aos;
+    // Les AO encore "A venir" ne sont pas encore engagés (pas d'étude en
+    // cours) : on les exclut de tout le reporting, KPI compris.
+    const aos = data.aos.filter((a) => a.phase !== "A venir");
     const gagnes = aos.filter((a) => a.resultat === "Gagné");
     const perdus = aos.filter((a) => a.resultat === "Perdu");
+    const enCours = aos.filter((a) => a.resultat === "En cours");
     const deposes = gagnes.length + perdus.length;
     const tauxReussite = deposes > 0 ? Math.round((gagnes.length / deposes) * 100) : null;
     const montantGagne = gagnes.reduce((sum, a) => sum + (Number(a.valeur_estimee_keur) || 0), 0);
-
-    const parTypeMarche = TYPE_MARCHE_OPTIONS
-      .map((tag) => ({ label: tag, value: aos.filter((a) => (a.type_marche || []).includes(tag)).length }))
-      .filter((x) => x.value > 0)
-      .sort((a, b) => b.value - a.value);
+    const montantPipelineEnCours = enCours.reduce((sum, a) => sum + (Number(a.valeur_estimee_keur) || 0), 0);
 
     const parTypeClient = TYPE_CLIENT_OPTIONS
       .map((client) => {
@@ -3286,7 +3279,7 @@
       .filter((x) => x.value > 0)
       .sort((a, b) => b.value - a.value);
 
-    return { gagnesCount: gagnes.length, deposes, tauxReussite, montantGagne, parTypeMarche, parTypeClient, evolutionMensuelle, parMotifPerte };
+    return { gagnesCount: gagnes.length, deposes, tauxReussite, montantGagne, montantPipelineEnCours, parTypeClient, evolutionMensuelle, parMotifPerte };
   }
 
   function showChartTooltip(target, text) {
@@ -3325,6 +3318,7 @@
     document.getElementById("reporting-stats").innerHTML = [
       [r.tauxReussite !== null ? r.tauxReussite + "%" : "—", "Taux de réussite", `${r.gagnesCount} gagné(s) / ${r.deposes} déposé(s)`],
       [formatKeur(r.montantGagne), "Montant gagné", `sur ${r.gagnesCount} AO gagné(s)`],
+      [formatKeur(r.montantPipelineEnCours), "Pipeline en cours", "AO encore en cours"],
       [String(r.deposes), "AO déposés", "gagnés + perdus"],
     ].map(([value, label, sub]) => `
       <div class="stat-card">
@@ -3333,25 +3327,6 @@
         <div class="stat-sub">${escapeHtml(sub)}</div>
       </div>
     `).join("");
-  }
-
-  function renderBarChart(containerId, items) {
-    const el = document.getElementById(containerId);
-    if (!items.length) {
-      el.innerHTML = `<div class="list-item-empty">Aucune donnée.</div>`;
-      return;
-    }
-    const max = Math.max(...items.map((i) => i.value));
-    el.innerHTML = items.map((item) => `
-      <div class="bar-row" tabindex="0" data-label="${escapeHtml(item.label)}" data-value="${item.value}">
-        <div class="bar-row-label">${escapeHtml(item.label)}</div>
-        <div class="bar-row-track">
-          <div class="bar-row-fill" style="width:${Math.max((item.value / max) * 100, 4)}%"></div>
-        </div>
-        <div class="bar-row-value">${item.value}</div>
-      </div>
-    `).join("");
-    wireChartTooltips(el, ".bar-row", (row) => `${row.dataset.label} : ${row.dataset.value}`);
   }
 
   function polarToCartesian(cx, cy, r, angleDeg) {
@@ -3378,7 +3353,7 @@
       return;
     }
     const total = items.reduce((sum, i) => sum + i.value, 0);
-    const size = 200;
+    const size = 220;
     const radius = size / 2;
     const cx = radius;
     const cy = radius;
@@ -3474,7 +3449,6 @@
   function renderReporting() {
     const r = computeReportingData(appData);
     renderReportingStats(r);
-    renderBarChart("reporting-marche", r.parTypeMarche);
     renderStatusLegend("reporting-client-legend");
     renderClientChart(r.parTypeClient);
     renderStatusLegend("reporting-monthly-legend");
