@@ -747,14 +747,19 @@
   }
 
   .calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 1px;
     background: var(--color-border);
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
     overflow: hidden;
     margin-bottom: 20px;
+  }
+
+  .calendar-weekday-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--color-border);
+    margin-bottom: 1px;
   }
 
   .calendar-weekday {
@@ -765,6 +770,29 @@
     color: var(--color-text-muted);
     text-align: center;
     text-transform: uppercase;
+  }
+
+  .calendar-week + .calendar-week {
+    margin-top: 1px;
+  }
+
+  .calendar-week-bars {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 16px;
+    gap: 2px 1px;
+    background: var(--color-surface);
+  }
+
+  .calendar-week-bars:not(:empty) {
+    padding: 2px 0;
+  }
+
+  .calendar-week-cells {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--color-border);
   }
 
   .calendar-cell {
@@ -853,33 +881,58 @@
     text-decoration: line-through;
   }
 
-  .calendar-task-chip.multi-day {
-    border-radius: 0;
-    height: 16px;
+  /* Barres multi-jours : éléments à part entière dans la mini-grille
+     .calendar-week-bars (7 colonnes, une par jour de la semaine), placés
+     via grid-column: start / span N — une vraie barre continue native,
+     plus un segment recollé par cellule. */
+  .calendar-bar-segment {
+    position: relative;
     box-sizing: border-box;
-    padding-top: 0;
-    padding-bottom: 0;
+    height: 16px;
+    padding: 0 12px 0 6px;
+    border-radius: 4px;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 10px;
     display: flex;
     align-items: center;
+    cursor: grab;
   }
 
-  .calendar-task-chip.multi-day .calendar-task-chip-title {
+  .calendar-bar-segment.dragging {
+    opacity: 0.4;
+  }
+
+  .calendar-bar-segment-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     line-height: 1;
   }
 
-  .calendar-task-chip.multi-day.segment-start {
-    border-top-left-radius: 4px;
-    border-bottom-left-radius: 4px;
+  .calendar-bar-segment.en-cours {
+    background: #60a5fa;
   }
 
-  .calendar-task-chip.multi-day.segment-end {
-    border-top-right-radius: 4px;
-    border-bottom-right-radius: 4px;
+  .calendar-bar-segment.flag-high {
+    background: var(--color-danger);
   }
 
-  .calendar-task-chip.multi-day:not(.segment-start) {
-    border-left: none;
-    padding-left: 6px;
+  .calendar-bar-segment.done {
+    background: var(--color-border);
+    color: var(--color-text-muted);
+  }
+
+  .calendar-bar-segment.done .calendar-bar-segment-label {
+    text-decoration: line-through;
+  }
+
+  .calendar-bar-segment .calendar-chip-resize-handle {
+    color: #fff;
+  }
+
+  .calendar-bar-segment.done .calendar-chip-resize-handle {
+    color: var(--color-text-muted);
   }
 
   .calendar-chip-resize-handle {
@@ -2562,8 +2615,7 @@
     return days;
   }
 
-  function renderCalendarTaskChip(entry) {
-    const { tache: t, isStart, isEnd, isMulti } = entry;
+  function renderCalendarTaskChip(t) {
     const ao = t.ao_lie ? appData.aos.find((a) => a.id === t.ao_lie) : null;
     const isDone = t.statut === "Terminé";
     const isEnCours = t.statut === "En cours" && !isDone;
@@ -2572,43 +2624,90 @@
     if (isDone) classes.push("done");
     if (isEnCours) classes.push("en-cours");
     if (isHigh) classes.push("flag-high");
-    if (isMulti) {
-      classes.push("multi-day");
-      if (isStart) classes.push("segment-start");
-      if (isEnd) classes.push("segment-end");
-    }
-    const showTitle = !isMulti || isStart;
-    const handle = isEnd
-      ? `<span class="calendar-chip-resize-handle" data-id="${t.id}" title="Glisser pour étirer l'échéance"></span>`
-      : "";
-
-    let content = "";
-    if (showTitle && isMulti) {
-      // Une seule ligne sur le premier segment (titre + AO), pour que tous
-      // les segments de la barre partagent exactement la même hauteur.
-      const parts = [`${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}`];
-      if (ao) parts.push(escapeHtml(ao.nom_projet || "(sans nom)"));
-      content = `<div class="calendar-task-chip-title">${parts.join(" · ")}</div>`;
-    } else if (showTitle) {
-      content = `<div class="calendar-task-chip-title">${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}</div>` +
-        (ao ? `<div class="calendar-task-chip-ao">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>` : "");
-    }
-
     return `
-      <div class="${classes.join(" ")}" data-id="${t.id}" draggable="true" title="${escapeHtml(t.tache || "")} — ${escapeHtml(t.statut)}">
-        ${content}
-        ${handle}
+      <div class="${classes.join(" ")}" data-id="${t.id}" draggable="true" title="${escapeHtml(t.statut)}">
+        <div class="calendar-task-chip-title">${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}</div>
+        ${ao ? `<div class="calendar-task-chip-ao">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>` : ""}
+        <span class="calendar-chip-resize-handle" data-id="${t.id}" title="Glisser pour étirer l'échéance"></span>
       </div>
     `;
   }
 
-  function sortCalendarEntries(list) {
-    return [...list].sort((a, b) => {
-      const aHigh = a.tache.priorite === "Haute" && a.tache.statut !== "Terminé";
-      const bHigh = b.tache.priorite === "Haute" && b.tache.statut !== "Terminé";
-      if (aHigh !== bHigh) return aHigh ? -1 : 1;
-      return (a.tache.echeance || "").localeCompare(b.tache.echeance || "");
+  // Découpe la grille du mois (jours à plat) en semaines de 7 jours.
+  function chunkIntoWeeks(days) {
+    const weeks = [];
+    for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
+    return weeks;
+  }
+
+  // Pour une semaine donnée, calcule à quelles colonnes (1-7) chaque tâche
+  // multi-jours apparaît cette semaine-là (une tâche à cheval sur deux
+  // semaines produit un segment distinct dans chacune).
+  function computeWeekBarSegments(weekKeys, multiDayTaches) {
+    const segments = [];
+    multiDayTaches.forEach((t) => {
+      const start = t.date_debut;
+      const end = t.echeance;
+      let startCol = null;
+      let endCol = null;
+      weekKeys.forEach((key, idx) => {
+        if (key >= start && key <= end) {
+          if (startCol === null) startCol = idx + 1;
+          endCol = idx + 1;
+        }
+      });
+      if (startCol === null) return;
+      segments.push({
+        tache: t,
+        startCol,
+        span: endCol - startCol + 1,
+        isGlobalStart: weekKeys[startCol - 1] === start,
+        isGlobalEnd: weekKeys[endCol - 1] === end,
+      });
     });
+    return segments;
+  }
+
+  // Attribution de lanes (algorithme glouton classique) : deux segments qui
+  // se chevauchent en colonnes ne peuvent pas partager la même ligne.
+  function assignBarLanes(segments) {
+    const sorted = [...segments].sort((a, b) => a.startCol - b.startCol || b.span - a.span);
+    const laneEnds = [];
+    sorted.forEach((seg) => {
+      let lane = laneEnds.findIndex((end) => end < seg.startCol);
+      if (lane === -1) {
+        lane = laneEnds.length;
+        laneEnds.push(0);
+      }
+      laneEnds[lane] = seg.startCol + seg.span - 1;
+      seg.lane = lane;
+    });
+    return sorted;
+  }
+
+  function renderBarSegment(seg) {
+    const t = seg.tache;
+    const ao = t.ao_lie ? appData.aos.find((a) => a.id === t.ao_lie) : null;
+    const isDone = t.statut === "Terminé";
+    const isEnCours = t.statut === "En cours" && !isDone;
+    const isHigh = t.priorite === "Haute" && !isDone;
+    const classes = ["calendar-bar-segment"];
+    if (isDone) classes.push("done");
+    if (isEnCours) classes.push("en-cours");
+    if (isHigh) classes.push("flag-high");
+    const parts = [`${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}`];
+    if (ao) parts.push(escapeHtml(ao.nom_projet || "(sans nom)"));
+    const handle = seg.isGlobalEnd
+      ? `<span class="calendar-chip-resize-handle" data-id="${t.id}" title="Glisser pour étirer l'échéance"></span>`
+      : "";
+    return `
+      <div class="${classes.join(" ")}" data-id="${t.id}" draggable="true"
+           style="grid-column: ${seg.startCol} / span ${seg.span}; grid-row: ${seg.lane + 1};"
+           title="${escapeHtml(t.tache || "")} — ${escapeHtml(t.statut)}">
+        <span class="calendar-bar-segment-label">${parts.join(" · ")}</span>
+        ${handle}
+      </div>
+    `;
   }
 
   function renderTodoCalendar(filteredTaches) {
@@ -2617,64 +2716,79 @@
     document.getElementById("calendar-month-label").textContent =
       calendarMonth.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 
+    const multiDayTaches = filteredTaches.filter((t) => t.date_debut && t.echeance && t.date_debut < t.echeance);
+    const multiDayIds = new Set(multiDayTaches.map((t) => t.id));
+    const singleDayTaches = filteredTaches.filter((t) => !multiDayIds.has(t.id));
+
     const tasksByDate = new Map();
-    filteredTaches.forEach((t) => {
+    singleDayTaches.forEach((t) => {
       if (!t.echeance) return;
-      const start = t.date_debut && t.date_debut <= t.echeance ? t.date_debut : t.echeance;
-      const end = t.echeance;
-      const isMulti = start !== end;
-      let cursor = start;
-      let guard = 0;
-      while (cursor <= end && guard < 400) {
-        if (!tasksByDate.has(cursor)) tasksByDate.set(cursor, []);
-        tasksByDate.get(cursor).push({ tache: t, isStart: cursor === start, isEnd: cursor === end, isMulti });
-        cursor = addDaysToKey(cursor, 1);
-        guard++;
-      }
+      if (!tasksByDate.has(t.echeance)) tasksByDate.set(t.echeance, []);
+      tasksByDate.get(t.echeance).push(t);
     });
-    tasksByDate.forEach((list, key) => tasksByDate.set(key, sortCalendarEntries(list)));
+    tasksByDate.forEach((list, key) => tasksByDate.set(key, sortTaches(list)));
 
     const todayKey = localDateKey(new Date());
     const weekdayHeaders = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
     const headerHtml = weekdayHeaders.map((d) => `<div class="calendar-weekday">${d}</div>`).join("");
 
-    const cellsHtml = getMonthGridDays(year, month).map(({ date, inMonth }) => {
-      const key = localDateKey(date);
-      const dayEntries = tasksByDate.get(key) || [];
-      const classes = ["calendar-cell"];
-      if (!inMonth) classes.push("calendar-cell-outside");
-      if (key === todayKey) classes.push("calendar-cell-today");
+    const weeks = chunkIntoWeeks(getMonthGridDays(year, month));
+    const weeksHtml = weeks.map((week) => {
+      const weekKeys = week.map(({ date }) => localDateKey(date));
+      const laned = assignBarLanes(computeWeekBarSegments(weekKeys, multiDayTaches));
+      const barsHtml = laned.map(renderBarSegment).join("");
+
+      const cellsHtml = week.map(({ date, inMonth }) => {
+        const key = localDateKey(date);
+        const dayTasks = tasksByDate.get(key) || [];
+        const classes = ["calendar-cell"];
+        if (!inMonth) classes.push("calendar-cell-outside");
+        if (key === todayKey) classes.push("calendar-cell-today");
+        return `
+          <div class="${classes.join(" ")}" data-date="${key}">
+            <div class="calendar-cell-daynum">${date.getDate()}</div>
+            <div class="calendar-cell-tasks">${dayTasks.map(renderCalendarTaskChip).join("")}</div>
+          </div>
+        `;
+      }).join("");
+
       return `
-        <div class="${classes.join(" ")}" data-date="${key}">
-          <div class="calendar-cell-daynum">${date.getDate()}</div>
-          <div class="calendar-cell-tasks">${dayEntries.map(renderCalendarTaskChip).join("")}</div>
+        <div class="calendar-week">
+          <div class="calendar-week-bars">${barsHtml}</div>
+          <div class="calendar-week-cells">${cellsHtml}</div>
         </div>
       `;
     }).join("");
 
     const calendarEl = document.getElementById("todo-calendar");
-    calendarEl.innerHTML = `<div class="calendar-grid">${headerHtml}${cellsHtml}</div>`;
+    calendarEl.innerHTML = `
+      <div class="calendar-grid">
+        <div class="calendar-weekday-row">${headerHtml}</div>
+        ${weeksHtml}
+      </div>
+    `;
 
-    calendarEl.querySelectorAll(".calendar-task-chip").forEach((chip) => {
-      chip.addEventListener("click", (event) => {
+    calendarEl.querySelectorAll(".calendar-task-chip, .calendar-bar-segment").forEach((el) => {
+      el.addEventListener("click", (event) => {
         if (draggedTacheId || event.target.classList.contains("calendar-chip-resize-handle")) return;
-        const t = appData.taches.find((x) => x.id === chip.dataset.id);
+        const t = appData.taches.find((x) => x.id === el.dataset.id);
         if (t) openTacheForm(t);
       });
-      chip.addEventListener("dragstart", (event) => {
-        draggedTacheId = chip.dataset.id;
-        chip.classList.add("dragging");
+      el.addEventListener("dragstart", (event) => {
+        draggedTacheId = el.dataset.id;
+        el.classList.add("dragging");
         event.dataTransfer.effectAllowed = "move";
       });
-      chip.addEventListener("dragend", () => {
-        chip.classList.remove("dragging");
+      el.addEventListener("dragend", () => {
+        el.classList.remove("dragging");
         draggedTacheId = null;
       });
     });
 
     // Poignée d'étirement : mousedown/mousemove/mouseup manuels plutôt que
-    // le drag HTML5 natif, pour éviter le conflit avec le drag du chip
-    // parent (deux zones draggable imbriquées se marchent dessus sinon).
+    // le drag HTML5 natif, pour éviter le conflit avec le drag du chip/de
+    // la barre parente (deux zones draggable imbriquées se marchent dessus
+    // sinon).
     calendarEl.querySelectorAll(".calendar-chip-resize-handle").forEach((handle) => {
       handle.addEventListener("mousedown", (event) => {
         event.preventDefault();
@@ -3462,6 +3576,7 @@
     renderPipeline, openAOForm, commitAOPhaseChange, openMotifModal,
     renderTodo, openTacheForm, sortTaches, getMonthGridDays, localDateKey,
     normalizeTacheDates, addDaysToKey, daysBetweenKeys,
+    chunkIntoWeeks, computeWeekBarSegments, assignBarLanes,
     renderContacts, openContactForm,
     renderReminderBell, markReminderTreated,
     renderReporting, computeReportingData, renderMotifPieChart,
