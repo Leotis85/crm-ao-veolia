@@ -119,7 +119,8 @@ Repris du Todo Notion existant, enrichi.
 | `id` | identifiant unique | |
 | `tache` | texte | intitulé |
 | `statut` | liste | Pas commencé, En cours, Terminé |
-| `echeance` | date | |
+| `date_debut` | date | ajouté ultérieurement, facultatif : si renseignée, la tâche s'étale sur plusieurs jours dans le calendrier ToDo (barre continue) — `echeance` reste la date de fin |
+| `echeance` | date | date de fin / échéance (seule date utilisée pour le tri, les rappels et les autres écrans si `date_debut` est vide) |
 | `assigne_a` | personne | Mathis ou collègue |
 | `priorite` | liste | Normale, Haute (= flag rouge / critique) |
 | `notes` | texte | |

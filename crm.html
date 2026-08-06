@@ -807,8 +807,9 @@
   }
 
   .calendar-task-chip {
+    position: relative;
     font-size: 11px;
-    padding: 2px 6px;
+    padding: 2px 12px 2px 6px;
     border-radius: 4px;
     background: var(--color-bg);
     border-left: 3px solid var(--color-primary);
@@ -850,6 +851,52 @@
 
   .calendar-task-chip.done .calendar-task-chip-ao {
     text-decoration: line-through;
+  }
+
+  .calendar-task-chip.multi-day {
+    border-radius: 0;
+  }
+
+  .calendar-task-chip.multi-day.segment-start {
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+  }
+
+  .calendar-task-chip.multi-day.segment-end {
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+  }
+
+  .calendar-task-chip.multi-day:not(.segment-start) {
+    border-left: none;
+    padding-left: 6px;
+  }
+
+  .calendar-chip-resize-handle {
+    position: absolute;
+    right: 1px;
+    top: 0;
+    bottom: 0;
+    width: 9px;
+    cursor: ew-resize;
+  }
+
+  .calendar-chip-resize-handle::after {
+    content: "";
+    position: absolute;
+    right: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: currentColor;
+    opacity: 0.4;
+    border-radius: 2px;
+  }
+
+  body.calendar-resizing {
+    cursor: ew-resize;
+    user-select: none;
   }
 </style>
 </head>
@@ -1115,6 +1162,9 @@
         </label>
         <label>Assigné à
           <select id="f-t-assigne_a"></select>
+        </label>
+        <label>Date de début (facultatif, pour étaler sur plusieurs jours)
+          <input type="date" id="f-t-date_debut">
         </label>
         <label>Échéance
           <input type="date" id="f-t-echeance">
@@ -1566,6 +1616,7 @@
       id: generateId(),
       tache: "",
       statut: "Pas commencé",
+      date_debut: null,
       echeance: null,
       assigne_a: "",
       priorite: "Normale",
@@ -2447,12 +2498,40 @@
 
   let calendarMonth = startOfMonth(new Date());
   let draggedTacheId = null;
+  let resizingTacheId = null;
+  let resizeHoverCell = null;
 
   function localDateKey(date) {
     const y = date.getFullYear();
     const m = String(date.getMonth() + 1).padStart(2, "0");
     const d = String(date.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
+  }
+
+  function parseDateKey(key) {
+    const [y, m, d] = key.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function addDaysToKey(key, days) {
+    const d = parseDateKey(key);
+    d.setDate(d.getDate() + days);
+    return localDateKey(d);
+  }
+
+  function daysBetweenKeys(a, b) {
+    return Math.round((parseDateKey(b) - parseDateKey(a)) / 86400000);
+  }
+
+  // Garantit date_debut <= echeance (échange si besoin) et réduit à une
+  // tâche mono-jour (date_debut=null) si les deux dates sont vides/égales.
+  function normalizeTacheDates(dateDebut, echeance) {
+    if (!echeance || !dateDebut || dateDebut === echeance) {
+      return { date_debut: null, echeance: echeance || null };
+    }
+    return dateDebut < echeance
+      ? { date_debut: dateDebut, echeance }
+      : { date_debut: echeance, echeance: dateDebut };
   }
 
   // Grille complète (jours du mois + jours de bordure des mois voisins
@@ -2476,7 +2555,8 @@
     return days;
   }
 
-  function renderCalendarTaskChip(t) {
+  function renderCalendarTaskChip(entry) {
+    const { tache: t, isStart, isEnd, isMulti } = entry;
     const ao = t.ao_lie ? appData.aos.find((a) => a.id === t.ao_lie) : null;
     const isDone = t.statut === "Terminé";
     const isEnCours = t.statut === "En cours" && !isDone;
@@ -2485,12 +2565,31 @@
     if (isDone) classes.push("done");
     if (isEnCours) classes.push("en-cours");
     if (isHigh) classes.push("flag-high");
+    if (isMulti) {
+      classes.push("multi-day");
+      if (isStart) classes.push("segment-start");
+      if (isEnd) classes.push("segment-end");
+    }
+    const showTitle = !isMulti || isStart;
+    const handle = isEnd
+      ? `<span class="calendar-chip-resize-handle" data-id="${t.id}" title="Glisser pour étirer l'échéance"></span>`
+      : "";
     return `
-      <div class="${classes.join(" ")}" data-id="${t.id}" draggable="true" title="${escapeHtml(t.statut)}">
-        <div class="calendar-task-chip-title">${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}</div>
-        ${ao ? `<div class="calendar-task-chip-ao">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>` : ""}
+      <div class="${classes.join(" ")}" data-id="${t.id}" draggable="true" title="${escapeHtml(t.tache || "")} — ${escapeHtml(t.statut)}">
+        ${showTitle ? `<div class="calendar-task-chip-title">${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}</div>` : ""}
+        ${showTitle && ao ? `<div class="calendar-task-chip-ao">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>` : ""}
+        ${handle}
       </div>
     `;
+  }
+
+  function sortCalendarEntries(list) {
+    return [...list].sort((a, b) => {
+      const aHigh = a.tache.priorite === "Haute" && a.tache.statut !== "Terminé";
+      const bHigh = b.tache.priorite === "Haute" && b.tache.statut !== "Terminé";
+      if (aHigh !== bHigh) return aHigh ? -1 : 1;
+      return (a.tache.echeance || "").localeCompare(b.tache.echeance || "");
+    });
   }
 
   function renderTodoCalendar(filteredTaches) {
@@ -2502,10 +2601,19 @@
     const tasksByDate = new Map();
     filteredTaches.forEach((t) => {
       if (!t.echeance) return;
-      if (!tasksByDate.has(t.echeance)) tasksByDate.set(t.echeance, []);
-      tasksByDate.get(t.echeance).push(t);
+      const start = t.date_debut && t.date_debut <= t.echeance ? t.date_debut : t.echeance;
+      const end = t.echeance;
+      const isMulti = start !== end;
+      let cursor = start;
+      let guard = 0;
+      while (cursor <= end && guard < 400) {
+        if (!tasksByDate.has(cursor)) tasksByDate.set(cursor, []);
+        tasksByDate.get(cursor).push({ tache: t, isStart: cursor === start, isEnd: cursor === end, isMulti });
+        cursor = addDaysToKey(cursor, 1);
+        guard++;
+      }
     });
-    tasksByDate.forEach((list, key) => tasksByDate.set(key, sortTaches(list)));
+    tasksByDate.forEach((list, key) => tasksByDate.set(key, sortCalendarEntries(list)));
 
     const todayKey = localDateKey(new Date());
     const weekdayHeaders = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
@@ -2513,14 +2621,14 @@
 
     const cellsHtml = getMonthGridDays(year, month).map(({ date, inMonth }) => {
       const key = localDateKey(date);
-      const dayTasks = tasksByDate.get(key) || [];
+      const dayEntries = tasksByDate.get(key) || [];
       const classes = ["calendar-cell"];
       if (!inMonth) classes.push("calendar-cell-outside");
       if (key === todayKey) classes.push("calendar-cell-today");
       return `
         <div class="${classes.join(" ")}" data-date="${key}">
           <div class="calendar-cell-daynum">${date.getDate()}</div>
-          <div class="calendar-cell-tasks">${dayTasks.map(renderCalendarTaskChip).join("")}</div>
+          <div class="calendar-cell-tasks">${dayEntries.map(renderCalendarTaskChip).join("")}</div>
         </div>
       `;
     }).join("");
@@ -2529,8 +2637,8 @@
     calendarEl.innerHTML = `<div class="calendar-grid">${headerHtml}${cellsHtml}</div>`;
 
     calendarEl.querySelectorAll(".calendar-task-chip").forEach((chip) => {
-      chip.addEventListener("click", () => {
-        if (draggedTacheId) return;
+      chip.addEventListener("click", (event) => {
+        if (draggedTacheId || event.target.classList.contains("calendar-chip-resize-handle")) return;
         const t = appData.taches.find((x) => x.id === chip.dataset.id);
         if (t) openTacheForm(t);
       });
@@ -2542,6 +2650,18 @@
       chip.addEventListener("dragend", () => {
         chip.classList.remove("dragging");
         draggedTacheId = null;
+      });
+    });
+
+    // Poignée d'étirement : mousedown/mousemove/mouseup manuels plutôt que
+    // le drag HTML5 natif, pour éviter le conflit avec le drag du chip
+    // parent (deux zones draggable imbriquées se marchent dessus sinon).
+    calendarEl.querySelectorAll(".calendar-chip-resize-handle").forEach((handle) => {
+      handle.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        resizingTacheId = handle.dataset.id;
+        document.body.classList.add("calendar-resizing");
       });
     });
 
@@ -2557,11 +2677,14 @@
         const id = draggedTacheId;
         if (!id) return;
         const tache = appData.taches.find((t) => t.id === id);
-        if (!tache) return;
-        const newDate = cell.dataset.date;
-        if (tache.echeance === newDate) return;
+        if (!tache || !tache.echeance) return;
+        const start = tache.date_debut || tache.echeance;
+        const spanDays = daysBetweenKeys(start, tache.echeance);
+        const newStart = cell.dataset.date;
+        if (newStart === start) return;
+        const newEnd = addDaysToKey(newStart, spanDays);
         try {
-          await updateTache(id, { echeance: newDate }, tache.last_modified);
+          await updateTache(id, { date_debut: spanDays > 0 ? newStart : null, echeance: newEnd }, tache.last_modified);
         } catch (err) {
           if (err instanceof RecordConflictError) {
             alert("Cette tâche a été modifiée par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
@@ -2573,6 +2696,43 @@
       });
     });
   }
+
+  document.addEventListener("mousemove", (event) => {
+    if (!resizingTacheId) return;
+    const el = document.elementFromPoint(event.clientX, event.clientY);
+    const cell = el ? el.closest(".calendar-cell") : null;
+    if (resizeHoverCell && resizeHoverCell !== cell) resizeHoverCell.classList.remove("drag-over");
+    if (cell) cell.classList.add("drag-over");
+    resizeHoverCell = cell;
+  });
+
+  document.addEventListener("mouseup", async () => {
+    if (!resizingTacheId) return;
+    const id = resizingTacheId;
+    const cell = resizeHoverCell;
+    resizingTacheId = null;
+    document.body.classList.remove("calendar-resizing");
+    if (cell) cell.classList.remove("drag-over");
+    resizeHoverCell = null;
+    if (!cell) return;
+
+    const tache = appData.taches.find((t) => t.id === id);
+    if (!tache || !tache.echeance) return;
+    const start = tache.date_debut || tache.echeance;
+    const dropDate = cell.dataset.date;
+    const finalDates = normalizeTacheDates(start, dropDate);
+    if (finalDates.date_debut === (tache.date_debut || null) && finalDates.echeance === tache.echeance) return;
+    try {
+      await updateTache(id, finalDates, tache.last_modified);
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cette tâche a été modifiée par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+      } else {
+        alert("Erreur : " + err.message);
+      }
+    }
+  });
 
   document.getElementById("calendar-prev").addEventListener("click", () => {
     calendarMonth.setMonth(calendarMonth.getMonth() - 1);
@@ -2654,6 +2814,7 @@
     document.getElementById("f-t-statut").value = data.statut || STATUT_TACHE_OPTIONS[0];
     populateAssigneSelect(document.getElementById("f-t-assigne_a"), data.assigne_a || "");
     document.getElementById("f-t-priorite").value = data.priorite || PRIORITE_OPTIONS[0];
+    document.getElementById("f-t-date_debut").value = data.date_debut || "";
     document.getElementById("f-t-echeance").value = data.echeance || "";
     document.getElementById("f-t-notes").value = data.notes || "";
 
@@ -2691,13 +2852,19 @@
       actif: true,
     }) : null;
 
+    const dates = normalizeTacheDates(
+      document.getElementById("f-t-date_debut").value || null,
+      document.getElementById("f-t-echeance").value || null,
+    );
+
     const changes = {
       tache: document.getElementById("f-t-tache").value.trim(),
       ao_lie: document.getElementById("f-t-ao_lie").value || null,
       statut: document.getElementById("f-t-statut").value,
       assigne_a: document.getElementById("f-t-assigne_a").value,
       priorite: document.getElementById("f-t-priorite").value,
-      echeance: document.getElementById("f-t-echeance").value || null,
+      date_debut: dates.date_debut,
+      echeance: dates.echeance,
       notes: document.getElementById("f-t-notes").value.trim(),
       rappel,
     };
@@ -3273,6 +3440,7 @@
     renderAll, renderAccueil, collectActiveReminders, isRappelActive, daysBetween,
     renderPipeline, openAOForm, commitAOPhaseChange, openMotifModal,
     renderTodo, openTacheForm, sortTaches, getMonthGridDays, localDateKey,
+    normalizeTacheDates, addDaysToKey, daysBetweenKeys,
     renderContacts, openContactForm,
     renderReminderBell, markReminderTreated,
     renderReporting, computeReportingData, renderMotifPieChart,
