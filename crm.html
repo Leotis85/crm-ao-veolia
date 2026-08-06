@@ -546,6 +546,14 @@
     font-size: 12px;
   }
 
+  .tag-chip-label {
+    cursor: pointer;
+  }
+
+  .tag-chip-label:hover {
+    text-decoration: underline;
+  }
+
   .tag-chip-remove {
     border: none;
     background: transparent;
@@ -2986,10 +2994,11 @@
 
   function renderAOTachesSection(ao) {
     const container = document.getElementById("ao-taches-list");
-    const linked = appData.taches.filter((t) => t.ao_lie === ao.id);
-    container.innerHTML = linked.length
-      ? sortTaches(linked).map((t) => renderTacheItem(t, { hideAO: true })).join("")
-      : `<div class="list-item-empty">Aucune tâche liée.</div>`;
+    const allLinked = appData.taches.filter((t) => t.ao_lie === ao.id);
+    const open = allLinked.filter((t) => t.statut !== "Terminé");
+    container.innerHTML = open.length
+      ? sortTaches(open).map((t) => renderTacheItem(t, { hideAO: true })).join("")
+      : `<div class="list-item-empty">${allLinked.length ? "Toutes les tâches sont terminées." : "Aucune tâche liée."}</div>`;
     wireTacheItemEvents(container);
   }
 
@@ -3227,14 +3236,23 @@
     chipsEl.innerHTML = linked.length
       ? linked.map((c) => `
           <span class="tag-chip">
-            ${escapeHtml(c.nom || "(sans nom)")}${c.organisme ? " · " + escapeHtml(c.organisme) : ""}
+            <span class="tag-chip-label" data-id="${c.id}">${escapeHtml(c.nom || "(sans nom)")}${c.organisme ? " · " + escapeHtml(c.organisme) : ""}</span>
             <button type="button" class="tag-chip-remove" data-id="${c.id}" title="Retirer">✕</button>
           </span>
         `).join("")
       : `<div class="list-item-empty">Aucun contact lié.</div>`;
 
+    chipsEl.querySelectorAll(".tag-chip-label").forEach((label) => {
+      label.addEventListener("click", () => {
+        const contact = appData.contacts.find((c) => c.id === label.dataset.id);
+        if (contact) openContactForm(contact);
+      });
+    });
     chipsEl.querySelectorAll(".tag-chip-remove").forEach((btn) => {
-      btn.addEventListener("click", () => toggleAOContactLink(btn.dataset.id, ao.id, false));
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleAOContactLink(btn.dataset.id, ao.id, false);
+      });
     });
 
     // Le menu déroulant peut être ouvert pendant un re-rendu (ajout d'un
