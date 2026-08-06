@@ -788,6 +788,11 @@
     box-shadow: inset 0 0 0 2px var(--color-primary);
   }
 
+  .calendar-cell.drag-over {
+    box-shadow: inset 0 0 0 2px var(--color-primary);
+    background: var(--color-bg);
+  }
+
   .calendar-cell-daynum {
     font-size: 12px;
     font-weight: 600;
@@ -807,10 +812,29 @@
     border-radius: 4px;
     background: var(--color-bg);
     border-left: 3px solid var(--color-primary);
-    cursor: pointer;
+    cursor: grab;
+  }
+
+  .calendar-task-chip.dragging {
+    opacity: 0.4;
+  }
+
+  .calendar-task-chip-title {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .calendar-task-chip-ao {
+    font-size: 9px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calendar-task-chip.en-cours {
+    background: #dbeafe;
   }
 
   .calendar-task-chip.flag-high {
@@ -821,6 +845,11 @@
     text-decoration: line-through;
     color: var(--color-text-muted);
     border-left-color: var(--color-border);
+    background: var(--color-bg);
+  }
+
+  .calendar-task-chip.done .calendar-task-chip-ao {
+    text-decoration: line-through;
   }
 </style>
 </head>
@@ -2417,6 +2446,7 @@
   }
 
   let calendarMonth = startOfMonth(new Date());
+  let draggedTacheId = null;
 
   function localDateKey(date) {
     const y = date.getFullYear();
@@ -2447,11 +2477,18 @@
   }
 
   function renderCalendarTaskChip(t) {
+    const ao = t.ao_lie ? appData.aos.find((a) => a.id === t.ao_lie) : null;
     const isDone = t.statut === "Terminé";
+    const isEnCours = t.statut === "En cours" && !isDone;
     const isHigh = t.priorite === "Haute" && !isDone;
+    const classes = ["calendar-task-chip"];
+    if (isDone) classes.push("done");
+    if (isEnCours) classes.push("en-cours");
+    if (isHigh) classes.push("flag-high");
     return `
-      <div class="calendar-task-chip${isDone ? " done" : ""}${isHigh ? " flag-high" : ""}" data-id="${t.id}">
-        ${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}
+      <div class="${classes.join(" ")}" data-id="${t.id}" draggable="true" title="${escapeHtml(t.statut)}">
+        <div class="calendar-task-chip-title">${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}</div>
+        ${ao ? `<div class="calendar-task-chip-ao">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>` : ""}
       </div>
     `;
   }
@@ -2481,7 +2518,7 @@
       if (!inMonth) classes.push("calendar-cell-outside");
       if (key === todayKey) classes.push("calendar-cell-today");
       return `
-        <div class="${classes.join(" ")}">
+        <div class="${classes.join(" ")}" data-date="${key}">
           <div class="calendar-cell-daynum">${date.getDate()}</div>
           <div class="calendar-cell-tasks">${dayTasks.map(renderCalendarTaskChip).join("")}</div>
         </div>
@@ -2490,10 +2527,49 @@
 
     const calendarEl = document.getElementById("todo-calendar");
     calendarEl.innerHTML = `<div class="calendar-grid">${headerHtml}${cellsHtml}</div>`;
+
     calendarEl.querySelectorAll(".calendar-task-chip").forEach((chip) => {
       chip.addEventListener("click", () => {
+        if (draggedTacheId) return;
         const t = appData.taches.find((x) => x.id === chip.dataset.id);
         if (t) openTacheForm(t);
+      });
+      chip.addEventListener("dragstart", (event) => {
+        draggedTacheId = chip.dataset.id;
+        chip.classList.add("dragging");
+        event.dataTransfer.effectAllowed = "move";
+      });
+      chip.addEventListener("dragend", () => {
+        chip.classList.remove("dragging");
+        draggedTacheId = null;
+      });
+    });
+
+    calendarEl.querySelectorAll(".calendar-cell").forEach((cell) => {
+      cell.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        cell.classList.add("drag-over");
+      });
+      cell.addEventListener("dragleave", () => cell.classList.remove("drag-over"));
+      cell.addEventListener("drop", async (event) => {
+        event.preventDefault();
+        cell.classList.remove("drag-over");
+        const id = draggedTacheId;
+        if (!id) return;
+        const tache = appData.taches.find((t) => t.id === id);
+        if (!tache) return;
+        const newDate = cell.dataset.date;
+        if (tache.echeance === newDate) return;
+        try {
+          await updateTache(id, { echeance: newDate }, tache.last_modified);
+        } catch (err) {
+          if (err instanceof RecordConflictError) {
+            alert("Cette tâche a été modifiée par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+            await refreshFromStorage();
+          } else {
+            alert("Erreur : " + err.message);
+          }
+        }
       });
     });
   }
