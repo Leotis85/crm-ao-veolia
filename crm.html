@@ -523,7 +523,7 @@
 
   .contact-item, .clickable-item { cursor: pointer; }
 
-  #f-c-ao-search {
+  #f-c-ao-search, #f-ao-contact-search {
     width: 100%;
     margin-bottom: 8px;
   }
@@ -1182,7 +1182,8 @@
 
       <fieldset id="ao-contacts-section" hidden>
         <legend>Contacts liés</legend>
-        <div class="list-panel" id="ao-contacts-list"></div>
+        <input type="text" id="f-ao-contact-search" placeholder="Rechercher un contact…">
+        <div class="checkbox-group scrollable" id="ao-contacts-picker"></div>
         <button type="button" class="btn-secondary btn-small" id="ao-contacts-add">+ Nouveau contact</button>
       </fieldset>
 
@@ -2314,7 +2315,10 @@
     if (ao) renderAOTachesSection(ao);
 
     document.getElementById("ao-contacts-section").hidden = !ao;
-    if (ao) renderAOContactsSection(ao);
+    if (ao) {
+      document.getElementById("f-ao-contact-search").value = "";
+      renderAOContactsSection(ao);
+    }
 
     updateRappelFieldsVisibility();
     document.getElementById("ao-modal-overlay").hidden = false;
@@ -3083,15 +3087,57 @@
   }
 
   function renderAOContactsSection(ao) {
-    const container = document.getElementById("ao-contacts-list");
-    const linked = appData.contacts
-      .filter((c) => (c.ao_lies || []).includes(ao.id))
-      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
-    container.innerHTML = linked.length
-      ? linked.map(renderContactItem).join("")
-      : `<div class="list-item-empty">Aucun contact lié.</div>`;
-    wireContactItemEvents(container);
+    const container = document.getElementById("ao-contacts-picker");
+    const sorted = [...appData.contacts].sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+    container.innerHTML = sorted.length
+      ? sorted.map((c) => `
+          <label class="checkbox-inline">
+            <input type="checkbox" class="ao-contact-item" value="${c.id}" ${(c.ao_lies || []).includes(ao.id) ? "checked" : ""}>
+            ${escapeHtml(c.nom || "(sans nom)")}${c.organisme ? " · " + escapeHtml(c.organisme) : ""}
+          </label>
+        `).join("")
+      : `<div class="list-item-empty">Aucun contact créé pour l'instant.</div>`;
+
+    // Reréapplique le filtre de recherche courant : renderAOContactsSection
+    // est aussi appelée par renderAll() pendant que la fiche est ouverte
+    // (sync cross-onglet, autre case cochée...), qui régénère le HTML sans
+    // connaître l'état du champ de recherche.
+    const currentQuery = document.getElementById("f-ao-contact-search").value.trim().toLowerCase();
+    if (currentQuery) {
+      container.querySelectorAll("label").forEach((label) => {
+        label.style.display = label.textContent.toLowerCase().includes(currentQuery) ? "" : "none";
+      });
+    }
+
+    container.querySelectorAll(".ao-contact-item").forEach((cb) => {
+      cb.addEventListener("change", async () => {
+        const contact = appData.contacts.find((c) => c.id === cb.value);
+        if (!contact) return;
+        const currentAoLies = contact.ao_lies || [];
+        const newAoLies = cb.checked
+          ? [...currentAoLies, ao.id]
+          : currentAoLies.filter((id) => id !== ao.id);
+        try {
+          await updateContact(contact.id, { ao_lies: newAoLies }, contact.last_modified);
+        } catch (err) {
+          cb.checked = !cb.checked;
+          if (err instanceof RecordConflictError) {
+            alert("Ce contact a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+            await refreshFromStorage();
+          } else {
+            alert("Erreur : " + err.message);
+          }
+        }
+      });
+    });
   }
+
+  document.getElementById("f-ao-contact-search").addEventListener("input", (event) => {
+    const q = event.target.value.trim().toLowerCase();
+    document.querySelectorAll("#ao-contacts-picker label").forEach((label) => {
+      label.style.display = !q || label.textContent.toLowerCase().includes(q) ? "" : "none";
+    });
+  });
 
   document.getElementById("filter-contact-search").addEventListener("input", (e) => {
     contactSearch = e.target.value;
