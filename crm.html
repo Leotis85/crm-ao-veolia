@@ -523,9 +523,86 @@
 
   .contact-item, .clickable-item { cursor: pointer; }
 
-  #f-c-ao-search, #f-ao-contact-search {
+  #f-c-ao-search {
     width: 100%;
     margin-bottom: 8px;
+  }
+
+  .tag-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 4px 6px 4px 10px;
+    font-size: 12px;
+  }
+
+  .tag-chip-remove {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    line-height: 1;
+    padding: 2px;
+  }
+
+  .tag-chip-remove:hover {
+    color: var(--color-danger);
+  }
+
+  .tag-add-wrap {
+    position: relative;
+    display: flex;
+    gap: 8px;
+  }
+
+  .tag-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 260px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    padding: 10px;
+    z-index: 60;
+  }
+
+  .tag-dropdown[hidden] { display: none; }
+
+  .tag-dropdown input {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .tag-dropdown-list {
+    max-height: 160px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .tag-dropdown-item {
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .tag-dropdown-item:hover {
+    background: var(--color-bg);
   }
 
   .checkbox-group.scrollable {
@@ -1192,9 +1269,15 @@
 
       <fieldset id="ao-contacts-section" hidden>
         <legend>Contacts liés</legend>
-        <input type="text" id="f-ao-contact-search" placeholder="Rechercher un contact…">
-        <div class="checkbox-group scrollable" id="ao-contacts-picker"></div>
-        <button type="button" class="btn-secondary btn-small" id="ao-contacts-add">+ Nouveau contact</button>
+        <div class="tag-chips" id="ao-contacts-chips"></div>
+        <div class="tag-add-wrap">
+          <button type="button" class="btn-secondary btn-small" id="ao-contacts-link-toggle">+ Lier un contact</button>
+          <div class="tag-dropdown" id="ao-contacts-dropdown" hidden>
+            <input type="text" id="ao-contacts-dropdown-search" placeholder="Rechercher un contact…">
+            <div class="tag-dropdown-list" id="ao-contacts-dropdown-list"></div>
+          </div>
+          <button type="button" class="btn-secondary btn-small" id="ao-contacts-add">+ Nouveau contact</button>
+        </div>
       </fieldset>
 
       <div class="modal-footer">
@@ -2325,10 +2408,8 @@
     if (ao) renderAOTachesSection(ao);
 
     document.getElementById("ao-contacts-section").hidden = !ao;
-    if (ao) {
-      document.getElementById("f-ao-contact-search").value = "";
-      renderAOContactsSection(ao);
-    }
+    document.getElementById("ao-contacts-dropdown").hidden = true;
+    if (ao) renderAOContactsSection(ao);
 
     updateRappelFieldsVisibility();
     document.getElementById("ao-modal-overlay").hidden = false;
@@ -2336,6 +2417,7 @@
 
   function closeAOForm() {
     document.getElementById("ao-modal-overlay").hidden = true;
+    document.getElementById("ao-contacts-dropdown").hidden = true;
     currentEditingAO = null;
   }
 
@@ -3096,57 +3178,95 @@
     wireContactItemEvents(listEl);
   }
 
-  function renderAOContactsSection(ao) {
-    const container = document.getElementById("ao-contacts-picker");
-    const sorted = [...appData.contacts].sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
-    container.innerHTML = sorted.length
-      ? sorted.map((c) => `
-          <label class="checkbox-inline">
-            <input type="checkbox" class="ao-contact-item" value="${c.id}" ${(c.ao_lies || []).includes(ao.id) ? "checked" : ""}>
-            ${escapeHtml(c.nom || "(sans nom)")}${c.organisme ? " · " + escapeHtml(c.organisme) : ""}
-          </label>
-        `).join("")
-      : `<div class="list-item-empty">Aucun contact créé pour l'instant.</div>`;
-
-    // Reréapplique le filtre de recherche courant : renderAOContactsSection
-    // est aussi appelée par renderAll() pendant que la fiche est ouverte
-    // (sync cross-onglet, autre case cochée...), qui régénère le HTML sans
-    // connaître l'état du champ de recherche.
-    const currentQuery = document.getElementById("f-ao-contact-search").value.trim().toLowerCase();
-    if (currentQuery) {
-      container.querySelectorAll("label").forEach((label) => {
-        label.style.display = label.textContent.toLowerCase().includes(currentQuery) ? "" : "none";
-      });
+  async function toggleAOContactLink(contactId, aoId, shouldLink) {
+    const contact = appData.contacts.find((c) => c.id === contactId);
+    if (!contact) return;
+    const currentAoLies = contact.ao_lies || [];
+    const newAoLies = shouldLink
+      ? [...currentAoLies, aoId]
+      : currentAoLies.filter((id) => id !== aoId);
+    try {
+      await updateContact(contact.id, { ao_lies: newAoLies }, contact.last_modified);
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Ce contact a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+      } else {
+        alert("Erreur : " + err.message);
+      }
     }
+  }
 
-    container.querySelectorAll(".ao-contact-item").forEach((cb) => {
-      cb.addEventListener("change", async () => {
-        const contact = appData.contacts.find((c) => c.id === cb.value);
-        if (!contact) return;
-        const currentAoLies = contact.ao_lies || [];
-        const newAoLies = cb.checked
-          ? [...currentAoLies, ao.id]
-          : currentAoLies.filter((id) => id !== ao.id);
-        try {
-          await updateContact(contact.id, { ao_lies: newAoLies }, contact.last_modified);
-        } catch (err) {
-          cb.checked = !cb.checked;
-          if (err instanceof RecordConflictError) {
-            alert("Ce contact a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
-            await refreshFromStorage();
-          } else {
-            alert("Erreur : " + err.message);
-          }
-        }
-      });
+  function renderAOContactsDropdownList(ao, linkedIds) {
+    const query = document.getElementById("ao-contacts-dropdown-search").value.trim().toLowerCase();
+    const available = appData.contacts
+      .filter((c) => !linkedIds.has(c.id))
+      .filter((c) => !query || (c.nom || "").toLowerCase().includes(query) || (c.organisme || "").toLowerCase().includes(query))
+      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+
+    const listEl = document.getElementById("ao-contacts-dropdown-list");
+    listEl.innerHTML = available.length
+      ? available.map((c) => `
+          <div class="tag-dropdown-item" data-id="${c.id}">
+            ${escapeHtml(c.nom || "(sans nom)")}${c.organisme ? " · " + escapeHtml(c.organisme) : ""}
+          </div>
+        `).join("")
+      : `<div class="list-item-empty">Aucun contact disponible.</div>`;
+
+    listEl.querySelectorAll(".tag-dropdown-item").forEach((item) => {
+      item.addEventListener("click", () => toggleAOContactLink(item.dataset.id, ao.id, true));
     });
   }
 
-  document.getElementById("f-ao-contact-search").addEventListener("input", (event) => {
-    const q = event.target.value.trim().toLowerCase();
-    document.querySelectorAll("#ao-contacts-picker label").forEach((label) => {
-      label.style.display = !q || label.textContent.toLowerCase().includes(q) ? "" : "none";
+  function renderAOContactsSection(ao) {
+    const linked = appData.contacts
+      .filter((c) => (c.ao_lies || []).includes(ao.id))
+      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+
+    const chipsEl = document.getElementById("ao-contacts-chips");
+    chipsEl.innerHTML = linked.length
+      ? linked.map((c) => `
+          <span class="tag-chip">
+            ${escapeHtml(c.nom || "(sans nom)")}${c.organisme ? " · " + escapeHtml(c.organisme) : ""}
+            <button type="button" class="tag-chip-remove" data-id="${c.id}" title="Retirer">✕</button>
+          </span>
+        `).join("")
+      : `<div class="list-item-empty">Aucun contact lié.</div>`;
+
+    chipsEl.querySelectorAll(".tag-chip-remove").forEach((btn) => {
+      btn.addEventListener("click", () => toggleAOContactLink(btn.dataset.id, ao.id, false));
     });
+
+    // Le menu déroulant peut être ouvert pendant un re-rendu (ajout d'un
+    // autre contact, sync cross-onglet...) : on le tient à jour aussi,
+    // sans changer son état ouvert/fermé.
+    renderAOContactsDropdownList(ao, new Set(linked.map((c) => c.id)));
+  }
+
+  document.getElementById("ao-contacts-link-toggle").addEventListener("click", (event) => {
+    event.stopPropagation();
+    const dropdown = document.getElementById("ao-contacts-dropdown");
+    dropdown.hidden = !dropdown.hidden;
+    if (!dropdown.hidden && currentEditingAO) {
+      document.getElementById("ao-contacts-dropdown-search").value = "";
+      const linked = appData.contacts.filter((c) => (c.ao_lies || []).includes(currentEditingAO.id));
+      renderAOContactsDropdownList(currentEditingAO, new Set(linked.map((c) => c.id)));
+      document.getElementById("ao-contacts-dropdown-search").focus();
+    }
+  });
+
+  document.getElementById("ao-contacts-dropdown-search").addEventListener("input", () => {
+    if (!currentEditingAO) return;
+    const linked = appData.contacts.filter((c) => (c.ao_lies || []).includes(currentEditingAO.id));
+    renderAOContactsDropdownList(currentEditingAO, new Set(linked.map((c) => c.id)));
+  });
+
+  document.addEventListener("click", (event) => {
+    const dropdown = document.getElementById("ao-contacts-dropdown");
+    const toggle = document.getElementById("ao-contacts-link-toggle");
+    if (!dropdown.hidden && !dropdown.contains(event.target) && event.target !== toggle) {
+      dropdown.hidden = true;
+    }
   });
 
   document.getElementById("filter-contact-search").addEventListener("input", (e) => {
