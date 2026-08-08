@@ -451,7 +451,8 @@
     margin-bottom: 12px;
   }
 
-  #ao-form label, #ao-form .block {
+  #ao-form label, #ao-form .block,
+  #contact-form .block, #contact-form .form-grid > label {
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -459,7 +460,12 @@
     color: var(--color-text-muted);
   }
 
-  #ao-form .block { margin-bottom: 12px; }
+  #ao-form .block, #contact-form .block { margin-bottom: 12px; }
+
+  .contact-form-name input {
+    font-size: 15px;
+    font-weight: 600;
+  }
 
   fieldset {
     border: 1px solid var(--color-border);
@@ -521,7 +527,103 @@
     color: var(--color-text-muted);
   }
 
-  .contact-item, .clickable-item { cursor: pointer; }
+  .clickable-item { cursor: pointer; }
+
+  .contacts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+
+  .contact-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 14px;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+
+  .contact-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 14px rgba(15, 118, 110, 0.12);
+  }
+
+  .contact-avatar {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .contact-card-body {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .contact-card-name {
+    font-size: 14px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .contact-card-sub {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+    overflow-wrap: anywhere;
+  }
+
+  .contact-card-meta {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .contact-card-meta a {
+    font-size: 12px;
+    color: var(--color-text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-wrap: anywhere;
+  }
+
+  .contact-card-meta a:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+
+  .contact-card-meta-icon {
+    flex-shrink: 0;
+    width: 14px;
+    text-align: center;
+    color: var(--color-text-muted);
+  }
+
+  .contact-card-badge {
+    flex-shrink: 0;
+  }
+
+  .contacts-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 16px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+  }
 
   #f-c-ao-search {
     width: 100%;
@@ -1148,7 +1250,7 @@
       <button type="button" class="btn-primary" id="btn-new-contact">+ Nouveau contact</button>
       <input type="text" id="filter-contact-search" placeholder="Rechercher un nom ou un organisme…">
     </div>
-    <div class="list-panel" id="contacts-list"></div>
+    <div class="contacts-grid" id="contacts-list"></div>
   </section>
 
   <section class="screen" id="screen-reporting">
@@ -1370,26 +1472,30 @@
       <button type="button" class="modal-close" id="contact-modal-close">✕</button>
     </div>
     <form id="contact-form">
-      <div class="form-grid">
-        <label>Nom
-          <input type="text" id="f-c-nom" required>
-        </label>
-        <label>Fonction
-          <input type="text" id="f-c-fonction">
-        </label>
-        <label>Organisme
-          <input type="text" id="f-c-organisme">
-        </label>
-        <label>Téléphone
-          <input type="text" id="f-c-telephone">
-        </label>
-        <label>Email
-          <input type="email" id="f-c-email">
-        </label>
-        <label>Adresse
+      <label class="block contact-form-name">Nom
+        <input type="text" id="f-c-nom" required placeholder="Nom complet">
+      </label>
+
+      <fieldset>
+        <legend>Coordonnées</legend>
+        <div class="form-grid">
+          <label>Fonction
+            <input type="text" id="f-c-fonction">
+          </label>
+          <label>Organisme
+            <input type="text" id="f-c-organisme">
+          </label>
+          <label>Téléphone
+            <input type="text" id="f-c-telephone" placeholder="06 12 34 56 78">
+          </label>
+          <label>Email
+            <input type="email" id="f-c-email" placeholder="nom@exemple.fr">
+          </label>
+        </div>
+        <label class="block">Adresse
           <input type="text" id="f-c-adresse">
         </label>
-      </div>
+      </fieldset>
 
       <label class="block">Notes
         <textarea id="f-c-notes" rows="3"></textarea>
@@ -3146,23 +3252,48 @@
   let contactSearch = "";
   let currentEditingContact = null;
 
+  function contactInitials(nom) {
+    const parts = (nom || "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "?";
+    return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+  }
+
+  function contactAvatarColor(seed) {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 45%, 42%)`;
+  }
+
   function renderContactItem(contact) {
     const aoCount = (contact.ao_lies || []).length;
     const sub = [contact.fonction, contact.organisme].filter(Boolean).map(escapeHtml).join(" · ");
+    const initials = contactInitials(contact.nom);
+    const color = contactAvatarColor(contact.nom || contact.id);
+    const meta = [];
+    if (contact.telephone) {
+      meta.push(`<a href="tel:${escapeHtml(contact.telephone)}"><span class="contact-card-meta-icon">☎</span>${escapeHtml(contact.telephone)}</a>`);
+    }
+    if (contact.email) {
+      meta.push(`<a href="mailto:${escapeHtml(contact.email)}"><span class="contact-card-meta-icon">✉</span>${escapeHtml(contact.email)}</a>`);
+    }
     return `
-      <div class="list-item contact-item" data-id="${contact.id}">
-        <div>
-          <div class="list-item-title">${escapeHtml(contact.nom || "(sans nom)")}</div>
-          <div class="list-item-sub">${sub}</div>
+      <div class="contact-card" data-id="${contact.id}">
+        <div class="contact-avatar" style="background:${color}">${escapeHtml(initials)}</div>
+        <div class="contact-card-body">
+          <div class="contact-card-name">${escapeHtml(contact.nom || "(sans nom)")}</div>
+          ${sub ? `<div class="contact-card-sub">${sub}</div>` : ""}
+          ${meta.length ? `<div class="contact-card-meta">${meta.join("")}</div>` : ""}
         </div>
-        ${aoCount ? `<span class="badge-type">${aoCount} AO</span>` : ""}
+        ${aoCount ? `<span class="badge-type contact-card-badge">${aoCount} AO</span>` : ""}
       </div>
     `;
   }
 
   function wireContactItemEvents(container) {
-    container.querySelectorAll(".contact-item").forEach((row) => {
-      row.addEventListener("click", () => {
+    container.querySelectorAll(".contact-card").forEach((row) => {
+      row.addEventListener("click", (event) => {
+        if (event.target.closest("a")) return;
         const contact = appData.contacts.find((c) => c.id === row.dataset.id);
         if (contact) openContactForm(contact);
       });
@@ -3183,7 +3314,7 @@
       .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
     listEl.innerHTML = filtered.length
       ? filtered.map(renderContactItem).join("")
-      : `<div class="list-item-empty">Aucun contact.</div>`;
+      : `<div class="contacts-empty">${contactSearch ? "Aucun contact ne correspond à la recherche." : "Aucun contact pour l’instant."}</div>`;
     wireContactItemEvents(listEl);
   }
 
@@ -3733,7 +3864,7 @@
       PRIORITE_OPTIONS,
       DECLENCHEMENT_OPTIONS,
       ASSIGNE_OPTIONS,
-      MOTIF_OPTIONS,
+      MOTIF_OPTIONS, 
     },
     createAO, createTache, createContact, createRappel,
     addAO, updateAO, deleteAO,
