@@ -94,10 +94,38 @@
     display: none;
   }
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .header-actions button {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: 6px 10px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .header-actions button:hover {
+    background: var(--color-bg);
+  }
+
+  #storage-status {
+    max-width: 1800px;
+    margin: 0 auto;
+    padding: 8px 24px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
   main {
-    max-width: 1100px;
+    max-width: 1800px;
     margin: 24px auto;
-    padding: 0 16px;
+    padding: 0 24px;
   }
 
   .screen {
@@ -122,12 +150,1017 @@
     font-size: 14px;
     text-align: center;
   }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .stat-label {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
+  .home-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 700px) {
+    .home-columns { grid-template-columns: 1fr; }
+  }
+
+  .reporting-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  @media (max-width: 700px) {
+    .reporting-columns { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .panel h2 {
+    font-size: 13px;
+    margin: 0 0 12px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .list-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: var(--color-bg);
+  }
+
+  .list-item.flag-high {
+    border-left: 3px solid var(--color-danger);
+  }
+
+  .list-item-title {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .list-item-sub {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+  }
+
+  .list-item-empty {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    padding: 8px 10px;
+  }
+
+  .days-badge, .badge-type {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+    background: var(--color-border);
+    color: var(--color-text);
+  }
+
+  .days-badge.days-urgent { background: var(--color-danger); color: #fff; }
+  .days-badge.days-soon { background: #f59e0b; color: #fff; }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: center;
+  }
+
+  .btn-primary, .btn-secondary, .btn-danger {
+    border: none;
+    border-radius: var(--radius);
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .btn-primary { background: var(--color-primary); color: #fff; }
+  .btn-primary:hover { background: var(--color-primary-hover); }
+
+  .btn-secondary { background: var(--color-bg); border: 1px solid var(--color-border); color: var(--color-text); }
+  .btn-secondary:hover { background: var(--color-border); }
+
+  .btn-danger { background: #fff; border: 1px solid var(--color-danger); color: var(--color-danger); }
+  .btn-danger:hover { background: var(--color-danger); color: #fff; }
+
+  .btn-small { padding: 4px 10px; font-size: 12px; }
+  .btn-icon { border: none; background: transparent; cursor: pointer; font-size: 13px; color: var(--color-text-muted); }
+
+  select, input[type="text"], input[type="number"], input[type="date"], input[type="url"], input[type="email"], textarea {
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  textarea { resize: vertical; }
+
+  .kanban-top-scroll {
+    overflow-x: scroll;
+    overflow-y: hidden;
+    height: 14px;
+    margin-bottom: 6px;
+    scrollbar-width: thin;
+  }
+
+  .kanban-top-scroll::-webkit-scrollbar {
+    height: 10px;
+  }
+
+  .kanban-top-scroll::-webkit-scrollbar-track {
+    background: var(--color-bg);
+    border-radius: 999px;
+  }
+
+  .kanban-top-scroll::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 999px;
+  }
+
+  .kanban-top-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--color-text-muted);
+  }
+
+  .kanban-top-scroll-spacer {
+    height: 1px;
+  }
+
+  .kanban-board {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 12px;
+  }
+
+  .kanban-column {
+    min-width: 240px;
+    max-width: 240px;
+    flex-shrink: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 10px;
+  }
+
+  .kanban-column-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .kanban-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 40px;
+  }
+
+  .kanban-cards.drag-over {
+    background: var(--color-bg);
+    outline: 2px dashed var(--color-primary);
+    border-radius: 6px;
+  }
+
+  .kanban-card {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    padding: 10px;
+    cursor: grab;
+  }
+
+  .kanban-card.dragging { opacity: 0.4; }
+
+  .kanban-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    gap: 6px;
+  }
+
+  .badge-type-ao {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+    margin-bottom: 6px;
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+  }
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 12px;
+    overflow-y: auto;
+    z-index: 100;
+  }
+
+  .modal-overlay[hidden] { display: none; }
+
+  .modal {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    max-width: 640px;
+    width: 100%;
+    padding: 20px;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .modal-header h2 { margin: 0; font-size: 17px; }
+
+  .modal-close {
+    border: none;
+    background: transparent;
+    font-size: 16px;
+    cursor: pointer;
+    color: var(--color-text-muted);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  #ao-form label, #ao-form .block,
+  #contact-form .block, #contact-form .form-grid > label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
+  #ao-form .block, #contact-form .block { margin-bottom: 12px; }
+
+  .contact-form-name input {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  fieldset {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    padding: 10px 12px;
+  }
+
+  legend {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    padding: 0 4px;
+  }
+
+  .checkbox-group, .checkbox-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 13px;
+    align-items: center;
+  }
+
+  .checkbox-inline { display: inline-flex; gap: 6px; }
+
+  .fichier-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .fichier-row input { flex: 1; }
+
+  .modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+  }
+
+  .modal-footer-right { display: flex; gap: 8px; }
+
+  .motif-modal-intro {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin: 0 0 14px;
+  }
+
+  .todo-item { cursor: pointer; }
+
+  .todo-item-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .todo-check { width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+
+  .list-item-title.done {
+    text-decoration: line-through;
+    color: var(--color-text-muted);
+  }
+
+  .clickable-item { cursor: pointer; }
+
+  .contacts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+
+  .contact-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 14px;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+
+  .contact-card:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 14px rgba(15, 118, 110, 0.12);
+  }
+
+  .contact-avatar {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .contact-card-body {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .contact-card-name {
+    font-size: 14px;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .contact-card-sub {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+    overflow-wrap: anywhere;
+  }
+
+  .contact-card-meta {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .contact-card-meta a {
+    font-size: 12px;
+    color: var(--color-text);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    overflow-wrap: anywhere;
+  }
+
+  .contact-card-meta a:hover {
+    color: var(--color-primary);
+    text-decoration: underline;
+  }
+
+  .contact-card-meta-icon {
+    flex-shrink: 0;
+    width: 14px;
+    text-align: center;
+    color: var(--color-text-muted);
+  }
+
+  .contact-card-badge {
+    flex-shrink: 0;
+  }
+
+  .contacts-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px 16px;
+    color: var(--color-text-muted);
+    font-size: 13px;
+  }
+
+  #f-c-ao-search {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .tag-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+
+  .tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 4px 6px 4px 10px;
+    font-size: 12px;
+  }
+
+  .tag-chip-label {
+    cursor: pointer;
+  }
+
+  .tag-chip-label:hover {
+    text-decoration: underline;
+  }
+
+  .tag-chip-remove {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    line-height: 1;
+    padding: 2px;
+  }
+
+  .tag-chip-remove:hover {
+    color: var(--color-danger);
+  }
+
+  .tag-add-wrap {
+    position: relative;
+    display: flex;
+    gap: 8px;
+  }
+
+  .tag-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    width: 260px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    padding: 10px;
+    z-index: 60;
+  }
+
+  .tag-dropdown[hidden] { display: none; }
+
+  .tag-dropdown input {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  .tag-dropdown-list {
+    max-height: 160px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .tag-dropdown-item {
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .tag-dropdown-item:hover {
+    background: var(--color-bg);
+  }
+
+  .checkbox-group.scrollable {
+    display: block;
+    max-height: 140px;
+    overflow-y: auto;
+  }
+
+  .checkbox-group.scrollable label.checkbox-inline {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 6px;
+    width: 100%;
+    text-align: left;
+  }
+
+  .checkbox-group.scrollable label.checkbox-inline input[type="checkbox"] {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .stat-sub {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    margin-top: 2px;
+  }
+
+  /* --- Reporting : légende de statut, barres, graphique mensuel --- */
+
+  .status-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-bottom: 14px;
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  .stacked-bar-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .stacked-bar-row {
+    display: grid;
+    grid-template-columns: 130px 1fr 34px;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bar-row-label {
+    font-size: 12px;
+    color: var(--color-text-muted);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stacked-bar-track {
+    height: 18px;
+    display: flex;
+    gap: 2px;
+  }
+
+  .stacked-bar-track .segment:last-child {
+    border-radius: 0 4px 4px 0;
+  }
+
+  .bar-row-value {
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .monthly-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    height: 200px;
+    padding-top: 20px;
+    overflow-x: auto;
+  }
+
+  .monthly-col-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 36px;
+    flex-shrink: 0;
+  }
+
+  .monthly-col {
+    width: 26px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: 160px;
+    gap: 2px;
+  }
+
+  .monthly-col .segment:first-child {
+    border-radius: 4px 4px 0 0;
+  }
+
+  .monthly-total-label {
+    font-size: 11px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .monthly-month-label {
+    font-size: 11px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+
+  .stacked-bar-row .segment:focus-visible, .monthly-col .segment:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+
+  .chart-tooltip {
+    position: fixed;
+    background: var(--color-text);
+    color: #fff;
+    font-size: 11px;
+    padding: 6px 9px;
+    border-radius: 6px;
+    pointer-events: none;
+    z-index: 200;
+    white-space: nowrap;
+  }
+
+  .chart-tooltip[hidden] { display: none; }
+
+  .pie-chart-wrap {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    flex-wrap: wrap;
+  }
+
+  .pie-chart-svg { flex-shrink: 0; }
+
+  .pie-slice {
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .pie-slice:hover, .pie-slice:focus-visible {
+    opacity: 0.82;
+    outline: none;
+  }
+
+  .pie-chart-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--color-text);
+  }
+
+  .reminder-wrap { position: relative; }
+
+  .reminder-panel {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    width: 300px;
+    max-height: 360px;
+    overflow-y: auto;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    z-index: 50;
+  }
+
+  .reminder-panel[hidden] { display: none; }
+
+  .reminder-panel-header {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .reminder-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .calendar-month-label {
+    font-size: 17px;
+    font-weight: 600;
+    text-transform: capitalize;
+    min-width: 170px;
+    text-align: center;
+  }
+
+  .calendar-grid {
+    background: var(--color-border);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+
+  .calendar-weekday-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--color-border);
+    margin-bottom: 1px;
+  }
+
+  .calendar-weekday {
+    background: var(--color-surface);
+    padding: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .calendar-week + .calendar-week {
+    margin-top: 1px;
+  }
+
+  .calendar-week-bars {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-rows: 19px;
+    gap: 2px 1px;
+    background: var(--color-surface);
+  }
+
+  .calendar-week-bars:not(:empty) {
+    padding: 2px 0;
+  }
+
+  .calendar-week-cells {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    background: var(--color-border);
+  }
+
+  .calendar-cell {
+    background: var(--color-surface);
+    min-height: 110px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .calendar-cell-outside {
+    background: var(--color-bg);
+  }
+
+  .calendar-cell-outside .calendar-cell-daynum {
+    color: var(--color-text-muted);
+  }
+
+  .calendar-cell-today {
+    box-shadow: inset 0 0 0 2px var(--color-primary);
+  }
+
+  .calendar-cell.drag-over {
+    box-shadow: inset 0 0 0 2px var(--color-primary);
+    background: var(--color-bg);
+  }
+
+  .calendar-cell-daynum {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .calendar-cell-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+    max-height: 112px;
+  }
+
+  .calendar-task-chip {
+    position: relative;
+    font-size: 12px;
+    padding: 3px 14px 3px 7px;
+    border-radius: 4px;
+    background: var(--color-bg);
+    border-left: 3px solid var(--color-primary);
+    cursor: grab;
+  }
+
+  .calendar-task-chip.dragging {
+    opacity: 0.4;
+  }
+
+  .calendar-task-chip-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calendar-task-chip-ao {
+    font-size: 10px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .calendar-task-chip.en-cours {
+    background: #dbeafe;
+  }
+
+  .calendar-task-chip.flag-high {
+    border-left-color: var(--color-danger);
+  }
+
+  .calendar-task-chip.done {
+    text-decoration: line-through;
+    color: var(--color-text-muted);
+    border-left-color: var(--color-border);
+    background: var(--color-bg);
+  }
+
+  .calendar-task-chip.done .calendar-task-chip-ao {
+    text-decoration: line-through;
+  }
+
+  /* Barres multi-jours : éléments à part entière dans la mini-grille
+     .calendar-week-bars (7 colonnes, une par jour de la semaine), placés
+     via grid-column: start / span N — une vraie barre continue native,
+     plus un segment recollé par cellule. */
+  .calendar-bar-segment {
+    position: relative;
+    box-sizing: border-box;
+    height: 22px;
+    padding: 0 14px 0 7px;
+    border-radius: 4px;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    cursor: grab;
+  }
+
+  .calendar-bar-segment.dragging {
+    opacity: 0.4;
+  }
+
+  .calendar-bar-segment-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1;
+  }
+
+  .calendar-bar-segment.en-cours {
+    background: #60a5fa;
+  }
+
+  .calendar-bar-segment.flag-high {
+    background: var(--color-danger);
+  }
+
+  .calendar-bar-segment.done {
+    background: var(--color-border);
+    color: var(--color-text-muted);
+  }
+
+  .calendar-bar-segment.done .calendar-bar-segment-label {
+    text-decoration: line-through;
+  }
+
+  .calendar-bar-segment .calendar-chip-resize-handle {
+    color: #fff;
+  }
+
+  .calendar-bar-segment.done .calendar-chip-resize-handle {
+    color: var(--color-text-muted);
+  }
+
+  .calendar-chip-resize-handle {
+    position: absolute;
+    right: 1px;
+    top: 0;
+    bottom: 0;
+    width: 9px;
+    cursor: ew-resize;
+  }
+
+  .calendar-chip-resize-handle::after {
+    content: "";
+    position: absolute;
+    right: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: currentColor;
+    opacity: 0.4;
+    border-radius: 2px;
+  }
+
+  body.calendar-resizing {
+    cursor: ew-resize;
+    user-select: none;
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <span class="app-title">CRM AO</span>
+  <span class="app-title">VEOLIA CRM</span>
   <nav id="main-nav">
     <button data-screen="accueil" class="active">Accueil</button>
     <button data-screen="pipeline">Pipeline</button>
@@ -135,37 +1168,400 @@
     <button data-screen="contacts">Contacts</button>
     <button data-screen="reporting">Reporting</button>
   </nav>
-  <button id="reminder-bell" title="Rappels">
-    🔔<span id="reminder-count">0</span>
-  </button>
+  <div class="header-actions">
+    <button id="btn-export">⬇ Exporter</button>
+    <button id="btn-import">⬆ Importer</button>
+    <input type="file" id="file-import" accept="application/json" hidden>
+    <div class="reminder-wrap">
+      <button id="reminder-bell" title="Rappels">
+        🔔<span id="reminder-count">0</span>
+      </button>
+      <div class="reminder-panel" id="reminder-panel" hidden>
+        <div class="reminder-panel-header">Rappels actifs</div>
+        <div class="list-panel" id="reminder-panel-list"></div>
+      </div>
+    </div>
+  </div>
 </header>
+
+<div id="storage-status">Chargement des données…</div>
 
 <main>
   <section class="screen active" id="screen-accueil">
     <h1>Accueil</h1>
-    <div class="placeholder">Récap à construire à l'étape 4.</div>
+    <div class="stats-grid" id="accueil-stats"></div>
+    <div class="home-columns">
+      <div class="panel">
+        <h2>Échéances proches</h2>
+        <div class="list-panel" id="accueil-echeances"></div>
+      </div>
+      <div class="panel">
+        <h2>Rappels actifs</h2>
+        <div class="list-panel" id="accueil-rappels"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Tâches prioritaires</h2>
+      <div class="list-panel" id="accueil-priorites"></div>
+    </div>
   </section>
 
   <section class="screen" id="screen-pipeline">
     <h1>Pipeline</h1>
-    <div class="placeholder">Vue Kanban à construire à l'étape 5.</div>
+    <div class="toolbar">
+      <button type="button" class="btn-primary" id="btn-new-ao">+ Nouvel AO</button>
+      <select id="filter-type_client"></select>
+      <select id="filter-type_marche"></select>
+      <select id="filter-assigne_a"></select>
+      <button type="button" class="btn-secondary btn-small" id="btn-export-ao-csv">⬇ CSV</button>
+    </div>
+    <div class="kanban-top-scroll" id="kanban-top-scroll">
+      <div class="kanban-top-scroll-spacer" id="kanban-top-scroll-spacer"></div>
+    </div>
+    <div class="kanban-board" id="kanban-board"></div>
   </section>
 
   <section class="screen" id="screen-todo">
     <h1>ToDo</h1>
-    <div class="placeholder">Vue tâches à construire à l'étape 6.</div>
+    <div class="toolbar">
+      <button type="button" class="btn-primary" id="btn-new-tache">+ Nouvelle tâche</button>
+      <select id="filter-tache-ao"></select>
+      <select id="filter-tache-assigne"></select>
+      <label class="checkbox-inline">
+        <input type="checkbox" id="filter-tache-hide-done" checked> Masquer les tâches terminées
+      </label>
+    </div>
+    <div class="calendar-nav">
+      <button type="button" class="btn-secondary btn-small" id="calendar-prev">◀</button>
+      <span class="calendar-month-label" id="calendar-month-label"></span>
+      <button type="button" class="btn-secondary btn-small" id="calendar-next">▶</button>
+      <button type="button" class="btn-secondary btn-small" id="calendar-today">Aujourd'hui</button>
+    </div>
+    <div id="todo-calendar"></div>
+
+    <div class="panel">
+      <h2>Tâches sans échéance</h2>
+      <div class="list-panel" id="todo-undated-list"></div>
+    </div>
   </section>
 
   <section class="screen" id="screen-contacts">
     <h1>Contacts</h1>
-    <div class="placeholder">Annuaire à construire à l'étape 7.</div>
+    <div class="toolbar">
+      <button type="button" class="btn-primary" id="btn-new-contact">+ Nouveau contact</button>
+      <input type="text" id="filter-contact-search" placeholder="Rechercher un nom ou un organisme…">
+    </div>
+    <div class="contacts-grid" id="contacts-list"></div>
   </section>
 
   <section class="screen" id="screen-reporting">
     <h1>Reporting</h1>
-    <div class="placeholder">Statistiques à construire à l'étape 9.</div>
+    <div class="toolbar">
+      <select id="filter-reporting-period"></select>
+    </div>
+    <div class="stats-grid" id="reporting-stats"></div>
+
+    <div class="reporting-columns">
+      <div class="panel">
+        <h2>Répartition et taux de réussite par type de client</h2>
+        <div class="status-legend" id="reporting-client-legend"></div>
+        <div class="stacked-bar-list" id="reporting-client"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Motifs de perte</h2>
+        <div id="reporting-motifs"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Évolution mensuelle des dépôts</h2>
+      <div class="status-legend" id="reporting-monthly-legend"></div>
+      <div class="monthly-chart" id="reporting-monthly"></div>
+    </div>
   </section>
 </main>
+
+<div class="chart-tooltip" id="chart-tooltip" hidden></div>
+
+<div class="modal-overlay" id="ao-modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="ao-modal-title">Nouvel AO</h2>
+      <button type="button" class="modal-close" id="ao-modal-close">✕</button>
+    </div>
+    <form id="ao-form">
+      <div class="form-grid">
+        <label>Nom du projet
+          <input type="text" id="f-nom_projet" required>
+        </label>
+        <label>Type de client
+          <select id="f-type_client"></select>
+        </label>
+        <label>Phase
+          <select id="f-phase"></select>
+        </label>
+        <label>Type
+          <select id="f-type"></select>
+        </label>
+        <label>Assigné à
+          <select id="f-assigne_a"></select>
+        </label>
+        <label>Valeur estimée (k€)
+          <input type="number" id="f-valeur_estimee_keur" step="0.1">
+        </label>
+        <label>AMO
+          <input type="text" id="f-amo">
+        </label>
+        <label>Concurrence
+          <input type="text" id="f-concurrence">
+        </label>
+        <label>Lieu
+          <input type="text" id="f-lieu">
+        </label>
+        <label>Date de remise
+          <input type="date" id="f-date_remise">
+        </label>
+        <label>Date de visite
+          <input type="date" id="f-date_visite">
+        </label>
+        <label>Date de prise d'effet
+          <input type="date" id="f-date_prise_effet">
+        </label>
+        <label>Résultat
+          <select id="f-resultat"></select>
+        </label>
+        <label>Motif de perte
+          <select id="f-motif-categorie"></select>
+        </label>
+        <label>Détail du motif (facultatif)
+          <input type="text" id="f-motif">
+        </label>
+      </div>
+
+      <fieldset>
+        <legend>Type de marché</legend>
+        <div class="checkbox-group" id="f-type_marche"></div>
+      </fieldset>
+
+      <label class="block">Notes
+        <textarea id="f-notes" rows="3"></textarea>
+      </label>
+
+      <fieldset>
+        <legend>Fichiers (liens)</legend>
+        <div id="f-fichiers-list"></div>
+        <button type="button" class="btn-secondary btn-small" id="f-fichiers-add">+ Ajouter un lien</button>
+      </fieldset>
+
+      <fieldset>
+        <legend>Rappel</legend>
+        <div class="form-grid">
+          <label>Déclenchement
+            <select id="f-rappel-declenchement"></select>
+          </label>
+          <label id="f-rappel-date-wrap">Date
+            <input type="date" id="f-rappel-date">
+          </label>
+          <label id="f-rappel-jours-wrap">Jours avant
+            <input type="number" id="f-rappel-jours_avant" min="0">
+          </label>
+          <label>Message
+            <input type="text" id="f-rappel-message">
+          </label>
+        </div>
+        <label class="checkbox-inline">
+          <input type="checkbox" id="f-rappel-actif"> Rappel actif
+        </label>
+      </fieldset>
+
+      <fieldset id="ao-taches-section" hidden>
+        <legend>Tâches liées</legend>
+        <div class="list-panel" id="ao-taches-list"></div>
+        <button type="button" class="btn-secondary btn-small" id="ao-taches-add">+ Ajouter une tâche</button>
+      </fieldset>
+
+      <fieldset id="ao-contacts-section" hidden>
+        <legend>Contacts liés</legend>
+        <div class="tag-chips" id="ao-contacts-chips"></div>
+        <div class="tag-add-wrap">
+          <button type="button" class="btn-secondary btn-small" id="ao-contacts-link-toggle">+ Lier un contact</button>
+          <div class="tag-dropdown" id="ao-contacts-dropdown" hidden>
+            <input type="text" id="ao-contacts-dropdown-search" placeholder="Rechercher un contact…">
+            <div class="tag-dropdown-list" id="ao-contacts-dropdown-list"></div>
+          </div>
+          <button type="button" class="btn-secondary btn-small" id="ao-contacts-add">+ Nouveau contact</button>
+        </div>
+      </fieldset>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-danger" id="ao-form-delete" hidden>Supprimer</button>
+        <div class="modal-footer-right">
+          <button type="button" class="btn-secondary" id="ao-form-cancel">Annuler</button>
+          <button type="submit" class="btn-primary">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="tache-modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="tache-modal-title">Nouvelle tâche</h2>
+      <button type="button" class="modal-close" id="tache-modal-close">✕</button>
+    </div>
+    <form id="tache-form">
+      <div class="form-grid">
+        <label>Tâche
+          <input type="text" id="f-t-tache" required>
+        </label>
+        <label>AO lié
+          <select id="f-t-ao_lie"></select>
+        </label>
+        <label>Statut
+          <select id="f-t-statut"></select>
+        </label>
+        <label>Priorité
+          <select id="f-t-priorite"></select>
+        </label>
+        <label>Assigné à
+          <select id="f-t-assigne_a"></select>
+        </label>
+        <label>Échéance
+          <input type="date" id="f-t-echeance">
+        </label>
+      </div>
+
+      <label class="block">Notes
+        <textarea id="f-t-notes" rows="3"></textarea>
+      </label>
+
+      <fieldset>
+        <legend>Rappel</legend>
+        <div class="form-grid">
+          <label>Déclenchement
+            <select id="f-t-rappel-declenchement"></select>
+          </label>
+          <label id="f-t-rappel-date-wrap">Date
+            <input type="date" id="f-t-rappel-date">
+          </label>
+          <label id="f-t-rappel-jours-wrap">Jours avant
+            <input type="number" id="f-t-rappel-jours_avant" min="0">
+          </label>
+          <label>Message
+            <input type="text" id="f-t-rappel-message">
+          </label>
+        </div>
+        <label class="checkbox-inline">
+          <input type="checkbox" id="f-t-rappel-actif"> Rappel actif
+        </label>
+      </fieldset>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-danger" id="tache-form-delete" hidden>Supprimer</button>
+        <div class="modal-footer-right">
+          <button type="button" class="btn-secondary" id="tache-form-cancel">Annuler</button>
+          <button type="submit" class="btn-primary">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="contact-modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="contact-modal-title">Nouveau contact</h2>
+      <button type="button" class="modal-close" id="contact-modal-close">✕</button>
+    </div>
+    <form id="contact-form">
+      <label class="block contact-form-name">Nom
+        <input type="text" id="f-c-nom" required placeholder="Nom complet">
+      </label>
+
+      <fieldset>
+        <legend>Coordonnées</legend>
+        <div class="form-grid">
+          <label>Fonction
+            <input type="text" id="f-c-fonction">
+          </label>
+          <label>Organisme
+            <input type="text" id="f-c-organisme">
+          </label>
+          <label>Téléphone
+            <input type="text" id="f-c-telephone" placeholder="06 12 34 56 78">
+          </label>
+          <label>Email
+            <input type="email" id="f-c-email" placeholder="nom@exemple.fr">
+          </label>
+        </div>
+        <label class="block">Adresse
+          <input type="text" id="f-c-adresse">
+        </label>
+      </fieldset>
+
+      <label class="block">Notes
+        <textarea id="f-c-notes" rows="3"></textarea>
+      </label>
+
+      <fieldset>
+        <legend>AO associés</legend>
+        <input type="text" id="f-c-ao-search" placeholder="Rechercher un AO…">
+        <div class="checkbox-group scrollable" id="f-c-ao_lies"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Rappel de relance</legend>
+        <div class="form-grid">
+          <label>Date
+            <input type="date" id="f-c-rappel-date">
+          </label>
+          <label>Message
+            <input type="text" id="f-c-rappel-message" placeholder="Relancer le 15…">
+          </label>
+        </div>
+        <label class="checkbox-inline">
+          <input type="checkbox" id="f-c-rappel-actif"> Rappel actif
+        </label>
+      </fieldset>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-danger" id="contact-form-delete" hidden>Supprimer</button>
+        <div class="modal-footer-right">
+          <button type="button" class="btn-secondary" id="contact-form-cancel">Annuler</button>
+          <button type="submit" class="btn-primary">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="motif-modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Motif de perte</h2>
+    </div>
+    <form id="motif-form">
+      <p class="motif-modal-intro">
+        L'AO « <strong id="motif-modal-ao-name"></strong> » passe en Perdu.
+        Merci de préciser le motif avant de continuer.
+      </p>
+      <label>Motif
+        <select id="f-motif-categorie-popup" required></select>
+      </label>
+      <label class="block">Détail (facultatif)
+        <textarea id="f-motif-detail-popup" rows="2"></textarea>
+      </label>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="motif-form-cancel">Annuler (ne pas déplacer)</button>
+        <div class="modal-footer-right">
+          <button type="submit" class="btn-primary">Confirmer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -195,8 +1591,2350 @@
     return adapter;
   }
 
-  // Adaptateur actif. Branché à l'étape 2 (LocalStorageAdapter).
-  let storageAdapter = null;
+  // ---------------------------------------------------------------------
+  // LocalStorageAdapter (étape 2).
+  //
+  // Stocke le blob complet des données sous une seule clé localStorage.
+  // L'anti-conflit (§6) se fait au niveau du blob entier : chaque adaptateur
+  // retient le `lastModified` vu à son dernier load()/save(). Si la valeur en
+  // localStorage a changé depuis (écriture depuis un autre onglet), save()
+  // refuse d'écraser et lève StorageConflictError — l'appelant doit alors
+  // recharger (load) avant de retenter.
+  // ---------------------------------------------------------------------
+
+  const STORAGE_KEY = "crm_ao_data_v1";
+  const USER_KEY = "crm_ao_current_user";
+
+  function getCurrentUser() {
+    let user = localStorage.getItem(USER_KEY);
+    if (!user) {
+      user = (window.prompt("Ton prénom, pour identifier tes modifications :") || "").trim();
+      if (user) localStorage.setItem(USER_KEY, user);
+    }
+    return user || "Inconnu";
+  }
+
+  function emptyData() {
+    return {
+      aos: [],
+      taches: [],
+      contacts: [],
+      _meta: { lastModified: null, modifiedBy: null },
+    };
+  }
+
+  class StorageConflictError extends Error {
+    constructor() {
+      super("Les données ont été modifiées ailleurs entre-temps. Recharge avant de réessayer.");
+      this.name = "StorageConflictError";
+    }
+  }
+
+  class LocalStorageAdapter {
+    constructor(key = STORAGE_KEY) {
+      this.key = key;
+      this._lastKnownModified = undefined;
+      this._listeners = new Set();
+      window.addEventListener("storage", (event) => {
+        if (event.key === this.key) {
+          this._listeners.forEach((cb) => cb());
+        }
+      });
+    }
+
+    _read() {
+      const raw = localStorage.getItem(this.key);
+      const data = raw ? JSON.parse(raw) : emptyData();
+      if (!data._meta) data._meta = { lastModified: null, modifiedBy: null };
+      return data;
+    }
+
+    async load() {
+      const data = this._read();
+      this._lastKnownModified = data._meta.lastModified;
+      return data;
+    }
+
+    async save(data) {
+      const current = this._read();
+      if (this._lastKnownModified !== undefined && current._meta.lastModified !== this._lastKnownModified) {
+        throw new StorageConflictError();
+      }
+      const toStore = {
+        ...data,
+        _meta: {
+          lastModified: new Date().toISOString(),
+          modifiedBy: getCurrentUser(),
+        },
+      };
+      localStorage.setItem(this.key, JSON.stringify(toStore));
+      this._lastKnownModified = toStore._meta.lastModified;
+      return toStore._meta;
+    }
+
+    subscribe(cb) {
+      this._listeners.add(cb);
+      return () => this._listeners.delete(cb);
+    }
+
+    async meta() {
+      return this._read()._meta;
+    }
+  }
+
+  // Adaptateur actif.
+  const storageAdapter = assertStorageAdapter(new LocalStorageAdapter());
+
+  // ---------------------------------------------------------------------
+  // Export / import JSON manuel (filet de sécurité, §6).
+  // ---------------------------------------------------------------------
+
+  function isValidCrmData(data) {
+    return data && Array.isArray(data.aos) && Array.isArray(data.taches) && Array.isArray(data.contacts);
+  }
+
+  function downloadJSON(data) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `crm-ao-export-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // Séparateur ; et BOM UTF-8 : ouverture directe dans Excel FR sans étape
+  // d'import manuelle (le séparateur , casse l'auto-détection en locale FR).
+  function csvEscape(value) {
+    const str = value === null || value === undefined ? "" : String(value);
+    return /[;"\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+  }
+
+  function downloadCSV(filename, rows) {
+    const content = rows.map((row) => row.map(csvEscape).join(";")).join("\r\n");
+    const blob = new Blob(["﻿" + content], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function readJSONFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          resolve(JSON.parse(reader.result));
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsText(file);
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // État applicatif + statut de stockage.
+  // ---------------------------------------------------------------------
+
+  let appData = emptyData();
+  const statusEl = document.getElementById("storage-status");
+
+  function renderStorageStatus() {
+    const meta = appData._meta || {};
+    const counts = `${appData.aos.length} AO · ${appData.taches.length} tâches · ${appData.contacts.length} contacts`;
+    const saved = meta.lastModified
+      ? `dernière sauvegarde ${new Date(meta.lastModified).toLocaleString("fr-FR")} par ${meta.modifiedBy}`
+      : "aucune donnée enregistrée pour l'instant";
+    statusEl.textContent = `${counts} — ${saved}`;
+  }
+
+  async function refreshFromStorage() {
+    appData = await storageAdapter.load();
+    normalizeData(appData);
+    renderAll();
+  }
+
+  storageAdapter.subscribe(refreshFromStorage);
+  refreshFromStorage();
+
+  // ---------------------------------------------------------------------
+  // Modèle de données (étape 3, voir PROJET.md §4).
+  //
+  // Trois entités : AO, Tâches, Contacts, chacune avec last_modified /
+  // modified_by (§6). Les relations (contacts_lies / taches_liees / ao_lie /
+  // ao_lies) sont dénormalisées des deux côtés et resynchronisées ici.
+  //
+  // Chaque mutation recharge l'état le plus frais depuis l'adaptateur avant
+  // d'écrire (verrouillage au niveau de l'enregistrement, pas du fichier
+  // global) : si l'enregistrement visé a changé depuis la version de base
+  // fournie par l'appelant, une RecordConflictError est levée sans écraser
+  // le travail de l'autre personne.
+  // ---------------------------------------------------------------------
+
+  const PHASE_OPTIONS = [
+    "A venir", "Étude", "Finalisation", "🤝 Négociation",
+    "⏳ En attente de réponse", "✅ Gagné", "❌ Perdu", "🚫 Abandonné",
+  ];
+  // Une fois l'offre en Négociation (et au-delà), la date de remise est
+  // forcément passée : ce n'est plus un retard à signaler (accueil + pipeline).
+  const PHASE_POST_REMISE_INDEX = PHASE_OPTIONS.indexOf("🤝 Négociation");
+  // Phases terminales : déplacer une carte ici doit synchroniser `resultat`
+  // (utilisé tel quel par le Reporting), pas seulement changer sa colonne.
+  const PHASE_TO_RESULTAT = {
+    "✅ Gagné": "Gagné",
+    "❌ Perdu": "Perdu",
+    "🚫 Abandonné": "Abandonné",
+  };
+  function resultatForPhase(phase, currentResultat) {
+    if (PHASE_TO_RESULTAT[phase]) return PHASE_TO_RESULTAT[phase];
+    // On sort d'une phase terminale vers une phase active : le résultat
+    // précédent n'est plus d'actualité, on repasse "En cours".
+    const wasTerminal = Object.values(PHASE_TO_RESULTAT).includes(currentResultat);
+    return wasTerminal ? "En cours" : currentResultat;
+  }
+  // Palette de statut partagée (carte Kanban + Reporting) : jamais thématique.
+  const RESULTAT_STATUS_ORDER = ["Gagné", "Perdu", "Abandonné", "En cours"];
+  const RESULTAT_STATUS_COLORS = { "Gagné": "#0ca30c", "Perdu": "#d03b3b", "Abandonné": "#fab219", "En cours": "#898781" };
+  const TYPE_CLIENT_OPTIONS = ["Habitat", "Collectivité", "Santé", "Enseignement", "Tertiaire", "Autre"];
+  // Liste fermée des personnes assignables (AO et Tâches).
+  const ASSIGNE_OPTIONS = ["Maxime", "Mathis", "Maxime + Mathis"];
+  // Motif de perte : catégorie fermée (alimente le Reporting) + détail libre.
+  const MOTIF_OPTIONS = ["Prix", "Technique", "Mauvais environnement", "Autre"];
+  // Couleurs du graphe circulaire des motifs de perte (palette catégorielle
+  // validée, ordre fixe) ; gris neutre pour le motif non renseigné.
+  const MOTIF_COLORS = {
+    "Prix": "#2a78d6",
+    "Technique": "#eb6834",
+    "Mauvais environnement": "#1baf7a",
+    "Autre": "#eda100",
+    "Non renseigné": "#898781",
+  };
+  const TYPE_AO_OPTIONS = ["Appel d'offres", "Renouvellement", "Avenant", "Sollicitation directe", "Proposition travaux"];
+  const TYPE_MARCHE_OPTIONS = ["P1", "P2", "P3", "CPE", "R1", "R2"];
+  const RESULTAT_OPTIONS = ["En cours", "Gagné", "Perdu", "Abandonné"];
+  const STATUT_TACHE_OPTIONS = ["Pas commencé", "En cours", "Terminé"];
+  const PRIORITE_OPTIONS = ["Normale", "Haute"];
+  const DECLENCHEMENT_OPTIONS = [
+    "Sur date manuelle", "X jours avant échéance remise", "X jours avant visite", "X jours avant prise d'effet",
+  ];
+
+  function generateId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return `id-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  }
+
+  function stamp(record) {
+    record.last_modified = new Date().toISOString();
+    record.modified_by = getCurrentUser();
+    return record;
+  }
+
+  class RecordConflictError extends Error {
+    constructor(entityType, id) {
+      super(`Cet enregistrement (${entityType} #${id}) a été modifié par quelqu'un d'autre entre-temps.`);
+      this.name = "RecordConflictError";
+      this.entityType = entityType;
+      this.id = id;
+    }
+  }
+
+  function findOrThrow(list, id, label) {
+    const record = list.find((r) => r.id === id);
+    if (!record) throw new Error(`${label} ${id} introuvable.`);
+    return record;
+  }
+
+  function checkRecordConflict(record, entityType, id, baseLastModified) {
+    if (baseLastModified !== undefined && record.last_modified !== baseLastModified) {
+      throw new RecordConflictError(entityType, id);
+    }
+  }
+
+  function createRappel(partial = {}) {
+    return {
+      date: null,
+      declenchement: "Sur date manuelle",
+      jours_avant: null,
+      message: "",
+      actif: true,
+      ...partial,
+    };
+  }
+
+  function createAO(partial = {}) {
+    return stamp({
+      id: generateId(),
+      nom_projet: "",
+      type_client: "Habitat",
+      assigne_a: "",
+      phase: "A venir",
+      type: "Appel d'offres",
+      type_marche: [],
+      valeur_estimee_keur: null,
+      amo: "",
+      concurrence: "",
+      date_remise: null,
+      date_visite: null,
+      date_prise_effet: null,
+      lieu: "",
+      notes: "",
+      fichiers: [],
+      resultat: "En cours",
+      motif_categorie: "",
+      motif: "",
+      rappel: null,
+      contacts_lies: [],
+      taches_liees: [],
+      ...partial,
+    });
+  }
+
+  function createTache(partial = {}) {
+    return stamp({
+      id: generateId(),
+      tache: "",
+      statut: "Pas commencé",
+      date_debut: null,
+      echeance: null,
+      assigne_a: "",
+      priorite: "Normale",
+      notes: "",
+      rappel: null,
+      ao_lie: null,
+      ...partial,
+    });
+  }
+
+  function createContact(partial = {}) {
+    return stamp({
+      id: generateId(),
+      nom: "",
+      fonction: "",
+      organisme: "",
+      telephone: "",
+      email: "",
+      adresse: "",
+      notes: "",
+      rappel: null,
+      ao_lies: [],
+      ...partial,
+    });
+  }
+
+  // Comble les champs manquants d'un enregistrement (ex. AO importé d'un
+  // ancien export qui ne connaissait pas encore taches_liees/motif_categorie)
+  // avec les valeurs par défaut du schéma actuel, sans jamais toucher aux
+  // champs déjà présents (id, last_modified... restent ceux du record réel).
+  function normalizeRecord(record, factory) {
+    return { ...factory({}), ...record };
+  }
+
+  function normalizeData(data) {
+    data.aos = data.aos.map((ao) => normalizeRecord(ao, createAO));
+    data.taches = data.taches.map((t) => normalizeRecord(t, createTache));
+    data.contacts = data.contacts.map((c) => normalizeRecord(c, createContact));
+    return data;
+  }
+
+  async function mutateData(mutateFn, attempt = 0) {
+    const freshData = await storageAdapter.load();
+    normalizeData(freshData);
+    mutateFn(freshData);
+    appData = freshData;
+    try {
+      await storageAdapter.save(appData);
+    } catch (err) {
+      if (err instanceof StorageConflictError && attempt < 2) {
+        return mutateData(mutateFn, attempt + 1);
+      }
+      throw err;
+    }
+    renderAll();
+    return appData;
+  }
+
+  // --- AO ---
+
+  async function addAO(partial) {
+    return mutateData((data) => { data.aos.push(createAO(partial)); });
+  }
+
+  async function updateAO(id, changes, baseLastModified) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.aos, id, "AO");
+      checkRecordConflict(record, "ao", id, baseLastModified);
+      Object.assign(record, changes);
+      stamp(record);
+    });
+  }
+
+  async function deleteAO(id, baseLastModified) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.aos, id, "AO");
+      checkRecordConflict(record, "ao", id, baseLastModified);
+      data.aos = data.aos.filter((r) => r.id !== id);
+      data.taches.forEach((t) => { if (t.ao_lie === id) t.ao_lie = null; });
+      data.contacts.forEach((c) => { c.ao_lies = (c.ao_lies || []).filter((aid) => aid !== id); });
+    });
+  }
+
+  // --- Tâches ---
+
+  async function addTache(partial) {
+    return mutateData((data) => {
+      const tache = createTache(partial);
+      data.taches.push(tache);
+      if (tache.ao_lie) {
+        const ao = data.aos.find((a) => a.id === tache.ao_lie);
+        if (ao) {
+          ao.taches_liees = ao.taches_liees || [];
+          if (!ao.taches_liees.includes(tache.id)) ao.taches_liees.push(tache.id);
+        }
+      }
+    });
+  }
+
+  async function updateTache(id, changes, baseLastModified) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.taches, id, "Tâche");
+      checkRecordConflict(record, "tache", id, baseLastModified);
+      const previousAoLie = record.ao_lie;
+      Object.assign(record, changes);
+      stamp(record);
+      if (previousAoLie !== record.ao_lie) {
+        if (previousAoLie) {
+          const prevAo = data.aos.find((a) => a.id === previousAoLie);
+          if (prevAo) prevAo.taches_liees = (prevAo.taches_liees || []).filter((tid) => tid !== id);
+        }
+        if (record.ao_lie) {
+          const newAo = data.aos.find((a) => a.id === record.ao_lie);
+          if (newAo) {
+            newAo.taches_liees = newAo.taches_liees || [];
+            if (!newAo.taches_liees.includes(id)) newAo.taches_liees.push(id);
+          }
+        }
+      }
+    });
+  }
+
+  async function deleteTache(id, baseLastModified) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.taches, id, "Tâche");
+      checkRecordConflict(record, "tache", id, baseLastModified);
+      data.taches = data.taches.filter((r) => r.id !== id);
+      if (record.ao_lie) {
+        const ao = data.aos.find((a) => a.id === record.ao_lie);
+        if (ao) ao.taches_liees = (ao.taches_liees || []).filter((tid) => tid !== id);
+      }
+    });
+  }
+
+  // --- Contacts ---
+
+  async function addContact(partial) {
+    return mutateData((data) => {
+      const contact = createContact(partial);
+      data.contacts.push(contact);
+      (contact.ao_lies || []).forEach((aoId) => {
+        const ao = data.aos.find((a) => a.id === aoId);
+        if (ao) {
+          ao.contacts_lies = ao.contacts_lies || [];
+          if (!ao.contacts_lies.includes(contact.id)) ao.contacts_lies.push(contact.id);
+        }
+      });
+    });
+  }
+
+  async function updateContact(id, changes, baseLastModified) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.contacts, id, "Contact");
+      checkRecordConflict(record, "contact", id, baseLastModified);
+      const previousAoLies = record.ao_lies || [];
+      Object.assign(record, changes);
+      stamp(record);
+      const newAoLies = record.ao_lies || [];
+      previousAoLies.filter((aid) => !newAoLies.includes(aid)).forEach((aid) => {
+        const ao = data.aos.find((a) => a.id === aid);
+        if (ao) ao.contacts_lies = (ao.contacts_lies || []).filter((cid) => cid !== id);
+      });
+      newAoLies.filter((aid) => !previousAoLies.includes(aid)).forEach((aid) => {
+        const ao = data.aos.find((a) => a.id === aid);
+        if (ao) {
+          ao.contacts_lies = ao.contacts_lies || [];
+          if (!ao.contacts_lies.includes(id)) ao.contacts_lies.push(id);
+        }
+      });
+    });
+  }
+
+  async function deleteContact(id, baseLastModified) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.contacts, id, "Contact");
+      checkRecordConflict(record, "contact", id, baseLastModified);
+      data.contacts = data.contacts.filter((r) => r.id !== id);
+      data.aos.forEach((ao) => { ao.contacts_lies = (ao.contacts_lies || []).filter((cid) => cid !== id); });
+    });
+  }
+
+  // ---------------------------------------------------------------------
+  // Écran d'accueil (étape 4, voir PROJET.md §5.1).
+  // ---------------------------------------------------------------------
+
+  function escapeHtml(str) {
+    return String(str ?? "").replace(/[&<>"']/g, (c) => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+    ));
+  }
+
+  function daysBetween(dateStr) {
+    if (!dateStr) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const target = new Date(dateStr);
+    target.setHours(0, 0, 0, 0);
+    return Math.round((target - today) / 86400000);
+  }
+
+  function formatDate(dateStr) {
+    return dateStr ? new Date(dateStr).toLocaleDateString("fr-FR") : "—";
+  }
+
+  function joursRestantsLabel(days) {
+    if (days === null) return "";
+    if (days < 0) return `en retard de ${Math.abs(days)} j`;
+    if (days === 0) return "aujourd'hui";
+    return `dans ${days} j`;
+  }
+
+  function joursRestantsClass(days) {
+    if (days === null) return "";
+    if (days <= 0) return "days-urgent";
+    if (days <= 3) return "days-soon";
+    return "";
+  }
+
+  // Trigger relatif -> champ date de l'AO parent dont il dépend (§4.4).
+  const RAPPEL_FIELD_BY_TRIGGER = {
+    "X jours avant échéance remise": "date_remise",
+    "X jours avant visite": "date_visite",
+    "X jours avant prise d'effet": "date_prise_effet",
+  };
+
+  function isRappelActive(rappel, relatedAO) {
+    if (!rappel || !rappel.actif) return false;
+    if (rappel.declenchement === "Sur date manuelle") {
+      return !!rappel.date && daysBetween(rappel.date) <= 0;
+    }
+    if (!relatedAO) return false;
+    const field = RAPPEL_FIELD_BY_TRIGGER[rappel.declenchement];
+    const targetDate = field && relatedAO[field];
+    if (!targetDate || rappel.jours_avant == null) return false;
+    const days = daysBetween(targetDate);
+    return days !== null && days <= Number(rappel.jours_avant);
+  }
+
+  function collectActiveReminders(data) {
+    const items = [];
+    data.aos.forEach((ao) => {
+      if (isRappelActive(ao.rappel, ao)) {
+        items.push({ type: "AO", label: ao.nom_projet, message: ao.rappel.message, entity: ao });
+      }
+    });
+    data.taches.forEach((t) => {
+      const relatedAO = t.ao_lie ? data.aos.find((a) => a.id === t.ao_lie) : null;
+      if (isRappelActive(t.rappel, relatedAO)) {
+        items.push({ type: "Tâche", label: t.tache, message: t.rappel.message, entity: t });
+      }
+    });
+    data.contacts.forEach((c) => {
+      if (isRappelActive(c.rappel, null)) {
+        items.push({ type: "Contact", label: c.nom, message: c.rappel.message, entity: c });
+      }
+    });
+    return items;
+  }
+
+  // ---------------------------------------------------------------------
+  // Moteur de rappels (étape 8, voir PROJET.md §5.6) — cloche + traitement.
+  // ---------------------------------------------------------------------
+
+  function renderReminderItem(item) {
+    return `
+      <div class="list-item reminder-item clickable-item">
+        <div>
+          <div class="list-item-title">${escapeHtml(item.label || "(sans titre)")}</div>
+          <div class="list-item-sub">${escapeHtml(item.message || "")}</div>
+        </div>
+        <div class="reminder-item-actions">
+          <span class="badge-type">${escapeHtml(item.type)}</span>
+          <button type="button" class="btn-small btn-secondary reminder-treat-btn">✓ Traité</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function openReminderEntityForm(item) {
+    if (item.type === "AO") openAOForm(item.entity);
+    else if (item.type === "Tâche") openTacheForm(item.entity);
+    else if (item.type === "Contact") openContactForm(item.entity);
+  }
+
+  function wireReminderItemEvents(container, items) {
+    container.querySelectorAll(".reminder-item").forEach((row, idx) => {
+      row.addEventListener("click", () => openReminderEntityForm(items[idx]));
+    });
+    container.querySelectorAll(".reminder-treat-btn").forEach((btn, idx) => {
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        markReminderTreated(items[idx]);
+      });
+    });
+  }
+
+  async function markReminderTreated(item) {
+    const changes = { rappel: { ...item.entity.rappel, actif: false } };
+    try {
+      if (item.type === "AO") await updateAO(item.entity.id, changes, item.entity.last_modified);
+      else if (item.type === "Tâche") await updateTache(item.entity.id, changes, item.entity.last_modified);
+      else if (item.type === "Contact") await updateContact(item.entity.id, changes, item.entity.last_modified);
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cet élément a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+      } else {
+        alert("Erreur : " + err.message);
+      }
+    }
+  }
+
+  function renderReminderBell() {
+    const items = collectActiveReminders(appData);
+    const countEl = document.getElementById("reminder-count");
+    countEl.textContent = items.length;
+    countEl.style.display = items.length ? "" : "none";
+
+    const panelList = document.getElementById("reminder-panel-list");
+    panelList.innerHTML = items.length
+      ? items.map(renderReminderItem).join("")
+      : `<div class="list-item-empty">Aucun rappel actif.</div>`;
+    wireReminderItemEvents(panelList, items);
+  }
+
+  document.getElementById("reminder-bell").addEventListener("click", (event) => {
+    event.stopPropagation();
+    document.getElementById("reminder-panel").hidden = !document.getElementById("reminder-panel").hidden;
+  });
+  document.addEventListener("click", (event) => {
+    const panel = document.getElementById("reminder-panel");
+    if (!panel.hidden && !panel.contains(event.target) && event.target.id !== "reminder-bell") {
+      panel.hidden = true;
+    }
+  });
+
+  function renderAccueil() {
+    const data = appData;
+
+    const aoEnCours = data.aos.filter((a) => a.resultat === "En cours").length;
+    const echeancesAO = data.aos
+      .filter((a) => {
+        const idx = PHASE_OPTIONS.indexOf(a.phase);
+        return idx === -1 || idx < PHASE_POST_REMISE_INDEX;
+      })
+      .map((a) => ({ ao: a, days: daysBetween(a.date_remise) }))
+      .filter((x) => x.days !== null);
+    const echeances7j = echeancesAO.filter((x) => x.days >= 0 && x.days <= 7).length;
+    const tachesOuvertes = data.taches.filter((t) => t.statut !== "Terminé").length;
+    const aoEnAttente = data.aos.filter((a) => a.phase === "⏳ En attente de réponse").length;
+
+    document.getElementById("accueil-stats").innerHTML = [
+      ["AO en cours", aoEnCours],
+      ["Échéances < 7 j", echeances7j],
+      ["Tâches ouvertes", tachesOuvertes],
+      ["AO en attente de réponse", aoEnAttente],
+    ].map(([label, value]) => `
+      <div class="stat-card">
+        <div class="stat-value">${value}</div>
+        <div class="stat-label">${escapeHtml(label)}</div>
+      </div>
+    `).join("");
+
+    const upcoming = echeancesAO.filter((x) => x.days <= 30).sort((a, b) => a.days - b.days);
+    const echeancesEl = document.getElementById("accueil-echeances");
+    echeancesEl.innerHTML = upcoming.length
+      ? upcoming.map(({ ao, days }) => `
+          <div class="list-item clickable-item" data-id="${ao.id}">
+            <div>
+              <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
+              <div class="list-item-sub">${escapeHtml(ao.type_client)} · remise le ${formatDate(ao.date_remise)}</div>
+            </div>
+            <span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>
+          </div>
+        `).join("")
+      : `<div class="list-item-empty">Aucune échéance dans les 30 prochains jours.</div>`;
+    echeancesEl.querySelectorAll(".clickable-item").forEach((row) => {
+      row.addEventListener("click", () => {
+        const ao = data.aos.find((a) => a.id === row.dataset.id);
+        if (ao) openAOForm(ao);
+      });
+    });
+
+    const activeReminders = collectActiveReminders(data);
+    const rappelsEl = document.getElementById("accueil-rappels");
+    rappelsEl.innerHTML = activeReminders.length
+      ? activeReminders.map(renderReminderItem).join("")
+      : `<div class="list-item-empty">Aucun rappel actif aujourd'hui.</div>`;
+    wireReminderItemEvents(rappelsEl, activeReminders);
+
+    const highPriority = data.taches
+      .filter((t) => t.priorite === "Haute" && t.statut !== "Terminé")
+      .sort((a, b) => (a.echeance || "").localeCompare(b.echeance || ""));
+    const prioritesEl = document.getElementById("accueil-priorites");
+    prioritesEl.innerHTML = highPriority.length
+      ? highPriority.map((t) => renderTacheItem(t)).join("")
+      : `<div class="list-item-empty">Aucune tâche prioritaire en cours.</div>`;
+    wireTacheItemEvents(prioritesEl);
+  }
+
+  // ---------------------------------------------------------------------
+  // Pipeline Kanban (étape 5, voir PROJET.md §5.2).
+  // ---------------------------------------------------------------------
+
+  const pipelineFilters = { type_client: "", type_marche: "", assigne_a: "" };
+  let draggedAOId = null;
+  let currentEditingAO = null;
+
+  function populateSelect(selectEl, options, withEmptyOption) {
+    const emptyOpt = withEmptyOption ? `<option value="">${escapeHtml(withEmptyOption)}</option>` : "";
+    selectEl.innerHTML = emptyOpt + options.map((o) => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join("");
+  }
+
+  // Comme populateSelect, mais conserve une valeur existante hors liste
+  // (ex. donnée importée de l'ancien CRM) en l'ajoutant temporairement,
+  // pour ne jamais la perdre silencieusement à l'ouverture du formulaire.
+  function populateAssigneSelect(selectEl, currentValue) {
+    const extra = currentValue && !ASSIGNE_OPTIONS.includes(currentValue) ? [currentValue] : [];
+    populateSelect(selectEl, [...extra, ...ASSIGNE_OPTIONS], "— Non assigné —");
+    selectEl.value = currentValue || "";
+  }
+
+  function renderPipelineFilters() {
+    const tcSel = document.getElementById("filter-type_client");
+    const tmSel = document.getElementById("filter-type_marche");
+    const asSel = document.getElementById("filter-assigne_a");
+    if (!tcSel.options.length) populateSelect(tcSel, TYPE_CLIENT_OPTIONS, "Tous types de client");
+    if (!tmSel.options.length) populateSelect(tmSel, TYPE_MARCHE_OPTIONS, "Tous types de marché");
+    if (!asSel.options.length) populateSelect(asSel, ASSIGNE_OPTIONS, "Tous les assignés");
+  }
+
+  function aoMatchesFilters(ao) {
+    if (pipelineFilters.type_client && ao.type_client !== pipelineFilters.type_client) return false;
+    if (pipelineFilters.type_marche && !(ao.type_marche || []).includes(pipelineFilters.type_marche)) return false;
+    if (pipelineFilters.assigne_a && ao.assigne_a !== pipelineFilters.assigne_a) return false;
+    return true;
+  }
+
+  // Tri des cartes au sein d'une même colonne : date de remise la plus
+  // récente (la plus lointaine) en premier ; celles sans date en dernier.
+  function sortAOsForColumn(list) {
+    return [...list].sort((a, b) => {
+      if (!a.date_remise && !b.date_remise) return 0;
+      if (!a.date_remise) return 1;
+      if (!b.date_remise) return -1;
+      return b.date_remise.localeCompare(a.date_remise);
+    });
+  }
+
+  function renderAOCard(ao) {
+    const phaseIndex = PHASE_OPTIONS.indexOf(ao.phase);
+    const showDeadline = phaseIndex === -1 || phaseIndex < PHASE_POST_REMISE_INDEX;
+    const days = showDeadline ? daysBetween(ao.date_remise) : null;
+    const marche = (ao.type_marche || []).join(", ");
+    return `
+      <div class="kanban-card" draggable="true" data-id="${ao.id}">
+        ${ao.type ? `<span class="badge-type-ao">${escapeHtml(ao.type)}</span>` : ""}
+        <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
+        <div class="list-item-sub">${escapeHtml(ao.type_client)}${marche ? " · " + escapeHtml(marche) : ""}</div>
+        <div class="kanban-card-footer">
+          ${days !== null ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : "<span></span>"}
+          ${ao.assigne_a ? `<span class="badge-type">${escapeHtml(ao.assigne_a)}</span>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderPipeline() {
+    renderPipelineFilters();
+    const board = document.getElementById("kanban-board");
+    const filtered = appData.aos.filter(aoMatchesFilters);
+
+    board.innerHTML = PHASE_OPTIONS.map((phase) => {
+      const cards = sortAOsForColumn(filtered.filter((ao) => ao.phase === phase));
+      return `
+        <div class="kanban-column">
+          <div class="kanban-column-header">
+            <span>${escapeHtml(phase)}</span>
+            <span class="badge-type">${cards.length}</span>
+          </div>
+          <div class="kanban-cards" data-phase="${escapeHtml(phase)}">
+            ${cards.map(renderAOCard).join("")}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    document.querySelectorAll(".kanban-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        const ao = appData.aos.find((a) => a.id === card.dataset.id);
+        if (ao) openAOForm(ao);
+      });
+      card.addEventListener("dragstart", () => {
+        draggedAOId = card.dataset.id;
+        card.classList.add("dragging");
+      });
+      card.addEventListener("dragend", () => {
+        card.classList.remove("dragging");
+        draggedAOId = null;
+      });
+    });
+
+    document.querySelectorAll(".kanban-cards").forEach((col) => {
+      col.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        col.classList.add("drag-over");
+      });
+      col.addEventListener("dragleave", () => col.classList.remove("drag-over"));
+      col.addEventListener("drop", async (event) => {
+        event.preventDefault();
+        col.classList.remove("drag-over");
+        const newPhase = col.dataset.phase;
+        const id = draggedAOId;
+        if (!id) return;
+        const ao = appData.aos.find((a) => a.id === id);
+        if (!ao || ao.phase === newPhase) return;
+
+        if (newPhase === "❌ Perdu" && !ao.motif_categorie) {
+          openMotifModal(ao, newPhase);
+          return;
+        }
+
+        await commitAOPhaseChange(ao, newPhase);
+      });
+    });
+
+    syncKanbanTopScrollWidth();
+  }
+
+  // Le Pipeline est masqué (display:none) au premier rendu (c'est l'écran
+  // Accueil qui est actif par défaut) : à ce moment-là board.scrollWidth
+  // vaut 0 et la barre du haut resterait bloquée sans largeur. Un
+  // ResizeObserver se resynchronise dès que le tableau redevient visible
+  // (changement d'onglet), se redimensionne, ou que son contenu change.
+  function syncKanbanTopScrollWidth() {
+    const board = document.getElementById("kanban-board");
+    document.getElementById("kanban-top-scroll-spacer").style.width = board.scrollWidth + "px";
+  }
+
+  new ResizeObserver(syncKanbanTopScrollWidth).observe(document.getElementById("kanban-board"));
+
+  document.getElementById("kanban-top-scroll").addEventListener("scroll", () => {
+    document.getElementById("kanban-board").scrollLeft = document.getElementById("kanban-top-scroll").scrollLeft;
+  });
+  document.getElementById("kanban-board").addEventListener("scroll", () => {
+    document.getElementById("kanban-top-scroll").scrollLeft = document.getElementById("kanban-board").scrollLeft;
+  });
+
+  document.getElementById("filter-type_client").addEventListener("change", (e) => {
+    pipelineFilters.type_client = e.target.value;
+    renderPipeline();
+  });
+  document.getElementById("filter-type_marche").addEventListener("change", (e) => {
+    pipelineFilters.type_marche = e.target.value;
+    renderPipeline();
+  });
+  document.getElementById("filter-assigne_a").addEventListener("change", (e) => {
+    pipelineFilters.assigne_a = e.target.value;
+    renderPipeline();
+  });
+  document.getElementById("btn-new-ao").addEventListener("click", () => openAOForm(null));
+
+  // --- Formulaire AO (création / édition) ---
+
+  function fichierRow(url) {
+    const row = document.createElement("div");
+    row.className = "fichier-row";
+    const input = document.createElement("input");
+    input.type = "url";
+    input.className = "f-fichier-input";
+    input.placeholder = "https://…";
+    input.value = url || "";
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn-icon";
+    removeBtn.textContent = "✕";
+    removeBtn.addEventListener("click", () => row.remove());
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    return row;
+  }
+
+  function updateRappelFieldsVisibility() {
+    const isManual = document.getElementById("f-rappel-declenchement").value === "Sur date manuelle";
+    document.getElementById("f-rappel-date-wrap").style.display = isManual ? "" : "none";
+    document.getElementById("f-rappel-jours-wrap").style.display = isManual ? "none" : "";
+  }
+
+  function openAOForm(ao) {
+    currentEditingAO = ao || null;
+    document.getElementById("ao-modal-title").textContent = ao ? "Modifier l'AO" : "Nouvel AO";
+    document.getElementById("ao-form-delete").hidden = !ao;
+
+    populateSelect(document.getElementById("f-type_client"), TYPE_CLIENT_OPTIONS);
+    populateSelect(document.getElementById("f-phase"), PHASE_OPTIONS);
+    populateSelect(document.getElementById("f-type"), TYPE_AO_OPTIONS);
+    populateSelect(document.getElementById("f-resultat"), RESULTAT_OPTIONS);
+    populateSelect(document.getElementById("f-motif-categorie"), MOTIF_OPTIONS, "— Aucun —");
+    populateSelect(document.getElementById("f-rappel-declenchement"), DECLENCHEMENT_OPTIONS);
+
+    const marcheContainer = document.getElementById("f-type_marche");
+    marcheContainer.innerHTML = TYPE_MARCHE_OPTIONS.map((m) => `
+      <label class="checkbox-inline"><input type="checkbox" class="f-type_marche-item" value="${escapeHtml(m)}"> ${escapeHtml(m)}</label>
+    `).join("");
+
+    const data = ao || {};
+    document.getElementById("f-nom_projet").value = data.nom_projet || "";
+    document.getElementById("f-type_client").value = data.type_client || TYPE_CLIENT_OPTIONS[0];
+    document.getElementById("f-phase").value = data.phase || PHASE_OPTIONS[0];
+    document.getElementById("f-type").value = data.type || TYPE_AO_OPTIONS[0];
+    populateAssigneSelect(document.getElementById("f-assigne_a"), data.assigne_a || "");
+    document.getElementById("f-valeur_estimee_keur").value = data.valeur_estimee_keur ?? "";
+    document.getElementById("f-amo").value = data.amo || "";
+    document.getElementById("f-concurrence").value = data.concurrence || "";
+    document.getElementById("f-lieu").value = data.lieu || "";
+    document.getElementById("f-date_remise").value = data.date_remise || "";
+    document.getElementById("f-date_visite").value = data.date_visite || "";
+    document.getElementById("f-date_prise_effet").value = data.date_prise_effet || "";
+    document.getElementById("f-resultat").value = data.resultat || RESULTAT_OPTIONS[0];
+    document.getElementById("f-motif-categorie").value = data.motif_categorie || "";
+    document.getElementById("f-motif").value = data.motif || "";
+    document.getElementById("f-notes").value = data.notes || "";
+
+    const selectedMarche = new Set(data.type_marche || []);
+    marcheContainer.querySelectorAll(".f-type_marche-item").forEach((cb) => {
+      cb.checked = selectedMarche.has(cb.value);
+    });
+
+    const fichiersList = document.getElementById("f-fichiers-list");
+    fichiersList.innerHTML = "";
+    (data.fichiers || []).forEach((url) => fichiersList.appendChild(fichierRow(url)));
+
+    const rappel = data.rappel || {};
+    document.getElementById("f-rappel-declenchement").value = rappel.declenchement || DECLENCHEMENT_OPTIONS[0];
+    document.getElementById("f-rappel-date").value = rappel.date || "";
+    document.getElementById("f-rappel-jours_avant").value = rappel.jours_avant ?? "";
+    document.getElementById("f-rappel-message").value = rappel.message || "";
+    document.getElementById("f-rappel-actif").checked = !!data.rappel && rappel.actif !== false;
+
+    document.getElementById("ao-taches-section").hidden = !ao;
+    if (ao) renderAOTachesSection(ao);
+
+    document.getElementById("ao-contacts-section").hidden = !ao;
+    document.getElementById("ao-contacts-dropdown").hidden = true;
+    if (ao) renderAOContactsSection(ao);
+
+    updateRappelFieldsVisibility();
+    document.getElementById("ao-modal-overlay").hidden = false;
+  }
+
+  function closeAOForm() {
+    document.getElementById("ao-modal-overlay").hidden = true;
+    document.getElementById("ao-contacts-dropdown").hidden = true;
+    currentEditingAO = null;
+  }
+
+  document.getElementById("f-rappel-declenchement").addEventListener("change", updateRappelFieldsVisibility);
+  document.getElementById("ao-modal-close").addEventListener("click", closeAOForm);
+  document.getElementById("ao-form-cancel").addEventListener("click", closeAOForm);
+  document.getElementById("ao-modal-overlay").addEventListener("click", (event) => {
+    if (event.target.id === "ao-modal-overlay") closeAOForm();
+  });
+  document.getElementById("f-fichiers-add").addEventListener("click", () => {
+    document.getElementById("f-fichiers-list").appendChild(fichierRow());
+  });
+
+  document.getElementById("ao-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const selectedMarche = Array.from(document.querySelectorAll(".f-type_marche-item:checked")).map((cb) => cb.value);
+    const fichiers = Array.from(document.querySelectorAll(".f-fichier-input")).map((i) => i.value.trim()).filter(Boolean);
+    const rappelActif = document.getElementById("f-rappel-actif").checked;
+    const rappel = rappelActif ? createRappel({
+      declenchement: document.getElementById("f-rappel-declenchement").value,
+      date: document.getElementById("f-rappel-date").value || null,
+      jours_avant: document.getElementById("f-rappel-jours_avant").value ? Number(document.getElementById("f-rappel-jours_avant").value) : null,
+      message: document.getElementById("f-rappel-message").value.trim(),
+      actif: true,
+    }) : null;
+
+    const changes = {
+      nom_projet: document.getElementById("f-nom_projet").value.trim(),
+      type_client: document.getElementById("f-type_client").value,
+      phase: document.getElementById("f-phase").value,
+      type: document.getElementById("f-type").value,
+      assigne_a: document.getElementById("f-assigne_a").value,
+      type_marche: selectedMarche,
+      valeur_estimee_keur: document.getElementById("f-valeur_estimee_keur").value
+        ? Number(document.getElementById("f-valeur_estimee_keur").value) : null,
+      amo: document.getElementById("f-amo").value.trim(),
+      concurrence: document.getElementById("f-concurrence").value.trim(),
+      lieu: document.getElementById("f-lieu").value.trim(),
+      date_remise: document.getElementById("f-date_remise").value || null,
+      date_visite: document.getElementById("f-date_visite").value || null,
+      date_prise_effet: document.getElementById("f-date_prise_effet").value || null,
+      resultat: document.getElementById("f-resultat").value,
+      motif_categorie: document.getElementById("f-motif-categorie").value,
+      motif: document.getElementById("f-motif").value.trim(),
+      notes: document.getElementById("f-notes").value.trim(),
+      fichiers,
+      rappel,
+    };
+
+    try {
+      if (currentEditingAO) {
+        await updateAO(currentEditingAO.id, changes, currentEditingAO.last_modified);
+      } else {
+        await addAO(changes);
+      }
+      closeAOForm();
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées, réessaie.");
+        await refreshFromStorage();
+        closeAOForm();
+      } else {
+        alert("Erreur lors de l'enregistrement : " + err.message);
+      }
+    }
+  });
+
+  document.getElementById("ao-form-delete").addEventListener("click", async () => {
+    if (!currentEditingAO) return;
+    const label = currentEditingAO.nom_projet || "(sans nom)";
+    if (!confirm(`Supprimer l'AO "${label}" ? Cette action est irréversible (les tâches et contacts liés sont conservés mais délinkés).`)) return;
+    try {
+      await deleteAO(currentEditingAO.id, currentEditingAO.last_modified);
+      closeAOForm();
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+        closeAOForm();
+      } else {
+        alert("Erreur lors de la suppression : " + err.message);
+      }
+    }
+  });
+
+  // --- Motif de perte : pop-up obligatoire au passage en Perdu ---
+
+  let pendingMotifAO = null;
+  let pendingMotifPhase = null;
+
+  async function commitAOPhaseChange(ao, newPhase, extraChanges = {}) {
+    try {
+      const newResultat = resultatForPhase(newPhase, ao.resultat);
+      await updateAO(ao.id, { phase: newPhase, resultat: newResultat, ...extraChanges }, ao.last_modified);
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+      } else {
+        alert("Erreur : " + err.message);
+      }
+    }
+  }
+
+  function openMotifModal(ao, newPhase) {
+    pendingMotifAO = ao;
+    pendingMotifPhase = newPhase;
+    document.getElementById("motif-modal-ao-name").textContent = ao.nom_projet || "(sans nom)";
+    populateSelect(document.getElementById("f-motif-categorie-popup"), MOTIF_OPTIONS, "— Choisir —");
+    document.getElementById("f-motif-categorie-popup").value = "";
+    document.getElementById("f-motif-detail-popup").value = "";
+    document.getElementById("motif-modal-overlay").hidden = false;
+  }
+
+  function closeMotifModal() {
+    document.getElementById("motif-modal-overlay").hidden = true;
+    pendingMotifAO = null;
+    pendingMotifPhase = null;
+  }
+
+  document.getElementById("motif-form-cancel").addEventListener("click", closeMotifModal);
+  document.getElementById("motif-modal-overlay").addEventListener("click", (event) => {
+    if (event.target.id === "motif-modal-overlay") closeMotifModal();
+  });
+
+  document.getElementById("motif-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const categorie = document.getElementById("f-motif-categorie-popup").value;
+    if (!categorie) return;
+    const detail = document.getElementById("f-motif-detail-popup").value.trim();
+    const ao = pendingMotifAO;
+    const newPhase = pendingMotifPhase;
+    closeMotifModal();
+    await commitAOPhaseChange(ao, newPhase, { motif_categorie: categorie, motif: detail });
+  });
+
+  // ---------------------------------------------------------------------
+  // ToDo (étape 6, voir PROJET.md §5.3) — vue globale + tâches par AO.
+  // ---------------------------------------------------------------------
+
+  const todoFilters = { ao: "", assigne_a: "", hideDone: true };
+  let currentEditingTache = null;
+
+  function sortTaches(list) {
+    return [...list].sort((a, b) => {
+      const aHigh = a.priorite === "Haute" && a.statut !== "Terminé";
+      const bHigh = b.priorite === "Haute" && b.statut !== "Terminé";
+      if (aHigh !== bHigh) return aHigh ? -1 : 1;
+      const aEch = a.echeance || "9999-12-31";
+      const bEch = b.echeance || "9999-12-31";
+      return aEch.localeCompare(bEch);
+    });
+  }
+
+  function renderTacheItem(tache, options = {}) {
+    const ao = tache.ao_lie ? appData.aos.find((a) => a.id === tache.ao_lie) : null;
+    const days = daysBetween(tache.echeance);
+    const isDone = tache.statut === "Terminé";
+    const isHigh = tache.priorite === "Haute" && !isDone;
+    const subParts = [];
+    if (!options.hideAO && ao) subParts.push(escapeHtml(ao.nom_projet || "(sans nom)"));
+    if (tache.assigne_a) subParts.push(escapeHtml(tache.assigne_a));
+    return `
+      <div class="list-item todo-item${isHigh ? " flag-high" : ""}" data-id="${tache.id}">
+        <div class="todo-item-main">
+          <input type="checkbox" class="todo-check" data-id="${tache.id}" ${isDone ? "checked" : ""}>
+          <div>
+            <div class="list-item-title${isDone ? " done" : ""}">${isHigh ? "🚩 " : ""}${escapeHtml(tache.tache || "(sans titre)")}</div>
+            <div class="list-item-sub">${subParts.join(" · ")}</div>
+          </div>
+        </div>
+        ${days !== null ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : "<span></span>"}
+      </div>
+    `;
+  }
+
+  function wireTacheItemEvents(container) {
+    container.querySelectorAll(".todo-check").forEach((cb) => {
+      cb.addEventListener("click", (event) => event.stopPropagation());
+      cb.addEventListener("change", async () => {
+        const id = cb.dataset.id;
+        const tache = appData.taches.find((t) => t.id === id);
+        if (!tache) return;
+        const newStatut = cb.checked ? "Terminé" : "Pas commencé";
+        try {
+          await updateTache(id, { statut: newStatut }, tache.last_modified);
+        } catch (err) {
+          cb.checked = !cb.checked;
+          if (err instanceof RecordConflictError) {
+            alert("Cette tâche a été modifiée par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+            await refreshFromStorage();
+          } else {
+            alert("Erreur : " + err.message);
+          }
+        }
+      });
+    });
+    container.querySelectorAll(".todo-item").forEach((row) => {
+      row.addEventListener("click", () => {
+        const tache = appData.taches.find((t) => t.id === row.dataset.id);
+        if (tache) openTacheForm(tache);
+      });
+    });
+  }
+
+  function renderTodoFilters() {
+    const aoSel = document.getElementById("filter-tache-ao");
+    aoSel.innerHTML = `<option value="">Tous les AO</option>` +
+      appData.aos.map((a) => `<option value="${a.id}">${escapeHtml(a.nom_projet || "(sans nom)")}</option>`).join("");
+    aoSel.value = todoFilters.ao;
+
+    const asSel = document.getElementById("filter-tache-assigne");
+    if (!asSel.options.length) populateSelect(asSel, ASSIGNE_OPTIONS, "Tous les assignés");
+  }
+
+  function tacheMatchesFilters(t) {
+    if (todoFilters.ao && t.ao_lie !== todoFilters.ao) return false;
+    if (todoFilters.assigne_a && t.assigne_a !== todoFilters.assigne_a) return false;
+    if (todoFilters.hideDone && t.statut === "Terminé") return false;
+    return true;
+  }
+
+  // --- Calendrier mensuel (remplace la vue liste sur l'écran ToDo) ---
+
+  function startOfMonth(date) {
+    return new Date(date.getFullYear(), date.getMonth(), 1);
+  }
+
+  let calendarMonth = startOfMonth(new Date());
+  let draggedTacheId = null;
+  let resizingTacheId = null;
+  let resizeHoverCell = null;
+
+  function localDateKey(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  function parseDateKey(key) {
+    const [y, m, d] = key.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function addDaysToKey(key, days) {
+    const d = parseDateKey(key);
+    d.setDate(d.getDate() + days);
+    return localDateKey(d);
+  }
+
+  function daysBetweenKeys(a, b) {
+    return Math.round((parseDateKey(b) - parseDateKey(a)) / 86400000);
+  }
+
+  // Garantit date_debut <= echeance (échange si besoin) et réduit à une
+  // tâche mono-jour (date_debut=null) si les deux dates sont vides/égales.
+  function normalizeTacheDates(dateDebut, echeance) {
+    if (!echeance || !dateDebut || dateDebut === echeance) {
+      return { date_debut: null, echeance: echeance || null };
+    }
+    return dateDebut < echeance
+      ? { date_debut: dateDebut, echeance }
+      : { date_debut: echeance, echeance: dateDebut };
+  }
+
+  // Grille complète (jours du mois + jours de bordure des mois voisins
+  // pour compléter les semaines), toujours un multiple de 7 cases.
+  function getMonthGridDays(year, month) {
+    const firstOfMonth = new Date(year, month, 1);
+    const startWeekday = (firstOfMonth.getDay() + 6) % 7; // Lundi = 0
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const days = [];
+    for (let i = startWeekday - 1; i >= 0; i--) {
+      days.push({ date: new Date(year, month, -i), inMonth: false });
+    }
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push({ date: new Date(year, month, day), inMonth: true });
+    }
+    while (days.length % 7 !== 0) {
+      const next = new Date(days[days.length - 1].date);
+      next.setDate(next.getDate() + 1);
+      days.push({ date: next, inMonth: false });
+    }
+    return days;
+  }
+
+  function renderCalendarTaskChip(t) {
+    const ao = t.ao_lie ? appData.aos.find((a) => a.id === t.ao_lie) : null;
+    const isDone = t.statut === "Terminé";
+    const isEnCours = t.statut === "En cours" && !isDone;
+    const isHigh = t.priorite === "Haute" && !isDone;
+    const classes = ["calendar-task-chip"];
+    if (isDone) classes.push("done");
+    if (isEnCours) classes.push("en-cours");
+    if (isHigh) classes.push("flag-high");
+    return `
+      <div class="${classes.join(" ")}" data-id="${t.id}" draggable="true" title="${escapeHtml(t.statut)}">
+        <div class="calendar-task-chip-title">${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}</div>
+        ${ao ? `<div class="calendar-task-chip-ao">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>` : ""}
+        <span class="calendar-chip-resize-handle" data-id="${t.id}" title="Glisser pour étirer l'échéance"></span>
+      </div>
+    `;
+  }
+
+  // Découpe la grille du mois (jours à plat) en semaines de 7 jours.
+  function chunkIntoWeeks(days) {
+    const weeks = [];
+    for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
+    return weeks;
+  }
+
+  // Pour une semaine donnée, calcule à quelles colonnes (1-7) chaque tâche
+  // multi-jours apparaît cette semaine-là (une tâche à cheval sur deux
+  // semaines produit un segment distinct dans chacune).
+  function computeWeekBarSegments(weekKeys, multiDayTaches) {
+    const segments = [];
+    multiDayTaches.forEach((t) => {
+      const start = t.date_debut;
+      const end = t.echeance;
+      let startCol = null;
+      let endCol = null;
+      weekKeys.forEach((key, idx) => {
+        if (key >= start && key <= end) {
+          if (startCol === null) startCol = idx + 1;
+          endCol = idx + 1;
+        }
+      });
+      if (startCol === null) return;
+      segments.push({
+        tache: t,
+        startCol,
+        span: endCol - startCol + 1,
+        isGlobalStart: weekKeys[startCol - 1] === start,
+        isGlobalEnd: weekKeys[endCol - 1] === end,
+      });
+    });
+    return segments;
+  }
+
+  // Attribution de lanes (algorithme glouton classique) : deux segments qui
+  // se chevauchent en colonnes ne peuvent pas partager la même ligne.
+  function assignBarLanes(segments) {
+    const sorted = [...segments].sort((a, b) => a.startCol - b.startCol || b.span - a.span);
+    const laneEnds = [];
+    sorted.forEach((seg) => {
+      let lane = laneEnds.findIndex((end) => end < seg.startCol);
+      if (lane === -1) {
+        lane = laneEnds.length;
+        laneEnds.push(0);
+      }
+      laneEnds[lane] = seg.startCol + seg.span - 1;
+      seg.lane = lane;
+    });
+    return sorted;
+  }
+
+  function renderBarSegment(seg) {
+    const t = seg.tache;
+    const ao = t.ao_lie ? appData.aos.find((a) => a.id === t.ao_lie) : null;
+    const isDone = t.statut === "Terminé";
+    const isEnCours = t.statut === "En cours" && !isDone;
+    const isHigh = t.priorite === "Haute" && !isDone;
+    const classes = ["calendar-bar-segment"];
+    if (isDone) classes.push("done");
+    if (isEnCours) classes.push("en-cours");
+    if (isHigh) classes.push("flag-high");
+    const parts = [`${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}`];
+    if (ao) parts.push(escapeHtml(ao.nom_projet || "(sans nom)"));
+    const handle = seg.isGlobalEnd
+      ? `<span class="calendar-chip-resize-handle" data-id="${t.id}" title="Glisser pour étirer l'échéance"></span>`
+      : "";
+    return `
+      <div class="${classes.join(" ")}" data-id="${t.id}" draggable="true"
+           style="grid-column: ${seg.startCol} / span ${seg.span}; grid-row: ${seg.lane + 1};"
+           title="${escapeHtml(t.tache || "")} — ${escapeHtml(t.statut)}">
+        <span class="calendar-bar-segment-label">${parts.join(" · ")}</span>
+        ${handle}
+      </div>
+    `;
+  }
+
+  function renderTodoCalendar(filteredTaches) {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    document.getElementById("calendar-month-label").textContent =
+      calendarMonth.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+
+    const multiDayTaches = filteredTaches.filter((t) => t.date_debut && t.echeance && t.date_debut < t.echeance);
+    const multiDayIds = new Set(multiDayTaches.map((t) => t.id));
+    const singleDayTaches = filteredTaches.filter((t) => !multiDayIds.has(t.id));
+
+    const tasksByDate = new Map();
+    singleDayTaches.forEach((t) => {
+      if (!t.echeance) return;
+      if (!tasksByDate.has(t.echeance)) tasksByDate.set(t.echeance, []);
+      tasksByDate.get(t.echeance).push(t);
+    });
+    tasksByDate.forEach((list, key) => tasksByDate.set(key, sortTaches(list)));
+
+    const todayKey = localDateKey(new Date());
+    const weekdayHeaders = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+    const headerHtml = weekdayHeaders.map((d) => `<div class="calendar-weekday">${d}</div>`).join("");
+
+    const weeks = chunkIntoWeeks(getMonthGridDays(year, month));
+    const weeksHtml = weeks.map((week) => {
+      const weekKeys = week.map(({ date }) => localDateKey(date));
+      const laned = assignBarLanes(computeWeekBarSegments(weekKeys, multiDayTaches));
+      const barsHtml = laned.map(renderBarSegment).join("");
+
+      const cellsHtml = week.map(({ date, inMonth }) => {
+        const key = localDateKey(date);
+        const dayTasks = tasksByDate.get(key) || [];
+        const classes = ["calendar-cell"];
+        if (!inMonth) classes.push("calendar-cell-outside");
+        if (key === todayKey) classes.push("calendar-cell-today");
+        return `
+          <div class="${classes.join(" ")}" data-date="${key}">
+            <div class="calendar-cell-daynum">${date.getDate()}</div>
+            <div class="calendar-cell-tasks">${dayTasks.map(renderCalendarTaskChip).join("")}</div>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="calendar-week">
+          <div class="calendar-week-bars">${barsHtml}</div>
+          <div class="calendar-week-cells">${cellsHtml}</div>
+        </div>
+      `;
+    }).join("");
+
+    const calendarEl = document.getElementById("todo-calendar");
+    calendarEl.innerHTML = `
+      <div class="calendar-grid">
+        <div class="calendar-weekday-row">${headerHtml}</div>
+        ${weeksHtml}
+      </div>
+    `;
+
+    calendarEl.querySelectorAll(".calendar-task-chip, .calendar-bar-segment").forEach((el) => {
+      el.addEventListener("click", (event) => {
+        if (draggedTacheId || event.target.classList.contains("calendar-chip-resize-handle")) return;
+        const t = appData.taches.find((x) => x.id === el.dataset.id);
+        if (t) openTacheForm(t);
+      });
+      el.addEventListener("dragstart", (event) => {
+        draggedTacheId = el.dataset.id;
+        el.classList.add("dragging");
+        event.dataTransfer.effectAllowed = "move";
+      });
+      el.addEventListener("dragend", () => {
+        el.classList.remove("dragging");
+        draggedTacheId = null;
+      });
+    });
+
+    // Poignée d'étirement : mousedown/mousemove/mouseup manuels plutôt que
+    // le drag HTML5 natif, pour éviter le conflit avec le drag du chip/de
+    // la barre parente (deux zones draggable imbriquées se marchent dessus
+    // sinon).
+    calendarEl.querySelectorAll(".calendar-chip-resize-handle").forEach((handle) => {
+      handle.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        resizingTacheId = handle.dataset.id;
+        document.body.classList.add("calendar-resizing");
+      });
+    });
+
+    calendarEl.querySelectorAll(".calendar-cell").forEach((cell) => {
+      cell.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        cell.classList.add("drag-over");
+      });
+      cell.addEventListener("dragleave", () => cell.classList.remove("drag-over"));
+      cell.addEventListener("drop", async (event) => {
+        event.preventDefault();
+        cell.classList.remove("drag-over");
+        const id = draggedTacheId;
+        if (!id) return;
+        const tache = appData.taches.find((t) => t.id === id);
+        if (!tache || !tache.echeance) return;
+        const start = tache.date_debut || tache.echeance;
+        const spanDays = daysBetweenKeys(start, tache.echeance);
+        const newStart = cell.dataset.date;
+        if (newStart === start) return;
+        const newEnd = addDaysToKey(newStart, spanDays);
+        try {
+          await updateTache(id, { date_debut: spanDays > 0 ? newStart : null, echeance: newEnd }, tache.last_modified);
+        } catch (err) {
+          if (err instanceof RecordConflictError) {
+            alert("Cette tâche a été modifiée par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+            await refreshFromStorage();
+          } else {
+            alert("Erreur : " + err.message);
+          }
+        }
+      });
+    });
+  }
+
+  document.addEventListener("mousemove", (event) => {
+    if (!resizingTacheId) return;
+    const el = document.elementFromPoint(event.clientX, event.clientY);
+    const cell = el ? el.closest(".calendar-cell") : null;
+    if (resizeHoverCell && resizeHoverCell !== cell) resizeHoverCell.classList.remove("drag-over");
+    if (cell) cell.classList.add("drag-over");
+    resizeHoverCell = cell;
+  });
+
+  document.addEventListener("mouseup", async () => {
+    if (!resizingTacheId) return;
+    const id = resizingTacheId;
+    const cell = resizeHoverCell;
+    resizingTacheId = null;
+    document.body.classList.remove("calendar-resizing");
+    if (cell) cell.classList.remove("drag-over");
+    resizeHoverCell = null;
+    if (!cell) return;
+
+    const tache = appData.taches.find((t) => t.id === id);
+    if (!tache || !tache.echeance) return;
+    const start = tache.date_debut || tache.echeance;
+    const dropDate = cell.dataset.date;
+    const finalDates = normalizeTacheDates(start, dropDate);
+    if (finalDates.date_debut === (tache.date_debut || null) && finalDates.echeance === tache.echeance) return;
+    try {
+      await updateTache(id, finalDates, tache.last_modified);
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cette tâche a été modifiée par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+      } else {
+        alert("Erreur : " + err.message);
+      }
+    }
+  });
+
+  document.getElementById("calendar-prev").addEventListener("click", () => {
+    calendarMonth.setMonth(calendarMonth.getMonth() - 1);
+    renderTodo();
+  });
+  document.getElementById("calendar-next").addEventListener("click", () => {
+    calendarMonth.setMonth(calendarMonth.getMonth() + 1);
+    renderTodo();
+  });
+  document.getElementById("calendar-today").addEventListener("click", () => {
+    calendarMonth = startOfMonth(new Date());
+    renderTodo();
+  });
+
+  function renderTodo() {
+    renderTodoFilters();
+    const filtered = appData.taches.filter(tacheMatchesFilters);
+
+    renderTodoCalendar(filtered);
+
+    const undatedEl = document.getElementById("todo-undated-list");
+    const undated = sortTaches(filtered.filter((t) => !t.echeance));
+    undatedEl.innerHTML = undated.length
+      ? undated.map((t) => renderTacheItem(t)).join("")
+      : `<div class="list-item-empty">Aucune tâche sans échéance.</div>`;
+    wireTacheItemEvents(undatedEl);
+  }
+
+  function renderAOTachesSection(ao) {
+    const container = document.getElementById("ao-taches-list");
+    const allLinked = appData.taches.filter((t) => t.ao_lie === ao.id);
+    const open = allLinked.filter((t) => t.statut !== "Terminé");
+    container.innerHTML = open.length
+      ? sortTaches(open).map((t) => renderTacheItem(t, { hideAO: true })).join("")
+      : `<div class="list-item-empty">${allLinked.length ? "Toutes les tâches sont terminées." : "Aucune tâche liée."}</div>`;
+    wireTacheItemEvents(container);
+  }
+
+  document.getElementById("filter-tache-ao").addEventListener("change", (e) => {
+    todoFilters.ao = e.target.value;
+    renderTodo();
+  });
+  document.getElementById("filter-tache-assigne").addEventListener("change", (e) => {
+    todoFilters.assigne_a = e.target.value;
+    renderTodo();
+  });
+  document.getElementById("filter-tache-hide-done").addEventListener("change", (e) => {
+    todoFilters.hideDone = e.target.checked;
+    renderTodo();
+  });
+  document.getElementById("btn-new-tache").addEventListener("click", () => openTacheForm(null));
+  document.getElementById("ao-taches-add").addEventListener("click", () => {
+    if (currentEditingAO) openTacheForm(null, currentEditingAO.id);
+  });
+
+  // --- Formulaire Tâche (création / édition) ---
+
+  function updateTacheRappelFieldsVisibility() {
+    const isManual = document.getElementById("f-t-rappel-declenchement").value === "Sur date manuelle";
+    document.getElementById("f-t-rappel-date-wrap").style.display = isManual ? "" : "none";
+    document.getElementById("f-t-rappel-jours-wrap").style.display = isManual ? "none" : "";
+  }
+
+  function openTacheForm(tache, presetAoId) {
+    currentEditingTache = tache || null;
+    document.getElementById("tache-modal-title").textContent = tache ? "Modifier la tâche" : "Nouvelle tâche";
+    document.getElementById("tache-form-delete").hidden = !tache;
+
+    const aoSelect = document.getElementById("f-t-ao_lie");
+    aoSelect.innerHTML = `<option value="">Aucun</option>` +
+      appData.aos.map((a) => `<option value="${a.id}">${escapeHtml(a.nom_projet || "(sans nom)")}</option>`).join("");
+
+    populateSelect(document.getElementById("f-t-statut"), STATUT_TACHE_OPTIONS);
+    populateSelect(document.getElementById("f-t-priorite"), PRIORITE_OPTIONS);
+    populateSelect(document.getElementById("f-t-rappel-declenchement"), DECLENCHEMENT_OPTIONS);
+
+    const data = tache || {};
+    document.getElementById("f-t-tache").value = data.tache || "";
+    aoSelect.value = data.ao_lie || presetAoId || "";
+    document.getElementById("f-t-statut").value = data.statut || STATUT_TACHE_OPTIONS[0];
+    populateAssigneSelect(document.getElementById("f-t-assigne_a"), data.assigne_a || "");
+    document.getElementById("f-t-priorite").value = data.priorite || PRIORITE_OPTIONS[0];
+    document.getElementById("f-t-echeance").value = data.echeance || "";
+    document.getElementById("f-t-notes").value = data.notes || "";
+
+    const rappel = data.rappel || {};
+    document.getElementById("f-t-rappel-declenchement").value = rappel.declenchement || DECLENCHEMENT_OPTIONS[0];
+    document.getElementById("f-t-rappel-date").value = rappel.date || "";
+    document.getElementById("f-t-rappel-jours_avant").value = rappel.jours_avant ?? "";
+    document.getElementById("f-t-rappel-message").value = rappel.message || "";
+    document.getElementById("f-t-rappel-actif").checked = !!data.rappel && rappel.actif !== false;
+
+    updateTacheRappelFieldsVisibility();
+    document.getElementById("tache-modal-overlay").hidden = false;
+  }
+
+  function closeTacheForm() {
+    document.getElementById("tache-modal-overlay").hidden = true;
+    currentEditingTache = null;
+  }
+
+  document.getElementById("f-t-rappel-declenchement").addEventListener("change", updateTacheRappelFieldsVisibility);
+  document.getElementById("tache-modal-close").addEventListener("click", closeTacheForm);
+  document.getElementById("tache-form-cancel").addEventListener("click", closeTacheForm);
+  document.getElementById("tache-modal-overlay").addEventListener("click", (event) => {
+    if (event.target.id === "tache-modal-overlay") closeTacheForm();
+  });
+
+  document.getElementById("tache-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const rappelActif = document.getElementById("f-t-rappel-actif").checked;
+    const rappel = rappelActif ? createRappel({
+      declenchement: document.getElementById("f-t-rappel-declenchement").value,
+      date: document.getElementById("f-t-rappel-date").value || null,
+      jours_avant: document.getElementById("f-t-rappel-jours_avant").value ? Number(document.getElementById("f-t-rappel-jours_avant").value) : null,
+      message: document.getElementById("f-t-rappel-message").value.trim(),
+      actif: true,
+    }) : null;
+
+    // date_debut n'est pas exposé dans le formulaire (réglable uniquement par
+    // glisser-étirer dans le calendrier) : on préserve la valeur existante et
+    // on la re-valide juste contre la nouvelle échéance si elle a changé.
+    const dates = normalizeTacheDates(
+      (currentEditingTache && currentEditingTache.date_debut) || null,
+      document.getElementById("f-t-echeance").value || null,
+    );
+
+    const changes = {
+      tache: document.getElementById("f-t-tache").value.trim(),
+      ao_lie: document.getElementById("f-t-ao_lie").value || null,
+      statut: document.getElementById("f-t-statut").value,
+      assigne_a: document.getElementById("f-t-assigne_a").value,
+      priorite: document.getElementById("f-t-priorite").value,
+      date_debut: dates.date_debut,
+      echeance: dates.echeance,
+      notes: document.getElementById("f-t-notes").value.trim(),
+      rappel,
+    };
+
+    try {
+      if (currentEditingTache) {
+        await updateTache(currentEditingTache.id, changes, currentEditingTache.last_modified);
+      } else {
+        await addTache(changes);
+      }
+      closeTacheForm();
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cette tâche a été modifiée par quelqu'un d'autre entre-temps. Les données ont été rechargées, réessaie.");
+        await refreshFromStorage();
+        closeTacheForm();
+      } else {
+        alert("Erreur lors de l'enregistrement : " + err.message);
+      }
+    }
+  });
+
+  document.getElementById("tache-form-delete").addEventListener("click", async () => {
+    if (!currentEditingTache) return;
+    const label = currentEditingTache.tache || "(sans titre)";
+    if (!confirm(`Supprimer la tâche "${label}" ?`)) return;
+    try {
+      await deleteTache(currentEditingTache.id, currentEditingTache.last_modified);
+      closeTacheForm();
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cette tâche a été modifiée par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+        closeTacheForm();
+      } else {
+        alert("Erreur lors de la suppression : " + err.message);
+      }
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // Contacts (étape 7, voir PROJET.md §5.4) — annuaire + fiche détail.
+  // ---------------------------------------------------------------------
+
+  let contactSearch = "";
+  let currentEditingContact = null;
+
+  function contactInitials(nom) {
+    const parts = (nom || "").trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return "?";
+    return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : "")).toUpperCase();
+  }
+
+  function contactAvatarColor(seed) {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+    const hue = Math.abs(hash) % 360;
+    return `hsl(${hue}, 45%, 42%)`;
+  }
+
+  function renderContactItem(contact) {
+    const aoCount = (contact.ao_lies || []).length;
+    const sub = [contact.fonction, contact.organisme].filter(Boolean).map(escapeHtml).join(" · ");
+    const initials = contactInitials(contact.nom);
+    const color = contactAvatarColor(contact.nom || contact.id);
+    const meta = [];
+    if (contact.telephone) {
+      meta.push(`<a href="tel:${escapeHtml(contact.telephone)}"><span class="contact-card-meta-icon">☎</span>${escapeHtml(contact.telephone)}</a>`);
+    }
+    if (contact.email) {
+      meta.push(`<a href="mailto:${escapeHtml(contact.email)}"><span class="contact-card-meta-icon">✉</span>${escapeHtml(contact.email)}</a>`);
+    }
+    return `
+      <div class="contact-card" data-id="${contact.id}">
+        <div class="contact-avatar" style="background:${color}">${escapeHtml(initials)}</div>
+        <div class="contact-card-body">
+          <div class="contact-card-name">${escapeHtml(contact.nom || "(sans nom)")}</div>
+          ${sub ? `<div class="contact-card-sub">${sub}</div>` : ""}
+          ${meta.length ? `<div class="contact-card-meta">${meta.join("")}</div>` : ""}
+        </div>
+        ${aoCount ? `<span class="badge-type contact-card-badge">${aoCount} AO</span>` : ""}
+      </div>
+    `;
+  }
+
+  function wireContactItemEvents(container) {
+    container.querySelectorAll(".contact-card").forEach((row) => {
+      row.addEventListener("click", (event) => {
+        if (event.target.closest("a")) return;
+        const contact = appData.contacts.find((c) => c.id === row.dataset.id);
+        if (contact) openContactForm(contact);
+      });
+    });
+  }
+
+  function contactMatchesSearch(c) {
+    if (!contactSearch) return true;
+    const q = contactSearch.toLowerCase();
+    return (c.nom || "").toLowerCase().includes(q) || (c.organisme || "").toLowerCase().includes(q);
+  }
+
+  function renderContacts() {
+    const listEl = document.getElementById("contacts-list");
+    const filtered = appData.contacts
+      .filter(contactMatchesSearch)
+      .slice()
+      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+    listEl.innerHTML = filtered.length
+      ? filtered.map(renderContactItem).join("")
+      : `<div class="contacts-empty">${contactSearch ? "Aucun contact ne correspond à la recherche." : "Aucun contact pour l’instant."}</div>`;
+    wireContactItemEvents(listEl);
+  }
+
+  async function toggleAOContactLink(contactId, aoId, shouldLink) {
+    const contact = appData.contacts.find((c) => c.id === contactId);
+    if (!contact) return;
+    const currentAoLies = contact.ao_lies || [];
+    const newAoLies = shouldLink
+      ? [...currentAoLies, aoId]
+      : currentAoLies.filter((id) => id !== aoId);
+    try {
+      await updateContact(contact.id, { ao_lies: newAoLies }, contact.last_modified);
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Ce contact a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+      } else {
+        alert("Erreur : " + err.message);
+      }
+    }
+  }
+
+  function renderAOContactsDropdownList(ao, linkedIds) {
+    const query = document.getElementById("ao-contacts-dropdown-search").value.trim().toLowerCase();
+    const available = appData.contacts
+      .filter((c) => !linkedIds.has(c.id))
+      .filter((c) => !query || (c.nom || "").toLowerCase().includes(query) || (c.organisme || "").toLowerCase().includes(query))
+      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+
+    const listEl = document.getElementById("ao-contacts-dropdown-list");
+    listEl.innerHTML = available.length
+      ? available.map((c) => `
+          <div class="tag-dropdown-item" data-id="${c.id}">
+            ${escapeHtml(c.nom || "(sans nom)")}${c.organisme ? " · " + escapeHtml(c.organisme) : ""}
+          </div>
+        `).join("")
+      : `<div class="list-item-empty">Aucun contact disponible.</div>`;
+
+    listEl.querySelectorAll(".tag-dropdown-item").forEach((item) => {
+      item.addEventListener("click", () => toggleAOContactLink(item.dataset.id, ao.id, true));
+    });
+  }
+
+  function renderAOContactsSection(ao) {
+    const linked = appData.contacts
+      .filter((c) => (c.ao_lies || []).includes(ao.id))
+      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+
+    const chipsEl = document.getElementById("ao-contacts-chips");
+    chipsEl.innerHTML = linked.length
+      ? linked.map((c) => `
+          <span class="tag-chip">
+            <span class="tag-chip-label" data-id="${c.id}">${escapeHtml(c.nom || "(sans nom)")}${c.organisme ? " · " + escapeHtml(c.organisme) : ""}</span>
+            <button type="button" class="tag-chip-remove" data-id="${c.id}" title="Retirer">✕</button>
+          </span>
+        `).join("")
+      : `<div class="list-item-empty">Aucun contact lié.</div>`;
+
+    chipsEl.querySelectorAll(".tag-chip-label").forEach((label) => {
+      label.addEventListener("click", () => {
+        const contact = appData.contacts.find((c) => c.id === label.dataset.id);
+        if (contact) openContactForm(contact);
+      });
+    });
+    chipsEl.querySelectorAll(".tag-chip-remove").forEach((btn) => {
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        toggleAOContactLink(btn.dataset.id, ao.id, false);
+      });
+    });
+
+    // Le menu déroulant peut être ouvert pendant un re-rendu (ajout d'un
+    // autre contact, sync cross-onglet...) : on le tient à jour aussi,
+    // sans changer son état ouvert/fermé.
+    renderAOContactsDropdownList(ao, new Set(linked.map((c) => c.id)));
+  }
+
+  document.getElementById("ao-contacts-link-toggle").addEventListener("click", (event) => {
+    event.stopPropagation();
+    const dropdown = document.getElementById("ao-contacts-dropdown");
+    dropdown.hidden = !dropdown.hidden;
+    if (!dropdown.hidden && currentEditingAO) {
+      document.getElementById("ao-contacts-dropdown-search").value = "";
+      const linked = appData.contacts.filter((c) => (c.ao_lies || []).includes(currentEditingAO.id));
+      renderAOContactsDropdownList(currentEditingAO, new Set(linked.map((c) => c.id)));
+      document.getElementById("ao-contacts-dropdown-search").focus();
+    }
+  });
+
+  document.getElementById("ao-contacts-dropdown-search").addEventListener("input", () => {
+    if (!currentEditingAO) return;
+    const linked = appData.contacts.filter((c) => (c.ao_lies || []).includes(currentEditingAO.id));
+    renderAOContactsDropdownList(currentEditingAO, new Set(linked.map((c) => c.id)));
+  });
+
+  document.addEventListener("click", (event) => {
+    const dropdown = document.getElementById("ao-contacts-dropdown");
+    const toggle = document.getElementById("ao-contacts-link-toggle");
+    if (!dropdown.hidden && !dropdown.contains(event.target) && event.target !== toggle) {
+      dropdown.hidden = true;
+    }
+  });
+
+  document.getElementById("filter-contact-search").addEventListener("input", (e) => {
+    contactSearch = e.target.value;
+    renderContacts();
+  });
+  document.getElementById("btn-new-contact").addEventListener("click", () => openContactForm(null));
+  document.getElementById("ao-contacts-add").addEventListener("click", () => {
+    if (currentEditingAO) openContactForm(null, currentEditingAO.id);
+  });
+
+  // --- Formulaire Contact (création / édition) ---
+
+  function openContactForm(contact, presetAoId) {
+    currentEditingContact = contact || null;
+    document.getElementById("contact-modal-title").textContent = contact ? "Modifier le contact" : "Nouveau contact";
+    document.getElementById("contact-form-delete").hidden = !contact;
+
+    const data = contact || {};
+    document.getElementById("f-c-nom").value = data.nom || "";
+    document.getElementById("f-c-fonction").value = data.fonction || "";
+    document.getElementById("f-c-organisme").value = data.organisme || "";
+    document.getElementById("f-c-telephone").value = data.telephone || "";
+    document.getElementById("f-c-email").value = data.email || "";
+    document.getElementById("f-c-adresse").value = data.adresse || "";
+    document.getElementById("f-c-notes").value = data.notes || "";
+
+    const aoContainer = document.getElementById("f-c-ao_lies");
+    const selected = new Set(data.ao_lies || (presetAoId ? [presetAoId] : []));
+    aoContainer.innerHTML = appData.aos.length
+      ? appData.aos.map((a) => `
+          <label class="checkbox-inline"><input type="checkbox" class="f-c-ao-item" value="${a.id}" ${selected.has(a.id) ? "checked" : ""}> ${escapeHtml(a.nom_projet || "(sans nom)")}</label>
+        `).join("")
+      : `<div class="list-item-empty">Aucun AO créé pour l'instant.</div>`;
+    document.getElementById("f-c-ao-search").value = "";
+
+    const rappel = data.rappel || {};
+    document.getElementById("f-c-rappel-date").value = rappel.date || "";
+    document.getElementById("f-c-rappel-message").value = rappel.message || "";
+    document.getElementById("f-c-rappel-actif").checked = !!data.rappel && rappel.actif !== false;
+
+    document.getElementById("contact-modal-overlay").hidden = false;
+  }
+
+  function closeContactForm() {
+    document.getElementById("contact-modal-overlay").hidden = true;
+    currentEditingContact = null;
+  }
+
+  document.getElementById("f-c-ao-search").addEventListener("input", (event) => {
+    const q = event.target.value.trim().toLowerCase();
+    document.querySelectorAll("#f-c-ao_lies label").forEach((label) => {
+      label.style.display = !q || label.textContent.toLowerCase().includes(q) ? "" : "none";
+    });
+  });
+
+  document.getElementById("contact-modal-close").addEventListener("click", closeContactForm);
+  document.getElementById("contact-form-cancel").addEventListener("click", closeContactForm);
+  document.getElementById("contact-modal-overlay").addEventListener("click", (event) => {
+    if (event.target.id === "contact-modal-overlay") closeContactForm();
+  });
+
+  document.getElementById("contact-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const selectedAO = Array.from(document.querySelectorAll(".f-c-ao-item:checked")).map((cb) => cb.value);
+    const rappelActif = document.getElementById("f-c-rappel-actif").checked;
+    const rappel = rappelActif ? createRappel({
+      declenchement: "Sur date manuelle",
+      date: document.getElementById("f-c-rappel-date").value || null,
+      message: document.getElementById("f-c-rappel-message").value.trim(),
+      actif: true,
+    }) : null;
+
+    const changes = {
+      nom: document.getElementById("f-c-nom").value.trim(),
+      fonction: document.getElementById("f-c-fonction").value.trim(),
+      organisme: document.getElementById("f-c-organisme").value.trim(),
+      telephone: document.getElementById("f-c-telephone").value.trim(),
+      email: document.getElementById("f-c-email").value.trim(),
+      adresse: document.getElementById("f-c-adresse").value.trim(),
+      notes: document.getElementById("f-c-notes").value.trim(),
+      ao_lies: selectedAO,
+      rappel,
+    };
+
+    try {
+      if (currentEditingContact) {
+        await updateContact(currentEditingContact.id, changes, currentEditingContact.last_modified);
+      } else {
+        await addContact(changes);
+      }
+      closeContactForm();
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Ce contact a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées, réessaie.");
+        await refreshFromStorage();
+        closeContactForm();
+      } else {
+        alert("Erreur lors de l'enregistrement : " + err.message);
+      }
+    }
+  });
+
+  document.getElementById("contact-form-delete").addEventListener("click", async () => {
+    if (!currentEditingContact) return;
+    const label = currentEditingContact.nom || "(sans nom)";
+    if (!confirm(`Supprimer le contact "${label}" ?`)) return;
+    try {
+      await deleteContact(currentEditingContact.id, currentEditingContact.last_modified);
+      closeContactForm();
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Ce contact a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
+        await refreshFromStorage();
+        closeContactForm();
+      } else {
+        alert("Erreur lors de la suppression : " + err.message);
+      }
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // Reporting (étape 9, voir PROJET.md §5.5).
+  //
+  // "Déposés" = AO avec un résultat tranché suite à un dépôt effectif
+  // (Gagné + Perdu) ; "Abandonné" et "En cours" n'entrent pas dans le taux
+  // de réussite (pas de dépôt concurrentiel abouti). Les graphiques par
+  // statut réutilisent la palette de statut fixe (jamais thématique) :
+  // Gagné=good, Perdu=critical, Abandonné=warning, En cours=neutre.
+  //
+  // Filtre de période : "all" (défaut) ou une année ("2026"). Le filtrage
+  // se fait sur l'année de date_remise, en amont de tous les calculs, pour
+  // que KPI, répartitions et graphiques restent cohérents entre eux et
+  // permettent de comparer une année sur l'autre.
+  // ---------------------------------------------------------------------
+
+  let reportingPeriod = "all";
+
+  function reportingAvailableYears(data) {
+    const years = new Set(
+      data.aos
+        .filter((a) => a.phase !== "A venir" && a.date_remise)
+        .map((a) => a.date_remise.slice(0, 4))
+    );
+    const currentYear = new Date().getFullYear();
+    years.add(String(currentYear));
+    years.add(String(currentYear - 1));
+    return Array.from(years).sort((a, b) => b - a);
+  }
+
+  function renderReportingPeriodFilter(data) {
+    const sel = document.getElementById("filter-reporting-period");
+    const currentYear = new Date().getFullYear();
+    const options = ['<option value="all">Toutes les années</option>'].concat(
+      reportingAvailableYears(data).map((y) => {
+        let label = y;
+        if (Number(y) === currentYear) label = `Année en cours (${y})`;
+        else if (Number(y) === currentYear - 1) label = `Année passée (${y})`;
+        return `<option value="${y}">${label}</option>`;
+      })
+    );
+    sel.innerHTML = options.join("");
+    sel.value = reportingPeriod;
+  }
+
+  function formatKeur(v) {
+    return `${Math.round(v).toLocaleString("fr-FR")} k€`;
+  }
+
+  function formatMonthLabel(key) {
+    const [y, m] = key.split("-").map(Number);
+    return new Date(y, m - 1, 1).toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
+  }
+
+  function computeReportingData(data, period = "all") {
+    // Les AO encore "A venir" ne sont pas encore engagés (pas d'étude en
+    // cours) : on les exclut de tout le reporting, KPI compris. Le filtre de
+    // période restreint ensuite sur l'année de date_remise (les AO sans date
+    // ne peuvent être rattachés à une année, donc n'apparaissent que sur
+    // "Toutes les années").
+    const aos = data.aos.filter((a) => {
+      if (a.phase === "A venir") return false;
+      if (period !== "all" && a.date_remise?.slice(0, 4) !== period) return false;
+      return true;
+    });
+    const gagnes = aos.filter((a) => a.resultat === "Gagné");
+    const perdus = aos.filter((a) => a.resultat === "Perdu");
+    const enCours = aos.filter((a) => a.resultat === "En cours");
+    const deposes = gagnes.length + perdus.length;
+    const tauxReussite = deposes > 0 ? Math.round((gagnes.length / deposes) * 100) : null;
+    const montantGagne = gagnes.reduce((sum, a) => sum + (Number(a.valeur_estimee_keur) || 0), 0);
+    const montantPipelineEnCours = enCours.reduce((sum, a) => sum + (Number(a.valeur_estimee_keur) || 0), 0);
+
+    const parTypeClient = TYPE_CLIENT_OPTIONS
+      .map((client) => {
+        const subset = aos.filter((a) => a.type_client === client);
+        const counts = {};
+        RESULTAT_STATUS_ORDER.forEach((s) => { counts[s] = subset.filter((a) => a.resultat === s).length; });
+        return { label: client, total: subset.length, counts };
+      })
+      .filter((x) => x.total > 0);
+
+    const monthlyBuckets = new Map();
+    aos.forEach((a) => {
+      if (!a.date_remise) return;
+      const key = a.date_remise.slice(0, 7);
+      if (!monthlyBuckets.has(key)) {
+        const counts = {};
+        RESULTAT_STATUS_ORDER.forEach((s) => { counts[s] = 0; });
+        monthlyBuckets.set(key, counts);
+      }
+      const bucket = monthlyBuckets.get(key);
+      bucket[a.resultat] = (bucket[a.resultat] || 0) + 1;
+    });
+    // "Toutes les années" : 12 derniers mois glissants avec activité (comme
+    // avant). Année précise : les 12 mois Jan-Déc de l'année, pour une
+    // comparaison alignée d'une année sur l'autre.
+    const monthKeys = period !== "all"
+      ? Array.from({ length: 12 }, (_, i) => `${period}-${String(i + 1).padStart(2, "0")}`)
+      : Array.from(monthlyBuckets.keys()).sort().slice(-12);
+    const evolutionMensuelle = monthKeys.map((key) => {
+      if (!monthlyBuckets.has(key)) {
+        const counts = {};
+        RESULTAT_STATUS_ORDER.forEach((s) => { counts[s] = 0; });
+        return { label: formatMonthLabel(key), counts, total: 0 };
+      }
+      const counts = monthlyBuckets.get(key);
+      return { label: formatMonthLabel(key), counts, total: Object.values(counts).reduce((a, b) => a + b, 0) };
+    });
+
+    const NON_RENSEIGNE = "Non renseigné";
+    const parMotifPerte = [...MOTIF_OPTIONS, NON_RENSEIGNE]
+      .map((cat) => ({
+        label: cat,
+        value: perdus.filter((a) => (a.motif_categorie || NON_RENSEIGNE) === cat).length,
+      }))
+      .filter((x) => x.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    return { gagnesCount: gagnes.length, deposes, tauxReussite, montantGagne, montantPipelineEnCours, parTypeClient, evolutionMensuelle, parMotifPerte };
+  }
+
+  function showChartTooltip(target, text) {
+    const tip = document.getElementById("chart-tooltip");
+    tip.textContent = text;
+    const rect = target.getBoundingClientRect();
+    tip.style.left = rect.left + rect.width / 2 + "px";
+    tip.style.top = rect.top - 8 + "px";
+    tip.style.transform = "translate(-50%, -100%)";
+    tip.hidden = false;
+  }
+
+  function hideChartTooltip() {
+    document.getElementById("chart-tooltip").hidden = true;
+  }
+
+  function wireChartTooltips(container, selector, textFn) {
+    container.querySelectorAll(selector).forEach((el) => {
+      const show = () => showChartTooltip(el, textFn(el));
+      el.addEventListener("mouseenter", show);
+      el.addEventListener("focus", show);
+      el.addEventListener("mouseleave", hideChartTooltip);
+      el.addEventListener("blur", hideChartTooltip);
+    });
+  }
+
+  function renderStatusLegend(containerId) {
+    document.getElementById(containerId).innerHTML = RESULTAT_STATUS_ORDER.map((s) => `
+      <span class="legend-item">
+        <span class="legend-swatch" style="background:${RESULTAT_STATUS_COLORS[s]}"></span>${escapeHtml(s)}
+      </span>
+    `).join("");
+  }
+
+  function renderReportingStats(r) {
+    document.getElementById("reporting-stats").innerHTML = [
+      [r.tauxReussite !== null ? r.tauxReussite + "%" : "—", "Taux de réussite", `${r.gagnesCount} gagné(s) / ${r.deposes} déposé(s)`],
+      [formatKeur(r.montantGagne), "Montant gagné", `sur ${r.gagnesCount} AO gagné(s)`],
+      [formatKeur(r.montantPipelineEnCours), "Pipeline en cours", "AO encore en cours"],
+      [String(r.deposes), "AO déposés", "gagnés + perdus"],
+    ].map(([value, label, sub]) => `
+      <div class="stat-card">
+        <div class="stat-value">${escapeHtml(value)}</div>
+        <div class="stat-label">${escapeHtml(label)}</div>
+        <div class="stat-sub">${escapeHtml(sub)}</div>
+      </div>
+    `).join("");
+  }
+
+  function polarToCartesian(cx, cy, r, angleDeg) {
+    const rad = (angleDeg - 90) * (Math.PI / 180);
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+
+  function describeSector(cx, cy, r, startAngle, endAngle) {
+    const startPoint = polarToCartesian(cx, cy, r, startAngle);
+    const endPoint = polarToCartesian(cx, cy, r, endAngle);
+    const largeArcFlag = endAngle - startAngle > 180 ? 1 : 0;
+    return [
+      `M ${cx} ${cy}`,
+      `L ${startPoint.x} ${startPoint.y}`,
+      `A ${r} ${r} 0 ${largeArcFlag} 1 ${endPoint.x} ${endPoint.y}`,
+      "Z",
+    ].join(" ");
+  }
+
+  function renderMotifPieChart(items) {
+    const el = document.getElementById("reporting-motifs");
+    if (!items.length) {
+      el.innerHTML = `<div class="list-item-empty">Aucune donnée.</div>`;
+      return;
+    }
+    const total = items.reduce((sum, i) => sum + i.value, 0);
+    const size = 220;
+    const radius = size / 2;
+    const cx = radius;
+    const cy = radius;
+
+    let cumulativeAngle = 0;
+    const slices = items.map((item) => {
+      const angle = (item.value / total) * 360;
+      const startAngle = cumulativeAngle;
+      const endAngle = cumulativeAngle + angle;
+      cumulativeAngle = endAngle;
+      return {
+        ...item,
+        startAngle,
+        endAngle,
+        pct: Math.round((item.value / total) * 100),
+        color: MOTIF_COLORS[item.label] || "#898781",
+      };
+    });
+
+    const svgSlices = slices.map((s) => {
+      // Une seule catégorie à 100% : cercle plein plutôt qu'un secteur dégénéré.
+      const d = (s.endAngle - s.startAngle) >= 359.99
+        ? `M ${cx} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx - 0.01} ${cy - radius} Z`
+        : describeSector(cx, cy, radius, s.startAngle, s.endAngle);
+      return `
+        <path d="${d}" fill="${s.color}" stroke="var(--color-surface)" stroke-width="2"
+              tabindex="0" class="pie-slice"
+              data-label="${escapeHtml(s.label)}" data-value="${s.value}" data-pct="${s.pct}"></path>
+      `;
+    }).join("");
+
+    el.innerHTML = `
+      <div class="pie-chart-wrap">
+        <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" class="pie-chart-svg">
+          ${svgSlices}
+        </svg>
+        <div class="pie-chart-legend">
+          ${slices.map((s) => `
+            <div class="legend-item">
+              <span class="legend-swatch" style="background:${s.color}"></span>
+              ${escapeHtml(s.label)} — <strong>${s.value}</strong> (${s.pct}%)
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+    wireChartTooltips(el, ".pie-slice", (path) => `${path.dataset.label} : ${path.dataset.value} (${path.dataset.pct}%)`);
+  }
+
+  function renderClientChart(items) {
+    const el = document.getElementById("reporting-client");
+    if (!items.length) {
+      el.innerHTML = `<div class="list-item-empty">Aucune donnée.</div>`;
+      return;
+    }
+    el.innerHTML = items.map((item) => `
+      <div class="stacked-bar-row">
+        <div class="bar-row-label">${escapeHtml(item.label)}</div>
+        <div class="stacked-bar-track">
+          ${RESULTAT_STATUS_ORDER.filter((s) => item.counts[s] > 0).map((s) => `
+            <div class="segment" tabindex="0" data-label="${escapeHtml(item.label)}" data-status="${escapeHtml(s)}" data-value="${item.counts[s]}"
+                 style="width:${(item.counts[s] / item.total) * 100}%; background:${RESULTAT_STATUS_COLORS[s]}"></div>
+          `).join("")}
+        </div>
+        <div class="bar-row-value">${item.total}</div>
+      </div>
+    `).join("");
+    wireChartTooltips(el, ".segment", (seg) => `${seg.dataset.label} — ${seg.dataset.status} : ${seg.dataset.value}`);
+  }
+
+  function renderMonthlyChart(months) {
+    const el = document.getElementById("reporting-monthly");
+    if (!months.length) {
+      el.innerHTML = `<div class="list-item-empty">Aucune donnée (aucune date de remise renseignée).</div>`;
+      return;
+    }
+    const maxTotal = Math.max(...months.map((m) => m.total));
+    el.innerHTML = months.map((m) => `
+      <div class="monthly-col-wrap">
+        <div class="monthly-total-label">${m.total}</div>
+        <div class="monthly-col">
+          ${RESULTAT_STATUS_ORDER.filter((s) => m.counts[s] > 0).map((s) => `
+            <div class="segment" tabindex="0" data-label="${escapeHtml(m.label)}" data-status="${escapeHtml(s)}" data-value="${m.counts[s]}"
+                 style="height:${Math.max((m.counts[s] / maxTotal) * 160, 3)}px; background:${RESULTAT_STATUS_COLORS[s]}"></div>
+          `).join("")}
+        </div>
+        <div class="monthly-month-label">${escapeHtml(m.label)}</div>
+      </div>
+    `).join("");
+    wireChartTooltips(el, ".segment", (seg) => `${seg.dataset.label} — ${seg.dataset.status} : ${seg.dataset.value}`);
+  }
+
+  function renderReporting() {
+    renderReportingPeriodFilter(appData);
+    const r = computeReportingData(appData, reportingPeriod);
+    renderReportingStats(r);
+    renderStatusLegend("reporting-client-legend");
+    renderClientChart(r.parTypeClient);
+    renderStatusLegend("reporting-monthly-legend");
+    renderMonthlyChart(r.evolutionMensuelle);
+    renderMotifPieChart(r.parMotifPerte);
+  }
+
+  function renderAll() {
+    renderStorageStatus();
+    renderReminderBell();
+    renderAccueil();
+    renderPipeline();
+    renderTodo();
+    renderContacts();
+    renderReporting();
+    if (!document.getElementById("ao-modal-overlay").hidden && currentEditingAO) {
+      renderAOTachesSection(currentEditingAO);
+      renderAOContactsSection(currentEditingAO);
+    }
+  }
+
+  document.getElementById("btn-export").addEventListener("click", () => {
+    downloadJSON(appData);
+  });
+
+  // Respecte les filtres Pipeline en cours : exporter la vue affichée à
+  // l'écran, pas systématiquement tous les AO.
+  document.getElementById("btn-export-ao-csv").addEventListener("click", () => {
+    const rows = [
+      ["Nom du projet", "Client", "Phase", "Type", "Type de marché", "Valeur (k€)", "AMO", "Concurrence", "Date de remise", "Date de visite", "Date de prise d'effet", "Lieu", "Résultat", "Motif", "Assigné à"],
+      ...appData.aos.filter(aoMatchesFilters).map((ao) => [
+        ao.nom_projet || "",
+        ao.type_client || "",
+        ao.phase || "",
+        ao.type || "",
+        (ao.type_marche || []).join(", "),
+        ao.valeur_estimee_keur ?? "",
+        ao.amo || "",
+        ao.concurrence || "",
+        formatDate(ao.date_remise),
+        formatDate(ao.date_visite),
+        formatDate(ao.date_prise_effet),
+        ao.lieu || "",
+        ao.resultat || "",
+        ao.motif_categorie || "",
+        ao.assigne_a || "",
+      ]),
+    ];
+    downloadCSV(`crm-ao-pipeline-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+  });
+
+  document.getElementById("filter-reporting-period").addEventListener("change", (e) => {
+    reportingPeriod = e.target.value;
+    renderReporting();
+  });
+
+  document.getElementById("btn-import").addEventListener("click", () => {
+    document.getElementById("file-import").click();
+  });
+
+  document.getElementById("file-import").addEventListener("change", async (event) => {
+    const file = event.target.files[0];
+    event.target.value = "";
+    if (!file) return;
+
+    let imported;
+    try {
+      imported = await readJSONFile(file);
+    } catch (err) {
+      alert("Fichier JSON invalide : impossible de le lire.");
+      return;
+    }
+    if (!isValidCrmData(imported)) {
+      alert("Ce fichier ne correspond pas au format attendu (aos / taches / contacts).");
+      return;
+    }
+    if (!confirm("Importer ce fichier va remplacer toutes les données actuelles. Continuer ?")) {
+      return;
+    }
+
+    await storageAdapter.load();
+    await storageAdapter.save(imported);
+    await refreshFromStorage();
+    alert("Import terminé.");
+  });
 
   // ---------------------------------------------------------------------
   // Routage simple entre les écrans.
@@ -218,7 +3956,37 @@
     if (btn) showScreen(btn.dataset.screen);
   });
 
-  window.CRM = { assertStorageAdapter, showScreen };
+  window.CRM = {
+    assertStorageAdapter,
+    showScreen,
+    storageAdapter,
+    getData: () => appData,
+    options: {
+      PHASE_OPTIONS,
+      TYPE_CLIENT_OPTIONS,
+      TYPE_AO_OPTIONS,
+      TYPE_MARCHE_OPTIONS,
+      RESULTAT_OPTIONS,
+      STATUT_TACHE_OPTIONS,
+      PRIORITE_OPTIONS,
+      DECLENCHEMENT_OPTIONS,
+      ASSIGNE_OPTIONS,
+      MOTIF_OPTIONS, 
+    },
+    createAO, createTache, createContact, createRappel,
+    addAO, updateAO, deleteAO,
+    addTache, updateTache, deleteTache,
+    addContact, updateContact, deleteContact,
+    RecordConflictError,
+    renderAll, renderAccueil, collectActiveReminders, isRappelActive, daysBetween,
+    renderPipeline, openAOForm, commitAOPhaseChange, openMotifModal,
+    renderTodo, openTacheForm, sortTaches, getMonthGridDays, localDateKey,
+    normalizeTacheDates, addDaysToKey, daysBetweenKeys,
+    chunkIntoWeeks, computeWeekBarSegments, assignBarLanes,
+    renderContacts, openContactForm,
+    renderReminderBell, markReminderTreated,
+    renderReporting, computeReportingData, renderMotifPieChart,
+  };
 })();
 </script>
 
