@@ -86,6 +86,7 @@ Repris du Pipeline Notion existant, enrichi.
 | `id` | identifiant unique | généré automatiquement |
 | `nom_projet` | texte | titre de l'AO |
 | `type_client` | liste | Habitat, Collectivité, Santé, Enseignement, Tertiaire, Autre |
+| `assigne_a` | texte | ajouté à l'étape 5 : nécessaire pour l'affichage et le filtre par personne sur les cartes Kanban (§5.2), absent du schéma initial |
 | `phase` | liste | voir valeurs ci-dessous |
 | `type` | liste | Appel d'offres, Renouvellement, Avenant, Sollicitation directe, Proposition travaux |
 | `type_marche` | multi-liste | P1, P2, P3, CPE, R1, R2, GTR, Gaz |
@@ -99,7 +100,8 @@ Repris du Pipeline Notion existant, enrichi.
 | `notes` | texte long | |
 | `fichiers` | liste de liens | liens vers livrables (résumé de lecture, mémoire technique…) |
 | `resultat` | liste | En cours, Gagné, Perdu, Abandonné |
-| `motif` | texte | si perdu : prix, technique, etc. (alimente le reporting) |
+| `motif_categorie` | liste | ajouté ultérieurement : Prix, Technique, Mauvais environnement, Autre — saisie obligatoire via pop-up quand l'AO passe en Perdu (Kanban), alimente le graphe Reporting |
+| `motif` | texte | détail libre facultatif du motif de perte |
 | `rappel` | rappel | date + type de déclenchement (voir §4.4) |
 | `contacts_lies` | relation | vers un ou plusieurs Contacts |
 | `taches_liees` | relation | vers une ou plusieurs Tâches |
@@ -117,7 +119,8 @@ Repris du Todo Notion existant, enrichi.
 | `id` | identifiant unique | |
 | `tache` | texte | intitulé |
 | `statut` | liste | Pas commencé, En cours, Terminé |
-| `echeance` | date | |
+| `date_debut` | date | ajouté ultérieurement, facultatif : si renseignée, la tâche s'étale sur plusieurs jours dans le calendrier ToDo (barre continue) — `echeance` reste la date de fin |
+| `echeance` | date | date de fin / échéance (seule date utilisée pour le tri, les rappels et les autres écrans si `date_debut` est vide) |
 | `assigne_a` | personne | Mathis ou collègue |
 | `priorite` | liste | Normale, Haute (= flag rouge / critique) |
 | `notes` | texte | |
