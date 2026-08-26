@@ -2,3 +2,6 @@
 Thumbs.db
 *.swp
 *.bak
+
+# Exports de données AO (concurrents, montants, motifs...) : jamais dans l'historique git.
+crm-ao-export-*.json

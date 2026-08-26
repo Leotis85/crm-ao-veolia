@@ -1779,19 +1779,48 @@
   // le travail de l'autre personne.
   // ---------------------------------------------------------------------
 
-  const PHASE_OPTIONS = [
-    "A venir", "Étude", "Finalisation", "🤝 Négociation",
-    "⏳ En attente de réponse", "✅ Gagné", "❌ Perdu", "🚫 Abandonné",
+  // Chaque phase a un identifiant STABLE (celui stocké dans `ao.phase`, jamais
+  // affiché) et un libellé (ce qui s'affiche dans la colonne). Pour renommer
+  // une colonne : changer `label` uniquement, jamais `id`. Les AO existants
+  // ne bougent pas puisqu'ils ne référencent que l'id.
+  const PHASES = [
+    { id: "a_venir", label: "A venir" },
+    { id: "etude", label: "Étude" },
+    { id: "finalisation", label: "Finalisation" },
+    { id: "negociation", label: "Négociation" },
+    { id: "attente_reponse", label: "En attente de réponse" },
+    { id: "gagne", label: "Gagné" },
+    { id: "perdu", label: "Perdu" },
+    { id: "abandonne", label: "Abandonné" },
   ];
+  const PHASE_OPTIONS = PHASES.map((p) => p.id);
+  function phaseLabel(id) {
+    return PHASES.find((p) => p.id === id)?.label || id;
+  }
+  // Anciens AO enregistrés avec le libellé complet comme valeur de `phase`
+  // (avant l'introduction des id stables ci-dessus) : remappés vers l'id au
+  // chargement (voir normalizeData) pour ne pas disparaître du pipeline.
+  // Ne pas toucher à cette table lors d'un renommage de colonne : elle ne
+  // sert qu'à cette migration ponctuelle, indépendante de PHASES.
+  const LEGACY_PHASE_LABEL_TO_ID = {
+    "A venir": "a_venir",
+    "Étude": "etude",
+    "Finalisation": "finalisation",
+    "🤝 Négociation": "negociation",
+    "⏳ En attente de réponse": "attente_reponse",
+    "✅ Gagné": "gagne",
+    "❌ Perdu": "perdu",
+    "🚫 Abandonné": "abandonne",
+  };
   // Une fois l'offre en Négociation (et au-delà), la date de remise est
   // forcément passée : ce n'est plus un retard à signaler (accueil + pipeline).
-  const PHASE_POST_REMISE_INDEX = PHASE_OPTIONS.indexOf("🤝 Négociation");
+  const PHASE_POST_REMISE_INDEX = PHASE_OPTIONS.indexOf("negociation");
   // Phases terminales : déplacer une carte ici doit synchroniser `resultat`
   // (utilisé tel quel par le Reporting), pas seulement changer sa colonne.
   const PHASE_TO_RESULTAT = {
-    "✅ Gagné": "Gagné",
-    "❌ Perdu": "Perdu",
-    "🚫 Abandonné": "Abandonné",
+    gagne: "Gagné",
+    perdu: "Perdu",
+    abandonne: "Abandonné",
   };
   function resultatForPhase(phase, currentResultat) {
     if (PHASE_TO_RESULTAT[phase]) return PHASE_TO_RESULTAT[phase];
@@ -1875,7 +1904,7 @@
       nom_projet: "",
       type_client: "Habitat",
       assigne_a: "",
-      phase: "A venir",
+      phase: "a_venir",
       type: "Appel d'offres",
       type_marche: [],
       valeur_estimee_keur: null,
@@ -1938,7 +1967,13 @@
   }
 
   function normalizeData(data) {
-    data.aos = data.aos.map((ao) => normalizeRecord(ao, createAO));
+    data.aos = data.aos.map((ao) => {
+      const normalized = normalizeRecord(ao, createAO);
+      if (LEGACY_PHASE_LABEL_TO_ID[normalized.phase]) {
+        normalized.phase = LEGACY_PHASE_LABEL_TO_ID[normalized.phase];
+      }
+      return normalized;
+    });
     data.taches = data.taches.map((t) => normalizeRecord(t, createTache));
     data.contacts = data.contacts.map((c) => normalizeRecord(c, createContact));
     return data;
@@ -2252,7 +2287,7 @@
       .filter((x) => x.days !== null);
     const echeances7j = echeancesAO.filter((x) => x.days >= 0 && x.days <= 7).length;
     const tachesOuvertes = data.taches.filter((t) => t.statut !== "Terminé").length;
-    const aoEnAttente = data.aos.filter((a) => a.phase === "⏳ En attente de réponse").length;
+    const aoEnAttente = data.aos.filter((a) => a.phase === "attente_reponse").length;
 
     document.getElementById("accueil-stats").innerHTML = [
       ["AO en cours", aoEnCours],
@@ -2313,7 +2348,11 @@
 
   function populateSelect(selectEl, options, withEmptyOption) {
     const emptyOpt = withEmptyOption ? `<option value="">${escapeHtml(withEmptyOption)}</option>` : "";
-    selectEl.innerHTML = emptyOpt + options.map((o) => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join("");
+    selectEl.innerHTML = emptyOpt + options.map((o) => {
+      const value = typeof o === "object" ? o.value : o;
+      const label = typeof o === "object" ? o.label : o;
+      return `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`;
+    }).join("");
   }
 
   // Comme populateSelect, mais conserve une valeur existante hors liste
@@ -2375,15 +2414,15 @@
     const board = document.getElementById("kanban-board");
     const filtered = appData.aos.filter(aoMatchesFilters);
 
-    board.innerHTML = PHASE_OPTIONS.map((phase) => {
-      const cards = sortAOsForColumn(filtered.filter((ao) => ao.phase === phase));
+    board.innerHTML = PHASES.map(({ id, label }) => {
+      const cards = sortAOsForColumn(filtered.filter((ao) => ao.phase === id));
       return `
         <div class="kanban-column">
           <div class="kanban-column-header">
-            <span>${escapeHtml(phase)}</span>
+            <span>${escapeHtml(label)}</span>
             <span class="badge-type">${cards.length}</span>
           </div>
-          <div class="kanban-cards" data-phase="${escapeHtml(phase)}">
+          <div class="kanban-cards" data-phase="${escapeHtml(id)}">
             ${cards.map(renderAOCard).join("")}
           </div>
         </div>
@@ -2420,7 +2459,7 @@
         const ao = appData.aos.find((a) => a.id === id);
         if (!ao || ao.phase === newPhase) return;
 
-        if (newPhase === "❌ Perdu" && !ao.motif_categorie) {
+        if (newPhase === "perdu" && !ao.motif_categorie) {
           openMotifModal(ao, newPhase);
           return;
         }
@@ -2497,7 +2536,7 @@
     document.getElementById("ao-form-delete").hidden = !ao;
 
     populateSelect(document.getElementById("f-type_client"), TYPE_CLIENT_OPTIONS);
-    populateSelect(document.getElementById("f-phase"), PHASE_OPTIONS);
+    populateSelect(document.getElementById("f-phase"), PHASES.map((p) => ({ value: p.id, label: p.label })));
     populateSelect(document.getElementById("f-type"), TYPE_AO_OPTIONS);
     populateSelect(document.getElementById("f-resultat"), RESULTAT_OPTIONS);
     populateSelect(document.getElementById("f-motif-categorie"), MOTIF_OPTIONS, "— Aucun —");
@@ -3581,7 +3620,7 @@
   function reportingAvailableYears(data) {
     const years = new Set(
       data.aos
-        .filter((a) => a.phase !== "A venir" && a.date_remise)
+        .filter((a) => a.phase !== "a_venir" && a.date_remise)
         .map((a) => a.date_remise.slice(0, 4))
     );
     const currentYear = new Date().getFullYear();
@@ -3621,7 +3660,7 @@
     // ne peuvent être rattachés à une année, donc n'apparaissent que sur
     // "Toutes les années").
     const aos = data.aos.filter((a) => {
-      if (a.phase === "A venir") return false;
+      if (a.phase === "a_venir") return false;
       if (period !== "all" && a.date_remise?.slice(0, 4) !== period) return false;
       return true;
     });
@@ -3883,7 +3922,7 @@
       ...appData.aos.filter(aoMatchesFilters).map((ao) => [
         ao.nom_projet || "",
         ao.type_client || "",
-        ao.phase || "",
+        ao.phase ? phaseLabel(ao.phase) : "",
         ao.type || "",
         (ao.type_marche || []).join(", "),
         ao.valeur_estimee_keur ?? "",
@@ -3963,6 +4002,7 @@
     getData: () => appData,
     options: {
       PHASE_OPTIONS,
+      PHASES,
       TYPE_CLIENT_OPTIONS,
       TYPE_AO_OPTIONS,
       TYPE_MARCHE_OPTIONS,
