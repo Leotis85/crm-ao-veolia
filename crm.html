@@ -1306,6 +1306,7 @@
     </div>
     <div class="user-wrap">
       <span id="current-user-name"></span>
+      <button id="btn-change-password" title="Changer mon mot de passe">Mot de passe</button>
       <button id="btn-logout" title="Se déconnecter">Déconnexion</button>
     </div>
   </div>
@@ -1691,6 +1692,29 @@
         <button type="button" class="btn-secondary" id="motif-form-cancel">Annuler (ne pas déplacer)</button>
         <div class="modal-footer-right">
           <button type="submit" class="btn-primary">Confirmer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="password-modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Changer mon mot de passe</h2>
+    </div>
+    <form id="password-form">
+      <label>Nouveau mot de passe
+        <input type="password" id="f-password-new" autocomplete="new-password" minlength="6" required>
+      </label>
+      <label>Confirmer le mot de passe
+        <input type="password" id="f-password-confirm" autocomplete="new-password" minlength="6" required>
+      </label>
+      <div class="auth-error" id="password-error" hidden></div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="password-form-cancel">Annuler</button>
+        <div class="modal-footer-right">
+          <button type="submit" class="btn-primary">Enregistrer</button>
         </div>
       </div>
     </form>
@@ -2087,6 +2111,52 @@
 
   document.getElementById("btn-logout").addEventListener("click", async () => {
     await supabaseClient.auth.signOut();
+  });
+
+  // ---------------------------------------------------------------------
+  // Changer son mot de passe (auto-service, sans email) : la personne se
+  // connecte avec le mot de passe temporaire donné par l'admin, puis le
+  // change elle-même ici. Ne nécessite aucun envoi d'email/SMTP.
+  // ---------------------------------------------------------------------
+
+  const passwordModalEl = document.getElementById("password-modal-overlay");
+  const passwordFormEl = document.getElementById("password-form");
+  const passwordErrorEl = document.getElementById("password-error");
+
+  function openPasswordForm() {
+    passwordFormEl.reset();
+    passwordErrorEl.hidden = true;
+    passwordModalEl.hidden = false;
+  }
+
+  function closePasswordForm() {
+    passwordModalEl.hidden = true;
+  }
+
+  document.getElementById("btn-change-password").addEventListener("click", openPasswordForm);
+  document.getElementById("password-form-cancel").addEventListener("click", closePasswordForm);
+  passwordModalEl.addEventListener("click", (event) => {
+    if (event.target.id === "password-modal-overlay") closePasswordForm();
+  });
+
+  passwordFormEl.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    passwordErrorEl.hidden = true;
+    const newPassword = document.getElementById("f-password-new").value;
+    const confirmPassword = document.getElementById("f-password-confirm").value;
+    if (newPassword !== confirmPassword) {
+      passwordErrorEl.textContent = "Les deux mots de passe ne correspondent pas.";
+      passwordErrorEl.hidden = false;
+      return;
+    }
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+    if (error) {
+      passwordErrorEl.textContent = "Erreur : " + error.message;
+      passwordErrorEl.hidden = false;
+      return;
+    }
+    closePasswordForm();
+    alert("Mot de passe changé.");
   });
 
   supabaseClient.auth.onAuthStateChange((_event, session) => {

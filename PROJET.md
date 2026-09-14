@@ -257,9 +257,13 @@ différenciés par **rôle** et par **service**, imposés côté serveur (RLS
 Postgres, `supabase/schema.sql`), pas seulement côté interface.
 
 - **Comptes** : créés par l'admin depuis le Dashboard Supabase
-  (Authentication → Add user). Pas d'auto-inscription. Un trigger crée
-  automatiquement la ligne `profiles` correspondante ; l'admin complète
-  ensuite `role` et `service` via le Table Editor.
+  (Authentication → Add user), avec un mot de passe temporaire défini
+  directement (pas d'email d'invitation : le mailer par défaut Supabase est
+  trop limité en gratuit). Un trigger crée automatiquement la ligne
+  `profiles` correspondante ; l'admin complète ensuite `role` et `service`
+  via le Table Editor (ou `supabase/seed_team.sql` pour plusieurs comptes
+  d'un coup). Chacun peut ensuite changer son mot de passe lui-même depuis
+  l'app (bouton « Mot de passe » dans le header, sans email non plus).
 - **`profiles`** (nouvelle table, hors schéma JSON du §4) : `display_name`,
   `role` (`admin` | `user`), `service` (multi-valeurs, ex. Commerce/Travaux).
 - **Rôle `admin`** : voit et modifie tout, sans restriction.
