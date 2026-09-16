@@ -524,20 +524,6 @@
     border: 1px solid var(--color-border);
   }
 
-  .badge-type-service {
-    display: inline-block;
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 7px;
-    border-radius: 999px;
-    white-space: nowrap;
-    margin-bottom: 6px;
-    margin-left: 4px;
-    background: #e6f2f1;
-    color: var(--color-primary);
-    border: 1px solid var(--color-primary);
-  }
-
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -2876,11 +2862,9 @@
     const showDeadline = phaseIndex === -1 || phaseIndex < PHASE_POST_REMISE_INDEX;
     const days = showDeadline ? daysBetween(ao.date_remise) : null;
     const marche = (ao.type_marche || []).join(", ");
-    const service = (ao.service || []).join(", ");
     return `
       <div class="kanban-card" draggable="true" data-id="${ao.id}">
         ${ao.type ? `<span class="badge-type-ao">${escapeHtml(ao.type)}</span>` : ""}
-        ${service ? `<span class="badge-type-service">${escapeHtml(service)}</span>` : ""}
         <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
         <div class="list-item-sub">${escapeHtml(ao.type_client)}${marche ? " · " + escapeHtml(marche) : ""}</div>
         <div class="kanban-card-footer">
