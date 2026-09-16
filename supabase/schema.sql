@@ -89,7 +89,11 @@ security definer
 set search_path = public
 as $$
 begin
-  if not public.is_admin() then
+  -- auth.uid() est NULL quand la requête vient du SQL Editor (ou d'un appel
+  -- service_role) : ce sont des contextes de confiance (l'admin y a de toute
+  -- façon les pleins pouvoirs), donc on ne protège que les appels faits par
+  -- un utilisateur authentifié via l'app qui n'est pas admin.
+  if auth.uid() is not null and not public.is_admin() then
     new.role := old.role;
     new.service := old.service;
   end if;

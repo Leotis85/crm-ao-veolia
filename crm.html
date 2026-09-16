@@ -72,6 +72,33 @@
     color: #fff;
   }
 
+  .pipeline-service-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .pipeline-service-tabs button {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+
+  .pipeline-service-tabs button:hover {
+    background: var(--color-bg);
+  }
+
+  .pipeline-service-tabs button.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+  }
+
   #reminder-bell {
     position: relative;
     border: none;
@@ -1336,6 +1363,7 @@
 
   <section class="screen" id="screen-pipeline">
     <h1>Pipeline</h1>
+    <div class="pipeline-service-tabs" id="pipeline-service-tabs" hidden></div>
     <div class="toolbar">
       <button type="button" class="btn-primary" id="btn-new-ao">+ Nouvel AO</button>
       <select id="filter-type_client"></select>
@@ -1474,10 +1502,9 @@
         <div class="checkbox-group" id="f-type_marche"></div>
       </fieldset>
 
-      <fieldset>
-        <legend>Service</legend>
-        <div class="checkbox-group" id="f-service"></div>
-      </fieldset>
+      <label>Service
+        <select id="f-service"></select>
+      </label>
 
       <label class="block">Notes
         <textarea id="f-notes" rows="3"></textarea>
@@ -2761,6 +2788,40 @@
   let draggedAOId = null;
   let currentEditingAO = null;
 
+  // Onglet de pipeline actif (Commerce / Travaux). Un AO n'appartient qu'à
+  // un seul service (voir §9 PROJET.md) : la vue Kanban en affiche un à la
+  // fois plutôt que de les mélanger.
+  let activePipelineService = "";
+
+  function availablePipelineServices() {
+    if (!currentProfile) return [];
+    if (currentProfile.role === "admin") return SERVICE_OPTIONS;
+    return (currentProfile.service || []).filter((s) => SERVICE_OPTIONS.includes(s));
+  }
+
+  function renderPipelineServiceTabs() {
+    const wrap = document.getElementById("pipeline-service-tabs");
+    const available = availablePipelineServices();
+    if (available.length < 2) {
+      wrap.hidden = true;
+      activePipelineService = available[0] || "";
+      return;
+    }
+    if (!available.includes(activePipelineService)) {
+      activePipelineService = available[0];
+    }
+    wrap.hidden = false;
+    wrap.innerHTML = available.map((s) => `
+      <button type="button" class="${s === activePipelineService ? "active" : ""}" data-service="${escapeHtml(s)}">${escapeHtml(s)}</button>
+    `).join("");
+    wrap.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        activePipelineService = btn.dataset.service;
+        renderPipeline();
+      });
+    });
+  }
+
   function populateSelect(selectEl, options, withEmptyOption) {
     const emptyOpt = withEmptyOption ? `<option value="">${escapeHtml(withEmptyOption)}</option>` : "";
     selectEl.innerHTML = emptyOpt + options.map((o) => {
@@ -2789,6 +2850,7 @@
   }
 
   function aoMatchesFilters(ao) {
+    if (activePipelineService && !(ao.service || []).includes(activePipelineService)) return false;
     if (pipelineFilters.type_client && ao.type_client !== pipelineFilters.type_client) return false;
     if (pipelineFilters.type_marche && !(ao.type_marche || []).includes(pipelineFilters.type_marche)) return false;
     if (pipelineFilters.assigne_a && ao.assigne_a !== pipelineFilters.assigne_a) return false;
@@ -2827,6 +2889,7 @@
   }
 
   function renderPipeline() {
+    renderPipelineServiceTabs();
     renderPipelineFilters();
     const board = document.getElementById("kanban-board");
     const filtered = appData.aos.filter(aoMatchesFilters);
@@ -2964,10 +3027,7 @@
       <label class="checkbox-inline"><input type="checkbox" class="f-type_marche-item" value="${escapeHtml(m)}"> ${escapeHtml(m)}</label>
     `).join("");
 
-    const serviceContainer = document.getElementById("f-service");
-    serviceContainer.innerHTML = SERVICE_OPTIONS.map((s) => `
-      <label class="checkbox-inline"><input type="checkbox" class="f-service-item" value="${escapeHtml(s)}"> ${escapeHtml(s)}</label>
-    `).join("");
+    populateSelect(document.getElementById("f-service"), SERVICE_OPTIONS, "— Aucun —");
 
     const data = ao || {};
     document.getElementById("f-nom_projet").value = data.nom_projet || "";
@@ -2992,10 +3052,7 @@
       cb.checked = selectedMarche.has(cb.value);
     });
 
-    const selectedService = new Set(data.service || []);
-    serviceContainer.querySelectorAll(".f-service-item").forEach((cb) => {
-      cb.checked = selectedService.has(cb.value);
-    });
+    document.getElementById("f-service").value = (data.service && data.service[0]) || activePipelineService || "";
 
     const fichiersList = document.getElementById("f-fichiers-list");
     fichiersList.innerHTML = "";
@@ -3038,7 +3095,8 @@
   document.getElementById("ao-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const selectedMarche = Array.from(document.querySelectorAll(".f-type_marche-item:checked")).map((cb) => cb.value);
-    const selectedService = Array.from(document.querySelectorAll(".f-service-item:checked")).map((cb) => cb.value);
+    const serviceValue = document.getElementById("f-service").value;
+    const selectedService = serviceValue ? [serviceValue] : [];
     const fichiers = Array.from(document.querySelectorAll(".f-fichier-input")).map((i) => i.value.trim()).filter(Boolean);
     const rappelActif = document.getElementById("f-rappel-actif").checked;
     const rappel = rappelActif ? createRappel({
