@@ -2850,7 +2850,10 @@
   }
 
   function aoMatchesFilters(ao) {
-    if (activePipelineService && !(ao.service || []).includes(activePipelineService)) return false;
+    // Un AO sans service (pas encore taggé) reste visible dans tous les
+    // onglets, cohérent avec la visibilité RLS "migration douce" (§9).
+    const aoServices = ao.service || [];
+    if (activePipelineService && aoServices.length && !aoServices.includes(activePipelineService)) return false;
     if (pipelineFilters.type_client && ao.type_client !== pipelineFilters.type_client) return false;
     if (pipelineFilters.type_marche && !(ao.type_marche || []).includes(pipelineFilters.type_marche)) return false;
     if (pipelineFilters.assigne_a && ao.assigne_a !== pipelineFilters.assigne_a) return false;
