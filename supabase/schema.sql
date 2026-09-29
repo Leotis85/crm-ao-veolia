@@ -205,7 +205,9 @@ create table public.taches (
   statut text not null default 'Pas commencé',
   date_debut date,
   echeance date,
-  assigne_a text not null default '',
+  -- Multi-valeurs : la tâche est personnelle par défaut (soi-même) mais peut
+  -- être partagée avec d'autres (ajout du 2026-09-29).
+  assigne_a text[] not null default '{}',
   priorite text not null default 'Normale',
   notes text not null default '',
   rappel jsonb,
@@ -214,7 +216,7 @@ create table public.taches (
   modified_by text not null default ''
 );
 
-create or replace function public.tache_visible(t_assigne_a text)
+create or replace function public.tache_visible(t_assigne_a text[])
 returns boolean
 language sql
 security definer
@@ -223,10 +225,10 @@ set search_path = public
 as $$
   select
     public.is_admin()
-    or t_assigne_a = coalesce(
+    or coalesce(
       (select display_name from public.profiles where id = auth.uid()),
       ''
-    );
+    ) = any(t_assigne_a);
 $$;
 
 alter table public.taches enable row level security;
@@ -451,7 +453,8 @@ begin
         coalesce(row_id, gen_random_uuid()::text),
         coalesce(row_data->>'tache', ''), coalesce(row_data->>'statut', 'Pas commencé'),
         nullif(row_data->>'date_debut', '')::date, nullif(row_data->>'echeance', '')::date,
-        coalesce(row_data->>'assigne_a', ''), coalesce(row_data->>'priorite', 'Normale'),
+        coalesce((select array(select jsonb_array_elements_text(row_data->'assigne_a'))), '{}'),
+        coalesce(row_data->>'priorite', 'Normale'),
         coalesce(row_data->>'notes', ''), row_data->'rappel',
         nullif(row_data->>'ao_lie', ''), now(), caller_name
       );
@@ -461,7 +464,7 @@ begin
         statut = coalesce(row_data->>'statut', 'Pas commencé'),
         date_debut = nullif(row_data->>'date_debut', '')::date,
         echeance = nullif(row_data->>'echeance', '')::date,
-        assigne_a = coalesce(row_data->>'assigne_a', ''),
+        assigne_a = coalesce((select array(select jsonb_array_elements_text(row_data->'assigne_a'))), '{}'),
         priorite = coalesce(row_data->>'priorite', 'Normale'),
         notes = coalesce(row_data->>'notes', ''),
         rappel = row_data->'rappel',

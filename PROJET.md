@@ -124,7 +124,7 @@ Repris du Todo Notion existant, enrichi.
 | `statut` | liste | Pas commencé, En cours, Terminé |
 | `date_debut` | date | ajouté ultérieurement, facultatif : si renseignée, la tâche s'étale sur plusieurs jours dans le calendrier ToDo (barre continue) — `echeance` reste la date de fin |
 | `echeance` | date | date de fin / échéance (seule date utilisée pour le tri, les rappels et les autres écrans si `date_debut` est vide) |
-| `assigne_a` | personne | Mathis ou collègue |
+| `assigne_a` | multi-personnes | modifié le 2026-09-29 : tableau, pas un texte simple. Une tâche est perso par défaut (soi-même seulement) mais peut être partagée en cochant d'autres personnes — pilote la visibilité (§9) |
 | `priorite` | liste | Normale, Haute (= flag rouge / critique) |
 | `notes` | texte | |
 | `rappel` | rappel | date + déclenchement (voir §4.4) |
@@ -271,9 +271,14 @@ Postgres, `supabase/schema.sql`), pas seulement côté interface.
   - **AO** : visible si son champ `service` (§4.1) recoupe le/les service(s)
     du profil, ou si `service` est vide (AO pas encore taggé — visible par
     tous par défaut).
-  - **Tâches** : **personnelles** — visibles uniquement par la personne en
-    `assigne_a` (doit correspondre exactement au `display_name` du profil)
-    et par l'admin.
+  - **Tâches** : **personnelles par défaut, partageables** — visibles par
+    toute personne présente dans `assigne_a` (tableau, comparé au
+    `display_name` du profil) et par l'admin. À la création, `assigne_a` est
+    automatiquement initialisé avec soi-même ; cocher d'autres personnes dans
+    le formulaire partage la tâche avec elles (elles peuvent alors la voir et
+    la modifier). La liste des personnes assignables (`ASSIGNE_OPTIONS` dans
+    crm.html) est chargée dynamiquement depuis `profiles`, plus besoin de la
+    maintenir à la main.
   - **Contacts** : aucun filtrage, visibles par tout le monde (à revoir plus
     tard si besoin).
 - La vérification d'accès est faite à la fois par les policies RLS des

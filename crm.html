@@ -1573,13 +1573,15 @@
         <label>Priorité
           <select id="f-t-priorite"></select>
         </label>
-        <label>Assigné à
-          <select id="f-t-assigne_a"></select>
-        </label>
         <label>Échéance
           <input type="date" id="f-t-echeance">
         </label>
       </div>
+
+      <fieldset>
+        <legend>Assigné à (soi-même par défaut, cocher d'autres personnes pour partager)</legend>
+        <div class="checkbox-group" id="f-t-assigne_a"></div>
+      </fieldset>
 
       <label class="block">Notes
         <textarea id="f-t-notes" rows="3"></textarea>
@@ -2110,6 +2112,7 @@
     authScreenEl.hidden = true;
     appShellEl.hidden = false;
     storageAdapter.subscribe(refreshFromStorage);
+    await loadKnownUsers();
     await refreshFromStorage();
   }
 
@@ -2264,8 +2267,17 @@
   const RESULTAT_STATUS_ORDER = ["Gagné", "Perdu", "Abandonné", "En cours"];
   const RESULTAT_STATUS_COLORS = { "Gagné": "#0ca30c", "Perdu": "#d03b3b", "Abandonné": "#fab219", "En cours": "#898781" };
   const TYPE_CLIENT_OPTIONS = ["Habitat", "Collectivité", "Santé", "Enseignement", "Tertiaire", "Autre"];
-  // Liste fermée des personnes assignables (AO et Tâches).
-  const ASSIGNE_OPTIONS = ["Maxime", "Mathis", "Maxime + Mathis"];
+  // Liste des personnes assignables (AO et Tâches), chargée depuis les
+  // profils Supabase (voir loadKnownUsers()) plutôt que codée en dur, pour
+  // ne jamais désynchroniser de l'équipe réelle.
+  let ASSIGNE_OPTIONS = [];
+
+  async function loadKnownUsers() {
+    const { data, error } = await supabaseClient.from("profiles").select("display_name").order("display_name");
+    if (!error && data) {
+      ASSIGNE_OPTIONS = data.map((p) => p.display_name).filter(Boolean);
+    }
+  }
   // Motif de perte : catégorie fermée (alimente le Reporting) + détail libre.
   const MOTIF_OPTIONS = ["Prix", "Technique", "Mauvais environnement", "Autre"];
   // Couleurs du graphe circulaire des motifs de perte (palette catégorielle
@@ -2366,7 +2378,7 @@
       statut: "Pas commencé",
       date_debut: null,
       echeance: null,
-      assigne_a: "",
+      assigne_a: [],
       priorite: "Normale",
       notes: "",
       rappel: null,
@@ -3235,7 +3247,7 @@
     const isHigh = tache.priorite === "Haute" && !isDone;
     const subParts = [];
     if (!options.hideAO && ao) subParts.push(escapeHtml(ao.nom_projet || "(sans nom)"));
-    if (tache.assigne_a) subParts.push(escapeHtml(tache.assigne_a));
+    if (tache.assigne_a && tache.assigne_a.length) subParts.push(escapeHtml(tache.assigne_a.join(", ")));
     return `
       <div class="list-item todo-item${isHigh ? " flag-high" : ""}" data-id="${tache.id}">
         <div class="todo-item-main">
@@ -3291,7 +3303,7 @@
 
   function tacheMatchesFilters(t) {
     if (todoFilters.ao && t.ao_lie !== todoFilters.ao) return false;
-    if (todoFilters.assigne_a && t.assigne_a !== todoFilters.assigne_a) return false;
+    if (todoFilters.assigne_a && !(t.assigne_a || []).includes(todoFilters.assigne_a)) return false;
     if (todoFilters.hideDone && t.statut === "Terminé") return false;
     return true;
   }
@@ -3688,11 +3700,20 @@
     populateSelect(document.getElementById("f-t-priorite"), PRIORITE_OPTIONS);
     populateSelect(document.getElementById("f-t-rappel-declenchement"), DECLENCHEMENT_OPTIONS);
 
+    const assigneContainer = document.getElementById("f-t-assigne_a");
+    assigneContainer.innerHTML = ASSIGNE_OPTIONS.map((n) => `
+      <label class="checkbox-inline"><input type="checkbox" class="f-t-assigne-item" value="${escapeHtml(n)}"> ${escapeHtml(n)}</label>
+    `).join("");
+
     const data = tache || {};
     document.getElementById("f-t-tache").value = data.tache || "";
     aoSelect.value = data.ao_lie || presetAoId || "";
     document.getElementById("f-t-statut").value = data.statut || STATUT_TACHE_OPTIONS[0];
-    populateAssigneSelect(document.getElementById("f-t-assigne_a"), data.assigne_a || "");
+    const defaultAssignees = tache ? (data.assigne_a || []) : [currentProfile.display_name];
+    const selectedAssignees = new Set(defaultAssignees);
+    assigneContainer.querySelectorAll(".f-t-assigne-item").forEach((cb) => {
+      cb.checked = selectedAssignees.has(cb.value);
+    });
     document.getElementById("f-t-priorite").value = data.priorite || PRIORITE_OPTIONS[0];
     document.getElementById("f-t-echeance").value = data.echeance || "";
     document.getElementById("f-t-notes").value = data.notes || "";
@@ -3743,7 +3764,7 @@
       tache: document.getElementById("f-t-tache").value.trim(),
       ao_lie: document.getElementById("f-t-ao_lie").value || null,
       statut: document.getElementById("f-t-statut").value,
-      assigne_a: document.getElementById("f-t-assigne_a").value,
+      assigne_a: Array.from(document.querySelectorAll(".f-t-assigne-item:checked")).map((cb) => cb.value),
       priorite: document.getElementById("f-t-priorite").value,
       date_debut: dates.date_debut,
       echeance: dates.echeance,
