@@ -1877,7 +1877,17 @@
   class SupabaseAdapter {
     constructor(client) {
       this.client = client;
-      this._snapshot = { aos: new Map(), taches: new Map(), contacts: new Map() };
+      // Un instantané par objet renvoyé par load() (clé = l'objet lui-même),
+      // plutôt qu'un instantané unique partagé sur l'instance. Plusieurs
+      // load()/save() peuvent se chevaucher (ex. un rechargement temps réel
+      // déclenché pendant qu'une autre création est en cours d'enregistrement
+      // — chaque sauvegarde déclenche elle-même une notification temps réel)
+      // : avec un état partagé, le diff d'un save() pouvait être calculé
+      // contre l'instantané d'UN AUTRE load(), et un enregistrement absent
+      // de ce load-là (parce que créé entre-temps) était alors envoyé comme
+      // suppression. Le WeakMap garantit que save(data) compare toujours
+      // data au SEUL load() qui l'a produit.
+      this._snapshots = new WeakMap();
       this._listeners = new Set();
       this._channel = null;
     }
@@ -1892,10 +1902,7 @@
       for (const res of [aosRes, tachesRes, contactsRes, metaRes]) {
         if (res.error) throw res.error;
       }
-      this._snapshot.aos = new Map(aosRes.data.map((r) => [r.id, r]));
-      this._snapshot.taches = new Map(tachesRes.data.map((r) => [r.id, r]));
-      this._snapshot.contacts = new Map(contactsRes.data.map((r) => [r.id, r]));
-      return {
+      const result = {
         aos: aosRes.data,
         taches: tachesRes.data,
         contacts: contactsRes.data,
@@ -1904,18 +1911,24 @@
           modifiedBy: metaRes.data ? metaRes.data.modified_by : null,
         },
       };
+      this._snapshots.set(result, {
+        aos: new Map(aosRes.data.map((r) => [r.id, r])),
+        taches: new Map(tachesRes.data.map((r) => [r.id, r])),
+        contacts: new Map(contactsRes.data.map((r) => [r.id, r])),
+      });
+      return result;
     }
 
-    // Compare les enregistrements reçus au dernier load() connu pour cette
-    // table : nouveaux -> insert (expected_last_modified null), last_modified
-    // différent -> update, absents -> delete.
-    _diffTable(table, records) {
-      const snapshot = this._snapshot[table];
+    // Compare les enregistrements reçus à l'instantau du load() qui a produit
+    // ces données : nouveaux -> insert (expected_last_modified null),
+    // last_modified différent -> update, absents -> delete.
+    _diffTable(snapshot, table, records) {
+      const known = snapshot[table];
       const seen = new Set();
       const upsert = [];
       for (const record of records) {
         seen.add(record.id);
-        const previous = snapshot.get(record.id);
+        const previous = known.get(record.id);
         if (!previous) {
           upsert.push({ ...record, expected_last_modified: null });
         } else if (previous.last_modified !== record.last_modified) {
@@ -1923,17 +1936,21 @@
         }
       }
       const del = [];
-      for (const [id, previous] of snapshot) {
+      for (const [id, previous] of known) {
         if (!seen.has(id)) del.push({ id, expected_last_modified: previous.last_modified });
       }
       return { upsert, delete: del };
     }
 
     async save(data) {
+      const snapshot = this._snapshots.get(data);
+      if (!snapshot) {
+        throw new Error("SupabaseAdapter.save() appelé sur des données qui ne viennent pas de load().");
+      }
       const payload = {
-        aos: this._diffTable("aos", data.aos),
-        taches: this._diffTable("taches", data.taches),
-        contacts: this._diffTable("contacts", data.contacts),
+        aos: this._diffTable(snapshot, "aos", data.aos),
+        taches: this._diffTable(snapshot, "taches", data.taches),
+        contacts: this._diffTable(snapshot, "contacts", data.contacts),
       };
       const hasChanges = ["aos", "taches", "contacts"].some(
         (t) => payload[t].upsert.length || payload[t].delete.length
@@ -1949,18 +1966,6 @@
       }
       if (result.forbidden && result.forbidden.length) {
         throw new Error("Un des enregistrements modifiés n'est pas dans ton périmètre d'accès.");
-      }
-
-      for (const table of ["aos", "taches", "contacts"]) {
-        const snapshot = this._snapshot[table];
-        for (const row of payload[table].upsert) {
-          const { expected_last_modified, ...record } = row;
-          record.last_modified = result.last_modified;
-          snapshot.set(record.id, record);
-        }
-        for (const row of payload[table].delete) {
-          snapshot.delete(row.id);
-        }
       }
 
       return { lastModified: result.last_modified, modifiedBy: getCurrentUser() };
