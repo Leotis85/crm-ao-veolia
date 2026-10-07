@@ -143,6 +143,11 @@ create table public.aos (
   date_remise date,
   date_visite date,
   date_prise_effet date,
+  -- Posée automatiquement (côté client) à la première sortie de "a_venir",
+  -- mais reste un champ normal modifiable à la main (plan de charge, §9/§10
+  -- PROJET.md) : pas d'historique fiable pour les AO déjà avancés avant
+  -- l'ajout de ce champ.
+  date_entree_etude date,
   lieu text not null default '',
   notes text not null default '',
   fichiers text[] not null default '{}',
@@ -357,6 +362,7 @@ begin
       insert into public.aos (
         id, nom_projet, type_client, assigne_a, phase, type, type_marche, service,
         valeur_estimee_keur, amo, concurrence, date_remise, date_visite, date_prise_effet,
+        date_entree_etude,
         lieu, notes, fichiers, resultat, motif_categorie, motif, rappel,
         contacts_lies, taches_liees, last_modified, modified_by
       ) values (
@@ -370,6 +376,7 @@ begin
         coalesce(row_data->>'amo', ''), coalesce(row_data->>'concurrence', ''),
         nullif(row_data->>'date_remise', '')::date, nullif(row_data->>'date_visite', '')::date,
         nullif(row_data->>'date_prise_effet', '')::date,
+        nullif(row_data->>'date_entree_etude', '')::date,
         coalesce(row_data->>'lieu', ''), coalesce(row_data->>'notes', ''),
         coalesce((select array(select jsonb_array_elements_text(row_data->'fichiers'))), '{}'),
         coalesce(row_data->>'resultat', 'En cours'), coalesce(row_data->>'motif_categorie', ''),
@@ -393,6 +400,7 @@ begin
         date_remise = nullif(row_data->>'date_remise', '')::date,
         date_visite = nullif(row_data->>'date_visite', '')::date,
         date_prise_effet = nullif(row_data->>'date_prise_effet', '')::date,
+        date_entree_etude = nullif(row_data->>'date_entree_etude', '')::date,
         lieu = coalesce(row_data->>'lieu', ''),
         notes = coalesce(row_data->>'notes', ''),
         fichiers = coalesce((select array(select jsonb_array_elements_text(row_data->'fichiers'))), '{}'),

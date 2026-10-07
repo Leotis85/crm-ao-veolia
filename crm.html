@@ -99,6 +99,79 @@
     color: #fff;
   }
 
+  .placeholder-hint {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin: -8px 0 16px;
+  }
+
+  .gantt-scroll {
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .gantt-service-section {
+    margin-bottom: 28px;
+  }
+
+  .gantt-service-section h2 {
+    font-size: 13px;
+    margin: 0 0 8px;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .gantt-grid-wrap {
+    position: relative;
+    display: inline-block;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+  }
+
+  .gantt-months {
+    display: grid;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .gantt-month {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-align: center;
+    text-transform: capitalize;
+    padding: 6px 0;
+    border-right: 1px solid var(--color-border);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .gantt-bars {
+    display: grid;
+    position: relative;
+  }
+
+  .gantt-bar {
+    margin: 3px 2px;
+    padding: 0 6px;
+    border-radius: 4px;
+    background: var(--color-primary);
+    color: #fff;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  .gantt-today-line {
+    background: rgba(220, 38, 38, 0.12);
+    border-left: 2px solid var(--color-danger);
+  }
+
   #reminder-bell {
     position: relative;
     border: none;
@@ -1300,6 +1373,7 @@
   <nav id="main-nav">
     <button data-screen="accueil" class="active">Accueil</button>
     <button data-screen="pipeline">Pipeline</button>
+    <button data-screen="plan-charge">Plan de charge</button>
     <button data-screen="todo">ToDo</button>
     <button data-screen="contacts">Contacts</button>
     <button data-screen="reporting">Reporting</button>
@@ -1361,6 +1435,14 @@
       <div class="kanban-top-scroll-spacer" id="kanban-top-scroll-spacer"></div>
     </div>
     <div class="kanban-board" id="kanban-board"></div>
+  </section>
+
+  <section class="screen" id="screen-plan-charge">
+    <h1>Plan de charge</h1>
+    <p class="placeholder-hint">Une barre par AO en cours, de son entrée en étude à sa date de remise.</p>
+    <div class="gantt-scroll" id="gantt-scroll">
+      <div id="gantt-container"></div>
+    </div>
   </section>
 
   <section class="screen" id="screen-todo">
@@ -1471,6 +1553,9 @@
         </label>
         <label>Date de prise d'effet
           <input type="date" id="f-date_prise_effet">
+        </label>
+        <label>Entrée en étude <small>(posée auto., modifiable)</small>
+          <input type="date" id="f-date_entree_etude">
         </label>
         <label>Résultat
           <select id="f-resultat"></select>
@@ -2343,7 +2428,7 @@
   }
 
   function createAO(partial = {}) {
-    return stamp({
+    const ao = stamp({
       id: generateId(),
       nom_projet: "",
       type_client: "Habitat",
@@ -2358,6 +2443,7 @@
       date_remise: null,
       date_visite: null,
       date_prise_effet: null,
+      date_entree_etude: null,
       lieu: "",
       notes: "",
       fichiers: [],
@@ -2369,6 +2455,10 @@
       taches_liees: [],
       ...partial,
     });
+    if (ao.phase !== "a_venir" && !ao.date_entree_etude) {
+      ao.date_entree_etude = localDateKey(new Date());
+    }
+    return ao;
   }
 
   function createTache(partial = {}) {
@@ -2452,6 +2542,11 @@
       const record = findOrThrow(data.aos, id, "AO");
       checkRecordConflict(record, "ao", id, baseLastModified);
       Object.assign(record, changes);
+      // Première sortie de "A venir" -> pose la date de départ du plan de
+      // charge, une seule fois (reste modifiable à la main ensuite).
+      if (record.phase !== "a_venir" && !record.date_entree_etude) {
+        record.date_entree_etude = localDateKey(new Date());
+      }
       stamp(record);
     });
   }
@@ -2974,6 +3069,112 @@
     document.getElementById("kanban-top-scroll").scrollLeft = document.getElementById("kanban-board").scrollLeft;
   });
 
+  // ---------------------------------------------------------------------
+  // Plan de charge (Gantt par service) : une barre par AO "En cours" avec
+  // date_entree_etude et date_remise renseignées, sur une fenêtre continue
+  // d'environ un an (2 mois passés -> 10 mois à venir). Même principe de
+  // lanes que les tâches multi-jours du calendrier ToDo (assignBarLanes,
+  // plus bas dans le fichier), appliqué à une grille de jours plus large
+  // plutôt qu'à une semaine.
+  // ---------------------------------------------------------------------
+
+  const GANTT_DAY_WIDTH = 28;
+
+  function computeGanttDays() {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + 10, 0);
+    const days = [];
+    for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      days.push(new Date(d));
+    }
+    return days;
+  }
+
+  function renderGanttMonthHeader(days) {
+    const months = [];
+    days.forEach((d) => {
+      const key = `${d.getFullYear()}-${d.getMonth()}`;
+      const last = months[months.length - 1];
+      if (last && last.key === key) {
+        last.span += 1;
+      } else {
+        months.push({ key, span: 1, label: d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) });
+      }
+    });
+    return months.map((m) => `<div class="gantt-month" style="grid-column: span ${m.span};">${escapeHtml(m.label)}</div>`).join("");
+  }
+
+  function ganttSegmentsForService(service, dayKeys) {
+    const rangeStart = dayKeys[0];
+    const rangeEnd = dayKeys[dayKeys.length - 1];
+    const relevant = appData.aos.filter((ao) =>
+      ao.resultat === "En cours" &&
+      ao.date_entree_etude && ao.date_remise &&
+      (ao.service || []).includes(service) &&
+      ao.date_entree_etude <= rangeEnd && ao.date_remise >= rangeStart
+    );
+    const segments = relevant.map((ao) => {
+      const clippedStart = ao.date_entree_etude < rangeStart ? rangeStart : ao.date_entree_etude;
+      const clippedEnd = ao.date_remise > rangeEnd ? rangeEnd : ao.date_remise;
+      const startCol = daysBetweenKeys(rangeStart, clippedStart) + 1;
+      const span = daysBetweenKeys(clippedStart, clippedEnd) + 1;
+      return { ao, startCol, span };
+    });
+    return assignBarLanes(segments);
+  }
+
+  function renderGanttBar(seg) {
+    return `
+      <div class="gantt-bar" data-id="${seg.ao.id}"
+           style="grid-column: ${seg.startCol} / span ${seg.span}; grid-row: ${seg.lane + 1};"
+           title="${escapeHtml(seg.ao.nom_projet || "")} — remise ${formatDate(seg.ao.date_remise)}">
+        ${escapeHtml(seg.ao.nom_projet || "(sans nom)")}
+      </div>
+    `;
+  }
+
+  function renderPlanCharge() {
+    const days = computeGanttDays();
+    const dayKeys = days.map((d) => localDateKey(d));
+    const todayKey = localDateKey(new Date());
+    const todayCol = dayKeys.indexOf(todayKey) + 1;
+    const monthHeaderHtml = renderGanttMonthHeader(days);
+    const dayColsStyle = `grid-template-columns: repeat(${days.length}, ${GANTT_DAY_WIDTH}px);`;
+
+    const services = availablePipelineServices();
+    const container = document.getElementById("gantt-container");
+
+    if (!services.length) {
+      container.innerHTML = `<div class="placeholder">Aucun service accessible.</div>`;
+      return;
+    }
+
+    container.innerHTML = services.map((service) => {
+      const segments = ganttSegmentsForService(service, dayKeys);
+      const laneCount = Math.max(1, ...segments.map((s) => s.lane + 1));
+      return `
+        <div class="gantt-service-section">
+          <h2>${escapeHtml(service)}</h2>
+          <div class="gantt-grid-wrap">
+            <div class="gantt-months" style="${dayColsStyle}">${monthHeaderHtml}</div>
+            <div class="gantt-bars" style="${dayColsStyle} grid-template-rows: repeat(${laneCount}, 28px);">
+              ${todayCol > 0 ? `<div class="gantt-today-line" style="grid-column: ${todayCol}; grid-row: 1 / span ${laneCount};"></div>` : ""}
+              ${segments.map(renderGanttBar).join("")}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    container.querySelectorAll(".gantt-bar").forEach((el) => {
+      el.addEventListener("click", () => {
+        const ao = appData.aos.find((a) => a.id === el.dataset.id);
+        if (ao) openAOForm(ao);
+      });
+    });
+  }
+
   document.getElementById("filter-type_client").addEventListener("change", (e) => {
     pipelineFilters.type_client = e.target.value;
     renderPipeline();
@@ -3046,6 +3247,7 @@
     document.getElementById("f-date_remise").value = data.date_remise || "";
     document.getElementById("f-date_visite").value = data.date_visite || "";
     document.getElementById("f-date_prise_effet").value = data.date_prise_effet || "";
+    document.getElementById("f-date_entree_etude").value = data.date_entree_etude || "";
     document.getElementById("f-resultat").value = data.resultat || RESULTAT_OPTIONS[0];
     document.getElementById("f-motif-categorie").value = data.motif_categorie || "";
     document.getElementById("f-motif").value = data.motif || "";
@@ -3127,6 +3329,7 @@
       date_remise: document.getElementById("f-date_remise").value || null,
       date_visite: document.getElementById("f-date_visite").value || null,
       date_prise_effet: document.getElementById("f-date_prise_effet").value || null,
+      date_entree_etude: document.getElementById("f-date_entree_etude").value || null,
       resultat: document.getElementById("f-resultat").value,
       motif_categorie: document.getElementById("f-motif-categorie").value,
       motif: document.getElementById("f-motif").value.trim(),
@@ -4401,6 +4604,7 @@
     renderReminderBell();
     renderAccueil();
     renderPipeline();
+    renderPlanCharge();
     renderTodo();
     renderContacts();
     renderReporting();

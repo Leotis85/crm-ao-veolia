@@ -99,6 +99,7 @@ Repris du Pipeline Notion existant, enrichi.
 | `date_remise` | date | date limite de remise de l'offre |
 | `date_visite` | date | visite éventuelle |
 | `date_prise_effet` | date | prise d'effet du contrat |
+| `date_entree_etude` | date | ajouté le 2026-10-07 : posée automatiquement à la première sortie de la phase "A venir", reste modifiable à la main. Alimente le plan de charge (§10) |
 | `lieu` | texte | localisation |
 | `notes` | texte long | |
 | `fichiers` | liste de liens | liens vers livrables (résumé de lecture, mémoire technique…) |
@@ -284,3 +285,28 @@ Postgres, `supabase/schema.sql`), pas seulement côté interface.
 - La vérification d'accès est faite à la fois par les policies RLS des
   tables (accès direct à l'API) et, en écriture, explicitement dans la
   fonction `save_crm_data` (voir commentaires dans `supabase/schema.sql`).
+
+---
+
+## 10. Plan de charge (ajouté le 2026-10-07)
+
+Nouvel écran "Plan de charge" (nav principale) : un Gantt horizontal par
+service (Commerce / Travaux), une barre par AO `En cours` dont
+`date_entree_etude` ET `date_remise` sont renseignées (voir §4.1). Fenêtre
+glissante d'environ un an (2 mois passés → 10 mois à venir) ; chaque service
+a ses propres lanes (algorithme glouton déjà utilisé pour les tâches
+multi-jours du calendrier ToDo) pour éviter que des AO qui se chevauchent
+dans le temps se superposent visuellement. Un AO sans `date_entree_etude`
+n'apparaît pas sur le Gantt tant qu'elle n'est pas renseignée.
+
+## 11. Travail futur demandé, pas commencé
+
+Lors du même retour (2026-10-07), deux autres besoins ont été exprimés mais
+mis en attente par Mathis ("dans un premier temps" = plan de charge
+d'abord) :
+- **Onglet Client** : suivi des infos/échéances du contrat en cours, lié au
+  Pipeline (probablement : un AO Gagné devient un client suivi dans le
+  temps). Aucune spécification détaillée encore donnée.
+- **Onglet Prospection froide** : suivi des partenaires/futurs clients
+  démarchés, en amont d'un AO formel. Aucune spécification détaillée encore
+  donnée.
