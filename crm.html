@@ -173,27 +173,7 @@
     border-left: 2px solid var(--color-danger);
   }
 
-  #reminder-bell {
-    position: relative;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    font-size: 18px;
-    padding: 6px 10px;
-  }
 
-  #reminder-count {
-    position: absolute;
-    top: 0;
-    right: 0;
-    background: var(--color-danger);
-    color: #fff;
-    font-size: 10px;
-    line-height: 1;
-    padding: 2px 5px;
-    border-radius: 999px;
-    display: none;
-  }
 
   .header-actions {
     display: flex;
@@ -688,7 +668,20 @@
     gap: 6px;
     margin-bottom: 6px;
   }
-  .fichier-row input { flex: 1; }
+  .fichier-row { align-items: center; }
+  .fichier-row input { flex: 1; min-width: 0; }
+  .fichier-row input[hidden], .fichier-link[hidden], .fichier-row .btn-icon[hidden] { display: none; }
+  .fichier-link {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    color: var(--color-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .fichier-link::before { content: "🔗 "; }
+  .fichier-link:hover { text-decoration: underline; }
 
   .modal-footer {
     display: flex;
@@ -855,8 +848,6 @@
   #ao-form .ao-field .checkbox-group { gap: 4px 10px; color: var(--color-text); }
   #ao-form .ao-field input[type="checkbox"] { width: auto; padding: 0; }
   #ao-form .ao-field .checkbox-group label.checkbox-inline { display: inline-flex; flex-direction: row; gap: 5px; font-size: 13px; color: var(--color-text); }
-  #ao-form .ao-rappel-toggle { display: inline-flex; flex-direction: row; font-size: 13px; color: var(--color-text); margin-bottom: 6px; }
-  #f-rappel-fields[hidden] { display: none; }
 
   .ao-fiche-main {
     display: flex;
@@ -1424,40 +1415,6 @@
     color: var(--color-text);
   }
 
-  .reminder-wrap { position: relative; }
-
-  .reminder-panel {
-    position: absolute;
-    top: 40px;
-    right: 0;
-    width: 300px;
-    max-height: 360px;
-    overflow-y: auto;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-    padding: 12px;
-    z-index: 50;
-  }
-
-  .reminder-panel[hidden] { display: none; }
-
-  .reminder-panel-header {
-    font-size: 12px;
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: var(--color-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-
-  .reminder-item-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
 
   .calendar-nav {
     display: flex;
@@ -1716,15 +1673,6 @@
     <button id="btn-export">⬇ Exporter</button>
     <button id="btn-import">⬆ Importer</button>
     <input type="file" id="file-import" accept="application/json" hidden>
-    <div class="reminder-wrap">
-      <button id="reminder-bell" title="Rappels">
-        🔔<span id="reminder-count">0</span>
-      </button>
-      <div class="reminder-panel" id="reminder-panel" hidden>
-        <div class="reminder-panel-header">Rappels actifs</div>
-        <div class="list-panel" id="reminder-panel-list"></div>
-      </div>
-    </div>
     <div class="user-wrap">
       <span id="current-user-name"></span>
       <button id="btn-change-password" title="Changer mon mot de passe">Mot de passe</button>
@@ -1745,13 +1693,9 @@
         <div class="list-panel" id="accueil-echeances"></div>
       </div>
       <div class="panel">
-        <h2>Rappels actifs</h2>
-        <div class="list-panel" id="accueil-rappels"></div>
+        <h2>Tâches prioritaires</h2>
+        <div class="list-panel" id="accueil-priorites"></div>
       </div>
-    </div>
-    <div class="panel">
-      <h2>Tâches prioritaires</h2>
-      <div class="list-panel" id="accueil-priorites"></div>
     </div>
   </section>
 
@@ -1935,27 +1879,6 @@
           </label>
         </section>
 
-        <section class="ao-side-section" data-ao-key="rappel">
-          <h3>Rappel</h3>
-          <label class="checkbox-inline ao-rappel-toggle">
-            <input type="checkbox" id="f-rappel-actif"> Rappel actif
-          </label>
-          <div id="f-rappel-fields">
-            <label class="ao-field">Déclenchement
-              <select id="f-rappel-declenchement"></select>
-            </label>
-            <label class="ao-field" id="f-rappel-date-wrap">Date
-              <input type="date" id="f-rappel-date">
-            </label>
-            <label class="ao-field" id="f-rappel-jours-wrap">Jours avant
-              <input type="number" id="f-rappel-jours_avant" min="0">
-            </label>
-            <label class="ao-field">Message
-              <input type="text" id="f-rappel-message">
-            </label>
-          </div>
-        </section>
-
         <section class="ao-side-section" data-ao-key="fichiers">
           <h3>Fichiers (liens)</h3>
           <div id="f-fichiers-list"></div>
@@ -2041,27 +1964,6 @@
         <textarea id="f-t-notes" rows="3"></textarea>
       </label>
 
-      <fieldset>
-        <legend>Rappel</legend>
-        <div class="form-grid">
-          <label>Déclenchement
-            <select id="f-t-rappel-declenchement"></select>
-          </label>
-          <label id="f-t-rappel-date-wrap">Date
-            <input type="date" id="f-t-rappel-date">
-          </label>
-          <label id="f-t-rappel-jours-wrap">Jours avant
-            <input type="number" id="f-t-rappel-jours_avant" min="0">
-          </label>
-          <label>Message
-            <input type="text" id="f-t-rappel-message">
-          </label>
-        </div>
-        <label class="checkbox-inline">
-          <input type="checkbox" id="f-t-rappel-actif"> Rappel actif
-        </label>
-      </fieldset>
-
       <div class="modal-footer">
         <button type="button" class="btn-danger" id="tache-form-delete" hidden>Supprimer</button>
         <div class="modal-footer-right">
@@ -2113,21 +2015,6 @@
         <legend>AO associés</legend>
         <input type="text" id="f-c-ao-search" placeholder="Rechercher un AO…">
         <div class="checkbox-group scrollable" id="f-c-ao_lies"></div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Rappel de relance</legend>
-        <div class="form-grid">
-          <label>Date
-            <input type="date" id="f-c-rappel-date">
-          </label>
-          <label>Message
-            <input type="text" id="f-c-rappel-message" placeholder="Relancer le 15…">
-          </label>
-        </div>
-        <label class="checkbox-inline">
-          <input type="checkbox" id="f-c-rappel-actif"> Rappel actif
-        </label>
       </fieldset>
 
       <div class="modal-footer">
@@ -2773,9 +2660,6 @@
   const RESULTAT_OPTIONS = ["En cours", "Gagné", "Perdu", "Abandonné"];
   const STATUT_TACHE_OPTIONS = ["Pas commencé", "En cours", "Terminé"];
   const PRIORITE_OPTIONS = ["Normale", "Haute"];
-  const DECLENCHEMENT_OPTIONS = [
-    "Sur date manuelle", "X jours avant échéance remise", "X jours avant visite", "X jours avant prise d'effet",
-  ];
 
   function generateId() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -2807,17 +2691,6 @@
     if (baseLastModified !== undefined && record.last_modified !== baseLastModified) {
       throw new RecordConflictError(entityType, id);
     }
-  }
-
-  function createRappel(partial = {}) {
-    return {
-      date: null,
-      declenchement: "Sur date manuelle",
-      jours_avant: null,
-      message: "",
-      actif: true,
-      ...partial,
-    };
   }
 
   function createAO(partial = {}) {
@@ -3103,124 +2976,6 @@
     return "";
   }
 
-  // Trigger relatif -> champ date de l'AO parent dont il dépend (§4.4).
-  const RAPPEL_FIELD_BY_TRIGGER = {
-    "X jours avant échéance remise": "date_remise",
-    "X jours avant visite": "date_visite",
-    "X jours avant prise d'effet": "date_prise_effet",
-  };
-
-  function isRappelActive(rappel, relatedAO) {
-    if (!rappel || !rappel.actif) return false;
-    if (rappel.declenchement === "Sur date manuelle") {
-      return !!rappel.date && daysBetween(rappel.date) <= 0;
-    }
-    if (!relatedAO) return false;
-    const field = RAPPEL_FIELD_BY_TRIGGER[rappel.declenchement];
-    const targetDate = field && relatedAO[field];
-    if (!targetDate || rappel.jours_avant == null) return false;
-    const days = daysBetween(targetDate);
-    return days !== null && days <= Number(rappel.jours_avant);
-  }
-
-  function collectActiveReminders(data) {
-    const items = [];
-    data.aos.forEach((ao) => {
-      if (isRappelActive(ao.rappel, ao)) {
-        items.push({ type: "AO", label: ao.nom_projet, message: ao.rappel.message, entity: ao });
-      }
-    });
-    data.taches.filter(isMyTache).forEach((t) => {
-      const relatedAO = t.ao_lie ? data.aos.find((a) => a.id === t.ao_lie) : null;
-      if (isRappelActive(t.rappel, relatedAO)) {
-        items.push({ type: "Tâche", label: t.tache, message: t.rappel.message, entity: t });
-      }
-    });
-    data.contacts.forEach((c) => {
-      if (isRappelActive(c.rappel, null)) {
-        items.push({ type: "Contact", label: c.nom, message: c.rappel.message, entity: c });
-      }
-    });
-    return items;
-  }
-
-  // ---------------------------------------------------------------------
-  // Moteur de rappels (étape 8, voir PROJET.md §5.6) — cloche + traitement.
-  // ---------------------------------------------------------------------
-
-  function renderReminderItem(item) {
-    return `
-      <div class="list-item reminder-item clickable-item">
-        <div>
-          <div class="list-item-title">${escapeHtml(item.label || "(sans titre)")}</div>
-          <div class="list-item-sub">${escapeHtml(item.message || "")}</div>
-        </div>
-        <div class="reminder-item-actions">
-          <span class="badge-type">${escapeHtml(item.type)}</span>
-          <button type="button" class="btn-small btn-secondary reminder-treat-btn">✓ Traité</button>
-        </div>
-      </div>
-    `;
-  }
-
-  function openReminderEntityForm(item) {
-    if (item.type === "AO") openAOForm(item.entity);
-    else if (item.type === "Tâche") openTacheForm(item.entity);
-    else if (item.type === "Contact") openContactForm(item.entity);
-  }
-
-  function wireReminderItemEvents(container, items) {
-    container.querySelectorAll(".reminder-item").forEach((row, idx) => {
-      row.addEventListener("click", () => openReminderEntityForm(items[idx]));
-    });
-    container.querySelectorAll(".reminder-treat-btn").forEach((btn, idx) => {
-      btn.addEventListener("click", (event) => {
-        event.stopPropagation();
-        markReminderTreated(items[idx]);
-      });
-    });
-  }
-
-  async function markReminderTreated(item) {
-    const changes = { rappel: { ...item.entity.rappel, actif: false } };
-    try {
-      if (item.type === "AO") await updateAO(item.entity.id, changes, item.entity.last_modified);
-      else if (item.type === "Tâche") await updateTache(item.entity.id, changes, item.entity.last_modified);
-      else if (item.type === "Contact") await updateContact(item.entity.id, changes, item.entity.last_modified);
-    } catch (err) {
-      if (err instanceof RecordConflictError) {
-        alert("Cet élément a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
-        await refreshFromStorage();
-      } else {
-        alert("Erreur : " + err.message);
-      }
-    }
-  }
-
-  function renderReminderBell() {
-    const items = collectActiveReminders(appData);
-    const countEl = document.getElementById("reminder-count");
-    countEl.textContent = items.length;
-    countEl.style.display = items.length ? "" : "none";
-
-    const panelList = document.getElementById("reminder-panel-list");
-    panelList.innerHTML = items.length
-      ? items.map(renderReminderItem).join("")
-      : `<div class="list-item-empty">Aucun rappel actif.</div>`;
-    wireReminderItemEvents(panelList, items);
-  }
-
-  document.getElementById("reminder-bell").addEventListener("click", (event) => {
-    event.stopPropagation();
-    document.getElementById("reminder-panel").hidden = !document.getElementById("reminder-panel").hidden;
-  });
-  document.addEventListener("click", (event) => {
-    const panel = document.getElementById("reminder-panel");
-    if (!panel.hidden && !panel.contains(event.target) && event.target.id !== "reminder-bell") {
-      panel.hidden = true;
-    }
-  });
-
   function renderAccueil() {
     const data = appData;
 
@@ -3267,13 +3022,6 @@
         if (ao) openAOForm(ao);
       });
     });
-
-    const activeReminders = collectActiveReminders(data);
-    const rappelsEl = document.getElementById("accueil-rappels");
-    rappelsEl.innerHTML = activeReminders.length
-      ? activeReminders.map(renderReminderItem).join("")
-      : `<div class="list-item-empty">Aucun rappel actif aujourd'hui.</div>`;
-    wireReminderItemEvents(rappelsEl, activeReminders);
 
     const highPriority = mesTaches(data.taches)
       .filter((t) => t.priorite === "Haute" && !isTacheDone(t))
@@ -3608,34 +3356,84 @@
 
   // --- Formulaire AO (création / édition) ---
 
+  // Ajoute https:// à un lien saisi sans protocole (ex. "sharepoint.com/…"),
+  // pour qu'il s'ouvre comme une adresse web et pas comme un chemin relatif.
+  function normalizeLinkUrl(url) {
+    const trimmed = (url || "").trim();
+    if (!trimmed) return "";
+    return /^[a-z][a-z0-9+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  }
+
+  // Ligne de lien de la fiche AO : affichée comme un lien cliquable (nouvel
+  // onglet), le crayon repasse en saisie. L'input .f-fichier-input reste la
+  // source de vérité lue par readAOForm(), même quand il est masqué.
   function fichierRow(url) {
     const row = document.createElement("div");
     row.className = "fichier-row";
     const input = document.createElement("input");
     input.type = "url";
     input.className = "f-fichier-input";
-    input.placeholder = "https://…";
+    input.placeholder = "https://… puis Entrée";
     input.value = url || "";
+    const link = document.createElement("a");
+    link.className = "fichier-link";
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "btn-icon";
+    editBtn.textContent = "✎";
+    editBtn.title = "Modifier le lien";
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "btn-icon";
     removeBtn.textContent = "✕";
+    removeBtn.title = "Retirer le lien";
+
+    function showLink() {
+      const value = normalizeLinkUrl(input.value);
+      if (!value) return;
+      input.value = value;
+      link.href = value;
+      link.textContent = value.replace(/^https?:\/\//i, "");
+      link.title = value;
+      input.hidden = true;
+      link.hidden = false;
+      editBtn.hidden = false;
+    }
+    function showInput() {
+      input.hidden = false;
+      link.hidden = true;
+      editBtn.hidden = true;
+      input.focus();
+    }
+
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        showLink();
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+    input.addEventListener("blur", () => {
+      if (!input.value.trim()) return;
+      showLink();
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    editBtn.addEventListener("click", showInput);
     removeBtn.addEventListener("click", () => {
       const list = row.parentElement;
       row.remove();
       // Prévient l'enregistrement automatique de la fiche AO.
       if (list) list.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    row.appendChild(input);
-    row.appendChild(removeBtn);
+
+    row.append(input, link, editBtn, removeBtn);
+    if (input.value.trim()) showLink();
+    else { link.hidden = true; editBtn.hidden = true; }
     return row;
   }
 
-  function updateRappelFieldsVisibility() {
-    const isManual = document.getElementById("f-rappel-declenchement").value === "Sur date manuelle";
-    document.getElementById("f-rappel-date-wrap").style.display = isManual ? "" : "none";
-    document.getElementById("f-rappel-jours-wrap").style.display = isManual ? "none" : "";
-  }
 
   // --- Fiche AO pleine page (refonte 2026-11-11, façon Pipedrive) ---
   //
@@ -3670,7 +3468,6 @@
   function readAOForm() {
     const serviceValue = ficheEl("f-service").value;
     const valeur = ficheEl("f-valeur_estimee_keur").value;
-    const rappelActif = ficheEl("f-rappel-actif").checked;
     return {
       nom_projet: ficheEl("f-nom_projet").value.trim(),
       type_client: ficheEl("f-type_client").value,
@@ -3693,13 +3490,6 @@
       // à la ligne en fin de texte ne doit pas être mangé.
       notes: ficheEl("f-notes").value,
       fichiers: Array.from(document.querySelectorAll(".f-fichier-input")).map((i) => i.value.trim()).filter(Boolean),
-      rappel: rappelActif ? createRappel({
-        declenchement: ficheEl("f-rappel-declenchement").value,
-        date: ficheEl("f-rappel-date").value || null,
-        jours_avant: ficheEl("f-rappel-jours_avant").value ? Number(ficheEl("f-rappel-jours_avant").value) : null,
-        message: ficheEl("f-rappel-message").value.trim(),
-        actif: true,
-      }) : null,
     };
   }
 
@@ -3735,16 +3525,6 @@
       list.innerHTML = "";
       (data.fichiers || []).forEach((url) => list.appendChild(fichierRow(url)));
     });
-    set("rappel", () => {
-      const rappel = data.rappel || {};
-      ficheEl("f-rappel-declenchement").value = rappel.declenchement || DECLENCHEMENT_OPTIONS[0];
-      ficheEl("f-rappel-date").value = rappel.date || "";
-      ficheEl("f-rappel-jours_avant").value = rappel.jours_avant ?? "";
-      ficheEl("f-rappel-message").value = rappel.message || "";
-      ficheEl("f-rappel-actif").checked = !!data.rappel && rappel.actif !== false;
-    });
-    updateRappelFieldsVisibility();
-    ficheEl("f-rappel-fields").hidden = !ficheEl("f-rappel-actif").checked;
   }
 
   function dirtyAOKeys() {
@@ -3855,9 +3635,6 @@
     scheduleAOSave(event.target.id === "f-notes" ? 1200 : 800);
   });
   ficheEl("ao-form").addEventListener("change", (event) => {
-    if (event.target.id === "f-rappel-actif") {
-      ficheEl("f-rappel-fields").hidden = !event.target.checked;
-    }
     if (event.target.id === "f-service") renderPhaseStepper();
     if (!event.target.closest("[data-ao-key]")) return;
     scheduleAOSave(200);
@@ -3901,7 +3678,6 @@
     populateSelect(ficheEl("f-type"), TYPE_AO_OPTIONS);
     populateSelect(ficheEl("f-resultat"), RESULTAT_OPTIONS);
     populateSelect(ficheEl("f-motif-categorie"), MOTIF_OPTIONS, "— Aucun —");
-    populateSelect(ficheEl("f-rappel-declenchement"), DECLENCHEMENT_OPTIONS);
     populateSelect(ficheEl("f-service"), SERVICE_OPTIONS, "— Aucun —");
 
     const data = ao || {
@@ -3943,7 +3719,6 @@
     hideAOFiche();
   }
 
-  ficheEl("f-rappel-declenchement").addEventListener("change", updateRappelFieldsVisibility);
   ficheEl("ao-modal-close").addEventListener("click", closeAOForm);
   ficheEl("ao-form-cancel").addEventListener("click", hideAOFiche);
   ficheEl("ao-modal-overlay").addEventListener("mousedown", (event) => {
@@ -4720,11 +4495,6 @@
 
   // --- Formulaire Tâche (création / édition) ---
 
-  function updateTacheRappelFieldsVisibility() {
-    const isManual = document.getElementById("f-t-rappel-declenchement").value === "Sur date manuelle";
-    document.getElementById("f-t-rappel-date-wrap").style.display = isManual ? "" : "none";
-    document.getElementById("f-t-rappel-jours-wrap").style.display = isManual ? "none" : "";
-  }
 
   function openTacheForm(tache, presetAoId) {
     currentEditingTache = tache || null;
@@ -4736,7 +4506,6 @@
       appData.aos.map((a) => `<option value="${a.id}">${escapeHtml(a.nom_projet || "(sans nom)")}</option>`).join("");
 
     populateSelect(document.getElementById("f-t-priorite"), PRIORITE_OPTIONS);
-    populateSelect(document.getElementById("f-t-rappel-declenchement"), DECLENCHEMENT_OPTIONS);
 
 
     const data = tache || {};
@@ -4750,14 +4519,6 @@
     renderFormSousTaches();
     document.getElementById("f-t-notes").value = data.notes || "";
 
-    const rappel = data.rappel || {};
-    document.getElementById("f-t-rappel-declenchement").value = rappel.declenchement || DECLENCHEMENT_OPTIONS[0];
-    document.getElementById("f-t-rappel-date").value = rappel.date || "";
-    document.getElementById("f-t-rappel-jours_avant").value = rappel.jours_avant ?? "";
-    document.getElementById("f-t-rappel-message").value = rappel.message || "";
-    document.getElementById("f-t-rappel-actif").checked = !!data.rappel && rappel.actif !== false;
-
-    updateTacheRappelFieldsVisibility();
     document.getElementById("tache-modal-overlay").hidden = false;
   }
 
@@ -4808,7 +4569,6 @@
     currentEditingTache = null;
   }
 
-  document.getElementById("f-t-rappel-declenchement").addEventListener("change", updateTacheRappelFieldsVisibility);
   document.getElementById("tache-modal-close").addEventListener("click", closeTacheForm);
   document.getElementById("tache-form-cancel").addEventListener("click", closeTacheForm);
   document.getElementById("tache-modal-overlay").addEventListener("click", (event) => {
@@ -4817,14 +4577,6 @@
 
   document.getElementById("tache-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const rappelActif = document.getElementById("f-t-rappel-actif").checked;
-    const rappel = rappelActif ? createRappel({
-      declenchement: document.getElementById("f-t-rappel-declenchement").value,
-      date: document.getElementById("f-t-rappel-date").value || null,
-      jours_avant: document.getElementById("f-t-rappel-jours_avant").value ? Number(document.getElementById("f-t-rappel-jours_avant").value) : null,
-      message: document.getElementById("f-t-rappel-message").value.trim(),
-      actif: true,
-    }) : null;
 
     // date_debut aussi réglable par glisser-étirer dans le calendrier ; sans
     // échéance, une date de début seule devient l'échéance.
@@ -4845,7 +4597,6 @@
       date_debut: dates.date_debut,
       echeance: dates.echeance,
       notes: document.getElementById("f-t-notes").value.trim(),
-      rappel,
     };
 
     try {
@@ -5091,11 +4842,6 @@
       : `<div class="list-item-empty">Aucun AO créé pour l'instant.</div>`;
     document.getElementById("f-c-ao-search").value = "";
 
-    const rappel = data.rappel || {};
-    document.getElementById("f-c-rappel-date").value = rappel.date || "";
-    document.getElementById("f-c-rappel-message").value = rappel.message || "";
-    document.getElementById("f-c-rappel-actif").checked = !!data.rappel && rappel.actif !== false;
-
     document.getElementById("contact-modal-overlay").hidden = false;
   }
 
@@ -5120,14 +4866,6 @@
   document.getElementById("contact-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const selectedAO = Array.from(document.querySelectorAll(".f-c-ao-item:checked")).map((cb) => cb.value);
-    const rappelActif = document.getElementById("f-c-rappel-actif").checked;
-    const rappel = rappelActif ? createRappel({
-      declenchement: "Sur date manuelle",
-      date: document.getElementById("f-c-rappel-date").value || null,
-      message: document.getElementById("f-c-rappel-message").value.trim(),
-      actif: true,
-    }) : null;
-
     const changes = {
       nom: document.getElementById("f-c-nom").value.trim(),
       fonction: document.getElementById("f-c-fonction").value.trim(),
@@ -5137,7 +4875,6 @@
       adresse: document.getElementById("f-c-adresse").value.trim(),
       notes: document.getElementById("f-c-notes").value.trim(),
       ao_lies: selectedAO,
-      rappel,
     };
 
     try {
@@ -5474,7 +5211,6 @@
 
   function renderAll() {
     renderStorageStatus();
-    renderReminderBell();
     renderAccueil();
     renderPipeline();
     renderPlanCharge();
@@ -5583,22 +5319,20 @@
       RESULTAT_OPTIONS,
       STATUT_TACHE_OPTIONS,
       PRIORITE_OPTIONS,
-      DECLENCHEMENT_OPTIONS,
       ASSIGNE_OPTIONS,
       MOTIF_OPTIONS, 
     },
-    createAO, createTache, createContact, createRappel,
+    createAO, createTache, createContact,
     addAO, updateAO, deleteAO,
     addTache, updateTache, deleteTache,
     addContact, updateContact, deleteContact,
     RecordConflictError,
-    renderAll, renderAccueil, collectActiveReminders, isRappelActive, daysBetween,
+    renderAll, renderAccueil, daysBetween,
     renderPipeline, openAOForm, commitAOPhaseChange, openMotifModal,
     renderTodo, openTacheForm, sortTaches, getMonthGridDays, localDateKey,
     normalizeTacheDates, addDaysToKey, daysBetweenKeys,
     chunkIntoWeeks, computeWeekBarSegments, assignBarLanes,
     renderContacts, openContactForm,
-    renderReminderBell, markReminderTreated,
     renderReporting, computeReportingData, renderMotifPieChart,
   };
 })();

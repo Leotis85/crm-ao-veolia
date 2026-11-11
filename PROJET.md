@@ -156,7 +156,12 @@ Repris du Todo Notion existant, enrichi.
 | `rappel` | rappel | ex. « relancer le 15 » |
 | `ao_lies` | relation | vers un ou plusieurs AO |
 
-### 4.4 Rappel (mécanisme, pas une entité)
+### 4.4 Rappel (mécanisme, pas une entité) — SUPPRIMÉ de l'interface le 2026-11-11
+
+> Jamais utilisé en pratique : cloche, panneau « Rappels actifs » de l'accueil
+> et champs Rappel des fiches AO / tâche / contact retirés. La colonne
+> `rappel` reste en base (données existantes conservées, plus lues ni écrites).
+
 
 Un rappel est un petit objet porté par un AO, une Tâche ou un Contact :
 
@@ -220,7 +225,7 @@ d'assignés : chacun ses tâches.
 - Répartition / taux de réussite par type de client.
 - Évolution dans le temps (par mois).
 
-### 5.6 Moteur de rappels
+### 5.6 Moteur de rappels — supprimé le 2026-11-11 (voir §4.4)
 - Au chargement de l'app : calcule quels rappels sont actifs (date atteinte,
   ou échéance AO dans X jours).
 - Affiche une cloche de notifications avec le nombre de rappels actifs.
