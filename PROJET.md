@@ -228,7 +228,10 @@ d'assignés : chacun ses tâches.
 - Refonte du 2026-11-11 : une seule barre de recherche sur tous les champs
   (nom, organisme, fonction, téléphone, email, notes, nom des AO liés),
   insensible aux accents, chaque mot tapé devant apparaître quelque part ;
-  pastilles de catégorie cliquables (avec compteur) pour filtrer.
+  accueil de l'annuaire = uniquement les catégories en tuiles (avec
+  compteur) ; un clic ouvre la liste de la catégorie, avec des pastilles pour
+  passer d'une catégorie à l'autre et « ← Catégories » pour revenir. Taper
+  dans la recherche affiche directement les résultats, toutes catégories.
 - Annuaire simple : liste + fiche détail.
 - Lien vers les AO associés.
 - Possibilité de poser un rappel de relance sur un contact.

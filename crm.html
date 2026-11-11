@@ -1230,6 +1230,59 @@
     opacity: 0.75;
   }
 
+  .contact-tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+
+  .contact-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    text-align: left;
+    padding: 18px 20px;
+    border: 1px solid var(--color-border);
+    border-left: 5px solid var(--cat-color, var(--color-border));
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+
+  .contact-tile:hover {
+    border-color: var(--cat-color, var(--color-primary));
+    box-shadow: 0 4px 14px rgba(15, 118, 110, 0.12);
+  }
+
+  .contact-tile.is-all { border-left-color: var(--color-primary); }
+
+  .contact-tile-count {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--cat-color, var(--color-primary));
+    line-height: 1;
+  }
+
+  .contact-tile-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .contact-back {
+    border: none;
+    background: transparent;
+    color: var(--color-primary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 5px 8px 5px 0;
+  }
+
+  .contact-back:hover { text-decoration: underline; }
+
   .contact-category-badge {
     display: inline-block;
     margin-top: 4px;
@@ -4905,7 +4958,10 @@
   // ---------------------------------------------------------------------
 
   let contactSearch = "";
-  let contactCategoryFilter = null; // null = toutes, "" = sans catégorie
+  // null = accueil (tuiles de catégories), ALL_CONTACTS = tous les contacts,
+  // "" = sans catégorie, sinon le nom de la catégorie.
+  const ALL_CONTACTS = "__all__";
+  let contactCategoryFilter = null;
   let currentEditingContact = null;
 
   // Catégories d'annuaire (2026-11-11). Pour en ajouter/renommer une, changer
@@ -5000,45 +5056,88 @@
   }
 
   function contactMatchesCategory(c) {
-    if (contactCategoryFilter === null) return true;
+    if (contactCategoryFilter === null || contactCategoryFilter === ALL_CONTACTS) return true;
     return (c.categorie || "") === contactCategoryFilter;
   }
 
-  function renderContactCategoryChips() {
-    const searched = appData.contacts.filter(contactMatchesSearch);
-    const countFor = (cat) => searched.filter((c) => (c.categorie || "") === cat).length;
-    const chips = [{ value: null, label: "Tous", count: searched.length }]
+  function contactCategoryEntries(list) {
+    const countFor = (cat) => list.filter((c) => (c.categorie || "") === cat).length;
+    return [{ value: ALL_CONTACTS, label: "Tous les contacts", count: list.length }]
       .concat(CONTACT_CATEGORIES.map((cat) => ({ value: cat, label: cat, count: countFor(cat), color: CONTACT_CATEGORY_COLORS[cat] })))
-      .concat([{ value: "", label: "Sans catégorie", count: countFor("") }])
-      .filter((chip) => chip.value === null || chip.count > 0 || chip.value === contactCategoryFilter);
+      .concat([{ value: "", label: "Sans catégorie", count: countFor("") }]);
+  }
+
+  // Accueil de l'annuaire : uniquement les catégories, en tuiles ; un clic
+  // ouvre la liste de la catégorie.
+  function renderContactCategoryTiles(container) {
+    const entries = contactCategoryEntries(appData.contacts)
+      .filter((e) => e.value !== "" || e.count > 0);
+    container.innerHTML = entries.map((e, idx) => `
+      <button type="button" class="contact-tile${e.value === ALL_CONTACTS ? " is-all" : ""}" data-idx="${idx}"
+              ${e.color ? `style="--cat-color:${e.color}"` : ""}>
+        <span class="contact-tile-count">${e.count}</span>
+        <span class="contact-tile-label">${escapeHtml(e.label)}</span>
+      </button>
+    `).join("");
+    container.querySelectorAll(".contact-tile").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        contactCategoryFilter = entries[Number(btn.dataset.idx)].value;
+        renderContacts();
+      });
+    });
+  }
+
+  function renderContactCategoryChips() {
     const wrap = document.getElementById("contact-category-chips");
-    wrap.innerHTML = chips.map((chip, idx) => `
-      <button type="button" class="contact-chip${chip.value === contactCategoryFilter ? " active" : ""}" data-idx="${idx}"
+    const searching = !!contactSearch.trim();
+    if (contactCategoryFilter === null && !searching) {
+      wrap.innerHTML = "";
+      return;
+    }
+    const searched = appData.contacts.filter(contactMatchesSearch);
+    const active = contactCategoryFilter === null ? ALL_CONTACTS : contactCategoryFilter;
+    const chips = contactCategoryEntries(searched)
+      .map((chip) => chip.value === ALL_CONTACTS ? { ...chip, label: "Tous" } : chip)
+      .filter((chip) => chip.value === ALL_CONTACTS || chip.count > 0 || chip.value === active);
+    wrap.innerHTML = `
+      <button type="button" class="contact-back" id="contact-back">← Catégories</button>
+    ` + chips.map((chip, idx) => `
+      <button type="button" class="contact-chip${chip.value === active ? " active" : ""}" data-idx="${idx}"
               ${chip.color ? `style="--cat-color:${chip.color}"` : ""}>
         ${chip.color ? `<span class="contact-chip-dot"></span>` : ""}${escapeHtml(chip.label)} <span class="contact-chip-count">${chip.count}</span>
       </button>
     `).join("");
     wrap.querySelectorAll(".contact-chip").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const chip = chips[Number(btn.dataset.idx)];
-        contactCategoryFilter = chip.value === contactCategoryFilter ? null : chip.value;
+        contactCategoryFilter = chips[Number(btn.dataset.idx)].value;
         renderContacts();
       });
+    });
+    document.getElementById("contact-back").addEventListener("click", () => {
+      contactCategoryFilter = null;
+      contactSearch = "";
+      document.getElementById("filter-contact-search").value = "";
+      renderContacts();
     });
   }
 
   function renderContacts() {
     renderContactCategoryChips();
     const listEl = document.getElementById("contacts-list");
+    if (contactCategoryFilter === null && !contactSearch.trim()) {
+      listEl.className = "contact-tiles";
+      renderContactCategoryTiles(listEl);
+      return;
+    }
+    listEl.className = "contacts-grid";
     const filtered = appData.contacts
       .filter(contactMatchesSearch)
       .filter(contactMatchesCategory)
       .slice()
       .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
-    const filtering = contactSearch.trim() || contactCategoryFilter !== null;
     listEl.innerHTML = filtered.length
       ? filtered.map(renderContactItem).join("")
-      : `<div class="contacts-empty">${filtering ? "Aucun contact ne correspond." : "Aucun contact pour l’instant."}</div>`;
+      : `<div class="contacts-empty">Aucun contact ne correspond.</div>`;
     wireContactItemEvents(listEl);
   }
 
@@ -5166,7 +5265,7 @@
     // Nouveau contact créé depuis un filtre de catégorie : pré-rempli avec.
     document.getElementById("f-c-categorie").value = contact
       ? (data.categorie || "")
-      : (contactCategoryFilter || "");
+      : (contactCategoryFilter && contactCategoryFilter !== ALL_CONTACTS ? contactCategoryFilter : "");
     document.getElementById("f-c-telephone").value = data.telephone || "";
     document.getElementById("f-c-email").value = data.email || "";
     document.getElementById("f-c-adresse").value = data.adresse || "";
