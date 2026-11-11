@@ -91,7 +91,7 @@ Repris du Pipeline Notion existant, enrichi.
 | `assigne_a` | multi-personnes | ajouté à l'étape 5 (affichage et filtre par personne sur les cartes Kanban, §5.2). Modifié le 2026-11-11 : tableau comme pour les tâches (`supabase/migrate_ao_assignes.sql`), soi-même coché par défaut à la création |
 | `phase` | liste | voir valeurs ci-dessous |
 | `type` | liste | Appel d'offres, Renouvellement, Avenant, Sollicitation directe, Proposition travaux |
-| `priorite` | liste | ajouté le 2026-11-11 (`supabase/migrate_ao_priorite.sql`) : Haute, Moyenne, Basse ou vide. Colore les cartes du pipeline (liseré + pastille), trie les cartes (Haute en tête) et sert de filtre |
+| `priorite` | liste | ajouté le 2026-11-11 (`supabase/migrate_ao_priorite.sql`) : Haute, Moyenne, Basse ou vide. Colore les cartes du pipeline (liseré + pastille), et sert de filtre (volontairement aucun tri par priorité) |
 | `type_marche` | multi-liste | P1, P2, P3, CPE, R1, R2, GTR, Gaz |
 | `service` | multi-liste | ajouté le 2026-09-09 : Commerce, Travaux — pilote la visibilité par service (§9). Vide = visible par tout le monde (migration douce des AO existants) |
 | `valeur_estimee_keur` | nombre | en k€ |

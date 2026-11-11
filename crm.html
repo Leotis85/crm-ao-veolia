@@ -3192,16 +3192,12 @@
     return true;
   }
 
-  // Tri des cartes au sein d'une même colonne : priorité d'abord (Haute en
-  // tête, non définie en dernier), puis date de remise la plus récente (la
-  // plus lointaine) en premier ; celles sans date en dernier.
+  // Tri des cartes au sein d'une même colonne : date de remise la plus
+  // récente (la plus lointaine) en premier ; celles sans date en dernier.
+  // Volontairement PAS de tri par priorité : la couleur sert justement à la
+  // repérer dans l'ordre chronologique.
   function sortAOsForColumn(list) {
-    const prioRank = (ao) => {
-      const idx = AO_PRIORITE_OPTIONS.indexOf(ao.priorite);
-      return idx === -1 ? AO_PRIORITE_OPTIONS.length : idx;
-    };
     return [...list].sort((a, b) => {
-      if (prioRank(a) !== prioRank(b)) return prioRank(a) - prioRank(b);
       if (!a.date_remise && !b.date_remise) return 0;
       if (!a.date_remise) return 1;
       if (!b.date_remise) return -1;
