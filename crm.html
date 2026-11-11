@@ -2308,16 +2308,38 @@
   const PHASES = [
     { id: "a_venir", label: "A venir" },
     { id: "etude", label: "Étude" },
-    { id: "finalisation", label: "Finalisation" },
     { id: "negociation", label: "Négociation" },
     { id: "attente_reponse", label: "En attente de réponse" },
+    { id: "execution", label: "Exécution" },
     { id: "gagne", label: "Gagné" },
     { id: "perdu", label: "Perdu" },
     { id: "abandonne", label: "Abandonné" },
   ];
   const PHASE_OPTIONS = PHASES.map((p) => p.id);
-  function phaseLabel(id) {
-    return PHASES.find((p) => p.id === id)?.label || id;
+  // Colonnes affichées par onglet de service (2026-11-11) : chaque pipeline a
+  // son propre déroulé. Les id restent communs (Reporting, accueil, plan de
+  // charge ne connaissent que l'id) ; seul l'affichage diffère.
+  const PIPELINE_PHASES_BY_SERVICE = {
+    Commerce: ["a_venir", "etude", "negociation", "attente_reponse", "gagne", "perdu", "abandonne"],
+    Travaux: ["a_venir", "etude", "attente_reponse", "execution", "gagne", "perdu", "abandonne"],
+  };
+  const PHASE_LABEL_OVERRIDES_BY_SERVICE = {
+    Travaux: { gagne: "Facturé / Fini" },
+  };
+  // Un AO sans service apparaît dans les deux onglets : s'il est dans une
+  // phase propre à l'autre service, il est rangé dans la colonne équivalente.
+  const PHASE_FALLBACK_COLUMN = { negociation: "attente_reponse", execution: "gagne" };
+  function pipelinePhasesFor(service) {
+    return PIPELINE_PHASES_BY_SERVICE[service] || PHASE_OPTIONS;
+  }
+  function phaseLabel(id, service) {
+    return PHASE_LABEL_OVERRIDES_BY_SERVICE[service]?.[id]
+      || PHASES.find((p) => p.id === id)?.label || id;
+  }
+  function pipelineColumnFor(phase, service) {
+    const phases = pipelinePhasesFor(service);
+    if (phases.includes(phase)) return phase;
+    return PHASE_FALLBACK_COLUMN[phase] || phase;
   }
   // Anciens AO enregistrés avec le libellé complet comme valeur de `phase`
   // (avant l'introduction des id stables ci-dessus) : remappés vers l'id au
@@ -2327,7 +2349,7 @@
   const LEGACY_PHASE_LABEL_TO_ID = {
     "A venir": "a_venir",
     "Étude": "etude",
-    "Finalisation": "finalisation",
+    "Finalisation": "etude",
     "🤝 Négociation": "negociation",
     "⏳ En attente de réponse": "attente_reponse",
     "✅ Gagné": "gagne",
@@ -2343,6 +2365,8 @@
     gagne: "Gagné",
     perdu: "Perdu",
     abandonne: "Abandonné",
+    // Travaux : un AO en exécution est déjà remporté.
+    execution: "Gagné",
   };
   function resultatForPhase(phase, currentResultat) {
     if (PHASE_TO_RESULTAT[phase]) return PHASE_TO_RESULTAT[phase];
@@ -2510,6 +2534,9 @@
       if (LEGACY_PHASE_LABEL_TO_ID[normalized.phase]) {
         normalized.phase = LEGACY_PHASE_LABEL_TO_ID[normalized.phase];
       }
+      // Colonne Finalisation supprimée le 2026-11-11 : ses AO repassent en
+      // Étude (enregistré en base à leur prochaine modification).
+      if (normalized.phase === "finalisation") normalized.phase = "etude";
       // assigne_a était un texte simple avant migrate_ao_assignes.sql (et
       // dans les anciens exports JSON) : "Maxime + Mathis" -> [Maxime, Mathis].
       if (!Array.isArray(normalized.assigne_a)) {
@@ -3011,8 +3038,9 @@
     const board = document.getElementById("kanban-board");
     const filtered = appData.aos.filter(aoMatchesFilters);
 
-    board.innerHTML = PHASES.map(({ id, label }) => {
-      const cards = sortAOsForColumn(filtered.filter((ao) => ao.phase === id));
+    board.innerHTML = pipelinePhasesFor(activePipelineService).map((id) => {
+      const label = phaseLabel(id, activePipelineService);
+      const cards = sortAOsForColumn(filtered.filter((ao) => pipelineColumnFor(ao.phase, activePipelineService) === id));
       return `
         <div class="kanban-column">
           <div class="kanban-column-header">
@@ -3233,13 +3261,26 @@
     document.getElementById("f-rappel-jours-wrap").style.display = isManual ? "none" : "";
   }
 
+  // Les phases proposées suivent le service choisi dans le formulaire (mêmes
+  // colonnes que l'onglet du pipeline correspondant).
+  function populatePhaseSelect(currentPhase) {
+    const service = document.getElementById("f-service").value;
+    const phaseSelect = document.getElementById("f-phase");
+    const ids = pipelinePhasesFor(service);
+    populateSelect(phaseSelect, ids.map((id) => ({ value: id, label: phaseLabel(id, service) })));
+    phaseSelect.value = ids.includes(currentPhase) ? currentPhase : pipelineColumnFor(currentPhase, service);
+  }
+
+  document.getElementById("f-service").addEventListener("change", () => {
+    populatePhaseSelect(document.getElementById("f-phase").value);
+  });
+
   function openAOForm(ao) {
     currentEditingAO = ao || null;
     document.getElementById("ao-modal-title").textContent = ao ? "Modifier l'AO" : "Nouvel AO";
     document.getElementById("ao-form-delete").hidden = !ao;
 
     populateSelect(document.getElementById("f-type_client"), TYPE_CLIENT_OPTIONS);
-    populateSelect(document.getElementById("f-phase"), PHASES.map((p) => ({ value: p.id, label: p.label })));
     populateSelect(document.getElementById("f-type"), TYPE_AO_OPTIONS);
     populateSelect(document.getElementById("f-resultat"), RESULTAT_OPTIONS);
     populateSelect(document.getElementById("f-motif-categorie"), MOTIF_OPTIONS, "— Aucun —");
@@ -3255,7 +3296,6 @@
     const data = ao || {};
     document.getElementById("f-nom_projet").value = data.nom_projet || "";
     document.getElementById("f-type_client").value = data.type_client || TYPE_CLIENT_OPTIONS[0];
-    document.getElementById("f-phase").value = data.phase || PHASE_OPTIONS[0];
     document.getElementById("f-type").value = data.type || TYPE_AO_OPTIONS[0];
     const defaultAoAssignees = ao ? (data.assigne_a || []) : [currentProfile.display_name];
     renderAssigneCheckboxes(document.getElementById("f-assigne_a"), defaultAoAssignees);
@@ -3278,6 +3318,7 @@
     });
 
     document.getElementById("f-service").value = (data.service && data.service[0]) || activePipelineService || "";
+    populatePhaseSelect(data.phase || PHASE_OPTIONS[0]);
 
     const fichiersList = document.getElementById("f-fichiers-list");
     fichiersList.innerHTML = "";
@@ -4638,7 +4679,7 @@
       ...appData.aos.filter(aoMatchesFilters).map((ao) => [
         ao.nom_projet || "",
         ao.type_client || "",
-        ao.phase ? phaseLabel(ao.phase) : "",
+        ao.phase ? phaseLabel(ao.phase, (ao.service || [])[0]) : "",
         ao.type || "",
         (ao.type_marche || []).join(", "),
         ao.valeur_estimee_keur ?? "",

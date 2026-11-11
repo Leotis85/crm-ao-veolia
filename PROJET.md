@@ -114,6 +114,15 @@ Repris du Pipeline Notion existant, enrichi.
 `A venir` → `Étude` → `Finalisation` → `🤝 Négociation` →
 `⏳ En attente de réponse` → `✅ Gagné` / `❌ Perdu` / `🚫 Abandonné`
 
+Depuis le 2026-11-11, chaque onglet de service a ses propres colonnes
+(`PIPELINE_PHASES_BY_SERVICE` dans crm.html) et `Finalisation` est supprimée
+(ses AO repassent en `Étude`) :
+- **Commerce** : A venir → Étude → Négociation → En attente de réponse →
+  Gagné / Perdu / Abandonné
+- **Travaux** : A venir → Étude → En attente de réponse → Exécution →
+  Facturé / Fini (id `gagne`) / Perdu / Abandonné. `Exécution` compte comme
+  `Gagné` côté résultat et Reporting.
+
 ### 4.2 Tâches
 
 Repris du Todo Notion existant, enrichi.
