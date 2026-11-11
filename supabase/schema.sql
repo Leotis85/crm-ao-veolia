@@ -132,7 +132,9 @@ create table public.aos (
   id text primary key default gen_random_uuid()::text,
   nom_projet text not null default '',
   type_client text not null default 'Habitat',
-  assigne_a text not null default '',
+  -- Tableau (comme taches.assigne_a) depuis migrate_ao_assignes.sql : un AO
+  -- peut être suivi par plusieurs personnes.
+  assigne_a text[] not null default '{}',
   phase text not null default 'a_venir',
   type text not null default 'Appel d''offres',
   type_marche text[] not null default '{}',
@@ -322,6 +324,22 @@ create policy app_meta_select on public.app_meta
 -- RLS de la table (qui reste actif pour un accès direct à l'API REST).
 -- ---------------------------------------------------------------------------
 
+-- Convertit une valeur JSON en text[] en acceptant aussi l'ancien format
+-- texte simple (ex. "Mathis" -> {Mathis}, "" ou null -> {}) : un onglet
+-- resté ouvert sur une ancienne version de crm.html peut encore envoyer
+-- aos.assigne_a sous forme de texte après la migration.
+create or replace function public.jsonb_text_array_lenient(v jsonb)
+returns text[]
+language sql
+immutable
+as $$
+  select case jsonb_typeof(v)
+    when 'array' then array(select jsonb_array_elements_text(v))
+    when 'string' then case when v #>> '{}' = '' then '{}'::text[] else array[v #>> '{}'] end
+    else '{}'::text[]
+  end;
+$$;
+
 create or replace function public.save_crm_data(payload jsonb)
 returns jsonb
 language plpgsql
@@ -368,7 +386,7 @@ begin
       ) values (
         coalesce(row_id, gen_random_uuid()::text),
         coalesce(row_data->>'nom_projet', ''), coalesce(row_data->>'type_client', 'Habitat'),
-        coalesce(row_data->>'assigne_a', ''), coalesce(row_data->>'phase', 'a_venir'),
+        public.jsonb_text_array_lenient(row_data->'assigne_a'), coalesce(row_data->>'phase', 'a_venir'),
         coalesce(row_data->>'type', 'Appel d''offres'),
         coalesce((select array(select jsonb_array_elements_text(row_data->'type_marche'))), '{}'),
         coalesce((select array(select jsonb_array_elements_text(row_data->'service'))), '{}'),
@@ -389,7 +407,7 @@ begin
       update public.aos set
         nom_projet = coalesce(row_data->>'nom_projet', ''),
         type_client = coalesce(row_data->>'type_client', 'Habitat'),
-        assigne_a = coalesce(row_data->>'assigne_a', ''),
+        assigne_a = public.jsonb_text_array_lenient(row_data->'assigne_a'),
         phase = coalesce(row_data->>'phase', 'a_venir'),
         type = coalesce(row_data->>'type', 'Appel d''offres'),
         type_marche = coalesce((select array(select jsonb_array_elements_text(row_data->'type_marche'))), '{}'),

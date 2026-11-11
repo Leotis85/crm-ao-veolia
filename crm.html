@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CRM AO — Veolia Nouvelle-Aquitaine</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAM1BMVEUAAADuDCDuDCDuDCDuDCDuDCDuDCDuDCDuDCDuDCDuDCDuDCDuDCDuDCDuDCDuDCDuDCDHxrmoAAAAEHRSTlMAECAwQFBgcICPn6+/z9/vIxqCigAAAjRJREFUWMOdV0mCAyEI1HYJbbvw/9fOYcYWFR0Mp8RAgcUiUWot1gEAAHzspU5F+5CRSIkfc2DuHmQkgzAQn3ElQQDh1uaIiEHvza9IteMNAABPomy4rfvSbnwT1rQLDeJZB3E335MfDS94WiXk9ZLZMDW812ARdPqXKJN3CK9/v6mvZ40gsSdqZawIL7NvCKm/p5HaK1WputnTIOizmk5LDmuCspa02qz8gjpRt9Vyh4mYKGvXq2aihqDxKIDmEEYGpAPH1hD+vmc2MTvJXdIrqyiferVtn746D4Zm9alpPFEOcFHa3y/3wdymNm8bwQFAraVEkijooxkA6Wf7DYAhn5k6vCDG4HcAtvExc6D/0p3NGsDtANJ6Chdi1N6CQQnIczTMCY0cQFkpzdFZFmDohU/3tK+eMCDXwU+n1O8IF88OWkIoJp7ouUgM8gC9Fq4BQhcZITvKIrjIOe3tQW3NQehdUrwkyYIl5zcdKEO+r2414taA2j83jiczCYa9AOKYlK7sLcsuUO2nH9IjQmTI9cjE29GFxU71Evj4X2p16YsGhpJvb2BfG632YVhHo+kIr8T6wVFr8jGEdyk2pY17l0YlrxbU/Ebh9e8PSSmlDMwrdFoXftW4wT7FeXjYBbwbH1fBU4HFcymV6SWFM/uk16uqRPbL8pf2BwjLPwxeyN96HTX5PH/8e7qW/N8WYOOWPckas4YooIVL2M1x8ZzsQMpApO2RgtPqWLS1HwBwdrfC/gA6Am/R//yp9QAAAABJRU5ErkJggg==">
 <style>
   :root {
     --color-bg: #f4f5f7;
@@ -1530,9 +1531,6 @@
         <label>Type
           <select id="f-type"></select>
         </label>
-        <label>Assigné à
-          <select id="f-assigne_a"></select>
-        </label>
         <label>Valeur estimée (k€)
           <input type="number" id="f-valeur_estimee_keur" step="0.1">
         </label>
@@ -1567,6 +1565,11 @@
           <input type="text" id="f-motif">
         </label>
       </div>
+
+      <fieldset>
+        <legend>Assigné à (soi-même par défaut, cocher d'autres personnes pour partager le suivi)</legend>
+        <div class="checkbox-group" id="f-assigne_a"></div>
+      </fieldset>
 
       <fieldset>
         <legend>Type de marché</legend>
@@ -2432,7 +2435,7 @@
       id: generateId(),
       nom_projet: "",
       type_client: "Habitat",
-      assigne_a: "",
+      assigne_a: [],
       phase: "a_venir",
       type: "Appel d'offres",
       type_marche: [],
@@ -2506,6 +2509,12 @@
       const normalized = normalizeRecord(ao, createAO);
       if (LEGACY_PHASE_LABEL_TO_ID[normalized.phase]) {
         normalized.phase = LEGACY_PHASE_LABEL_TO_ID[normalized.phase];
+      }
+      // assigne_a était un texte simple avant migrate_ao_assignes.sql (et
+      // dans les anciens exports JSON) : "Maxime + Mathis" -> [Maxime, Mathis].
+      if (!Array.isArray(normalized.assigne_a)) {
+        normalized.assigne_a = String(normalized.assigne_a || "")
+          .split("+").map((n) => n.trim()).filter(Boolean);
       }
       return normalized;
     });
@@ -2932,10 +2941,19 @@
   // Comme populateSelect, mais conserve une valeur existante hors liste
   // (ex. donnée importée de l'ancien CRM) en l'ajoutant temporairement,
   // pour ne jamais la perdre silencieusement à l'ouverture du formulaire.
-  function populateAssigneSelect(selectEl, currentValue) {
-    const extra = currentValue && !ASSIGNE_OPTIONS.includes(currentValue) ? [currentValue] : [];
-    populateSelect(selectEl, [...extra, ...ASSIGNE_OPTIONS], "— Non assigné —");
-    selectEl.value = currentValue || "";
+  // Cases à cocher multi-personnes (AO et tâches). Un nom déjà assigné mais
+  // absent de ASSIGNE_OPTIONS (profil renommé/supprimé) reste affiché pour
+  // ne pas être perdu silencieusement à l'enregistrement.
+  function renderAssigneCheckboxes(container, selected) {
+    const selectedSet = new Set(selected);
+    const names = [...selected.filter((n) => !ASSIGNE_OPTIONS.includes(n)), ...ASSIGNE_OPTIONS];
+    container.innerHTML = names.map((n) => `
+      <label class="checkbox-inline"><input type="checkbox" class="assigne-item" value="${escapeHtml(n)}"${selectedSet.has(n) ? " checked" : ""}> ${escapeHtml(n)}</label>
+    `).join("");
+  }
+
+  function checkedAssignees(container) {
+    return Array.from(container.querySelectorAll(".assigne-item:checked")).map((cb) => cb.value);
   }
 
   function renderPipelineFilters() {
@@ -2954,7 +2972,7 @@
     if (activePipelineService && aoServices.length && !aoServices.includes(activePipelineService)) return false;
     if (pipelineFilters.type_client && ao.type_client !== pipelineFilters.type_client) return false;
     if (pipelineFilters.type_marche && !(ao.type_marche || []).includes(pipelineFilters.type_marche)) return false;
-    if (pipelineFilters.assigne_a && ao.assigne_a !== pipelineFilters.assigne_a) return false;
+    if (pipelineFilters.assigne_a && !ao.assigne_a.includes(pipelineFilters.assigne_a)) return false;
     return true;
   }
 
@@ -2981,7 +2999,7 @@
         <div class="list-item-sub">${escapeHtml(ao.type_client)}${marche ? " · " + escapeHtml(marche) : ""}</div>
         <div class="kanban-card-footer">
           ${days !== null ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : "<span></span>"}
-          ${ao.assigne_a ? `<span class="badge-type">${escapeHtml(ao.assigne_a)}</span>` : ""}
+          ${ao.assigne_a.length ? `<span class="badge-type">${escapeHtml(ao.assigne_a.join(", "))}</span>` : ""}
         </div>
       </div>
     `;
@@ -3239,7 +3257,8 @@
     document.getElementById("f-type_client").value = data.type_client || TYPE_CLIENT_OPTIONS[0];
     document.getElementById("f-phase").value = data.phase || PHASE_OPTIONS[0];
     document.getElementById("f-type").value = data.type || TYPE_AO_OPTIONS[0];
-    populateAssigneSelect(document.getElementById("f-assigne_a"), data.assigne_a || "");
+    const defaultAoAssignees = ao ? (data.assigne_a || []) : [currentProfile.display_name];
+    renderAssigneCheckboxes(document.getElementById("f-assigne_a"), defaultAoAssignees);
     document.getElementById("f-valeur_estimee_keur").value = data.valeur_estimee_keur ?? "";
     document.getElementById("f-amo").value = data.amo || "";
     document.getElementById("f-concurrence").value = data.concurrence || "";
@@ -3318,7 +3337,7 @@
       type_client: document.getElementById("f-type_client").value,
       phase: document.getElementById("f-phase").value,
       type: document.getElementById("f-type").value,
-      assigne_a: document.getElementById("f-assigne_a").value,
+      assigne_a: checkedAssignees(document.getElementById("f-assigne_a")),
       type_marche: selectedMarche,
       service: selectedService,
       valeur_estimee_keur: document.getElementById("f-valeur_estimee_keur").value
@@ -3903,20 +3922,13 @@
     populateSelect(document.getElementById("f-t-priorite"), PRIORITE_OPTIONS);
     populateSelect(document.getElementById("f-t-rappel-declenchement"), DECLENCHEMENT_OPTIONS);
 
-    const assigneContainer = document.getElementById("f-t-assigne_a");
-    assigneContainer.innerHTML = ASSIGNE_OPTIONS.map((n) => `
-      <label class="checkbox-inline"><input type="checkbox" class="f-t-assigne-item" value="${escapeHtml(n)}"> ${escapeHtml(n)}</label>
-    `).join("");
 
     const data = tache || {};
     document.getElementById("f-t-tache").value = data.tache || "";
     aoSelect.value = data.ao_lie || presetAoId || "";
     document.getElementById("f-t-statut").value = data.statut || STATUT_TACHE_OPTIONS[0];
     const defaultAssignees = tache ? (data.assigne_a || []) : [currentProfile.display_name];
-    const selectedAssignees = new Set(defaultAssignees);
-    assigneContainer.querySelectorAll(".f-t-assigne-item").forEach((cb) => {
-      cb.checked = selectedAssignees.has(cb.value);
-    });
+    renderAssigneCheckboxes(document.getElementById("f-t-assigne_a"), defaultAssignees);
     document.getElementById("f-t-priorite").value = data.priorite || PRIORITE_OPTIONS[0];
     document.getElementById("f-t-echeance").value = data.echeance || "";
     document.getElementById("f-t-notes").value = data.notes || "";
@@ -3967,7 +3979,7 @@
       tache: document.getElementById("f-t-tache").value.trim(),
       ao_lie: document.getElementById("f-t-ao_lie").value || null,
       statut: document.getElementById("f-t-statut").value,
-      assigne_a: Array.from(document.querySelectorAll(".f-t-assigne-item:checked")).map((cb) => cb.value),
+      assigne_a: checkedAssignees(document.getElementById("f-t-assigne_a")),
       priorite: document.getElementById("f-t-priorite").value,
       date_debut: dates.date_debut,
       echeance: dates.echeance,
@@ -4638,7 +4650,7 @@
         ao.lieu || "",
         ao.resultat || "",
         ao.motif_categorie || "",
-        ao.assigne_a || "",
+        ao.assigne_a.join(", "),
       ]),
     ];
     downloadCSV(`crm-ao-pipeline-${new Date().toISOString().slice(0, 10)}.csv`, rows);
