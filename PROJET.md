@@ -336,6 +336,17 @@ multi-jours du calendrier ToDo) pour éviter que des AO qui se chevauchent
 dans le temps se superposent visuellement. Un AO sans `date_entree_etude`
 n'apparaît pas sur le Gantt tant qu'elle n'est pas renseignée.
 
+**Refonte du 2026-11-11** : le Gantt à barres libres est remplacé par un
+tableau par service, plus lisible. Une ligne par AO (nom, date de remise,
+assignés et liseré de priorité dans une colonne à gauche), une colonne par
+semaine (numéros ISO, regroupés par mois) sur la même fenêtre glissante
+(2 mois passés → 10 à venir). Les cases sont remplies de la semaine d'entrée
+en étude à celle de la remise (case finale plus foncée), la semaine en cours
+est surlignée en rouge. Les colonnes se partagent la largeur de l'écran :
+toute la fenêtre est visible sans défilement horizontal. Lignes triées par
+date de remise ; les AO en cours sans les deux dates sont comptés sous le
+tableau.
+
 ## 11. Travail futur demandé, pas commencé
 
 Lors du même retour (2026-10-07), deux autres besoins ont été exprimés mais

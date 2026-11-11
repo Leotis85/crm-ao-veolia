@@ -107,15 +107,17 @@
   }
 
   .gantt-scroll {
+    /* Défilement seulement sur petit écran (tableau trop étroit sinon). */
     overflow-x: auto;
     padding-bottom: 8px;
   }
 
-  .gantt-service-section {
-    margin-bottom: 28px;
-  }
+  .gantt-service-section { margin-bottom: 28px; }
 
   .gantt-service-section h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 13px;
     margin: 0 0 8px;
     color: var(--color-text-muted);
@@ -123,57 +125,127 @@
     letter-spacing: 0.03em;
   }
 
-  .gantt-grid-wrap {
-    position: relative;
-    display: inline-block;
+  .gantt-table {
+    --gantt-label-width: 240px;
+    display: grid;
+    min-width: 900px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
     background: var(--color-surface);
+    overflow: hidden;
   }
 
-  .gantt-months {
+  .gantt-corner {
+    grid-column: 1;
+    display: flex;
+    align-items: flex-end;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
+    border-right: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+  }
+
+  .gantt-month-cell {
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    text-transform: capitalize;
+    padding: 6px 0 4px;
+    color: var(--color-text);
+    border-left: 1px solid var(--color-border);
+    background: var(--color-bg);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  .gantt-week-cell {
+    font-size: 9px;
+    text-align: center;
+    padding: 2px 0 4px;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+    overflow: hidden;
+  }
+
+  /* Séparateur de mois en ombre interne (pas en bordure) : une case remplie
+     le recouvre, la barre reste continue d'un mois à l'autre. */
+  .gantt-week-cell.month-start, .gantt-cell.month-start { box-shadow: inset 1px 0 0 var(--color-border); }
+  .gantt-week-cell.is-today { color: var(--color-danger); font-weight: 700; }
+
+  /* Une ligne = sous-grille alignée sur les colonnes du tableau. */
+  .gantt-row {
     display: grid;
+    grid-template-columns: subgrid;
+    cursor: pointer;
     border-bottom: 1px solid var(--color-border);
   }
 
-  .gantt-month {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--color-text-muted);
-    text-align: center;
-    text-transform: capitalize;
-    padding: 6px 0;
+  .gantt-row:last-child { border-bottom: none; }
+  .gantt-row:hover .gantt-label, .gantt-row:hover .gantt-cell { background-color: #f0fdfa; }
+  .gantt-row:hover .gantt-cell.filled { background-color: #0d5f59; }
+
+  .gantt-label {
+    padding: 6px 12px;
     border-right: 1px solid var(--color-border);
-    white-space: nowrap;
-    overflow: hidden;
+    border-left: 4px solid transparent;
+    min-width: 0;
   }
 
-  .gantt-bars {
-    display: grid;
-    position: relative;
-  }
+  .gantt-label.prio-haute { border-left-color: #d03b3b; }
+  .gantt-label.prio-moyenne { border-left-color: #f59e0b; }
+  .gantt-label.prio-basse { border-left-color: #3b82f6; }
 
-  .gantt-bar {
-    margin: 3px 2px;
-    padding: 0 6px;
-    border-radius: 4px;
-    background: var(--color-primary);
-    color: #fff;
-    font-size: 11px;
-    display: flex;
-    align-items: center;
+  .gantt-label-title {
+    font-size: 13px;
+    font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    cursor: pointer;
   }
 
-  .gantt-today-line {
-    background: rgba(220, 38, 38, 0.12);
-    border-left: 2px solid var(--color-danger);
+  .gantt-label-sub {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
   }
 
+  .gantt-cell { min-height: 40px; }
+  .gantt-cell.is-today { background-color: rgba(220, 38, 38, 0.08); }
 
+  .gantt-cell.filled {
+    background-color: var(--color-primary);
+    opacity: 0.55;
+    margin: 9px 0;
+    min-height: 22px;
+  }
+
+  .gantt-cell.filled.month-start { box-shadow: none; }
+  .gantt-cell.filled.is-today { box-shadow: inset 0 0 0 2px var(--color-danger); }
+  .gantt-cell.bar-start { border-radius: 5px 0 0 5px; margin-left: 1px; }
+  .gantt-cell.bar-end { opacity: 1; border-radius: 0 5px 5px 0; margin-right: 1px; }
+  .gantt-cell.bar-start.bar-end { border-radius: 5px; }
+
+  .gantt-empty, .gantt-footnote {
+    font-size: 13px;
+    color: var(--color-text-muted);
+  }
+
+  .gantt-empty { padding: 14px 12px; }
+  .gantt-footnote { margin: 6px 0 0; font-size: 12px; }
+
+  @media (max-width: 800px) {
+    .gantt-table { --gantt-label-width: 160px; }
+  }
 
   .header-actions {
     display: flex;
@@ -1764,7 +1836,7 @@
 
   <section class="screen" id="screen-plan-charge">
     <h1>Plan de charge</h1>
-    <p class="placeholder-hint">Une barre par AO en cours, de son entrée en étude à sa date de remise.</p>
+    <p class="placeholder-hint">Une ligne par AO en cours : cases remplies de la semaine d'entrée en étude à celle de la remise (repère foncé). Colonne rouge = semaine en cours.</p>
     <div class="gantt-scroll" id="gantt-scroll">
       <div id="gantt-container"></div>
     </div>
@@ -3303,78 +3375,113 @@
   });
 
   // ---------------------------------------------------------------------
-  // Plan de charge (Gantt par service) : une barre par AO "En cours" avec
-  // date_entree_etude et date_remise renseignées, sur une fenêtre continue
-  // d'environ un an (2 mois passés -> 10 mois à venir). Même principe de
-  // lanes que les tâches multi-jours du calendrier ToDo (assignBarLanes,
-  // plus bas dans le fichier), appliqué à une grille de jours plus large
-  // plutôt qu'à une semaine.
+  // Plan de charge (refonte 2026-11-11) : un tableau par service, une
+  // ligne par AO "En cours" (nom à gauche), une colonne par semaine sur une
+  // fenêtre glissante d'environ un an (2 mois passés -> 10 mois à venir).
+  // Les cases de la semaine d'entrée en étude jusqu'à celle de la remise
+  // sont remplies. Colonnes en fractions de la largeur : toute la fenêtre
+  // tient à l'écran sans défilement horizontal.
   // ---------------------------------------------------------------------
 
-  const GANTT_DAY_WIDTH = 28;
+  function mondayOf(date) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d;
+  }
 
-  function computeGanttDays() {
+  // Numéro de semaine ISO 8601 (celui des agendas français).
+  function isoWeekNumber(date) {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  }
+
+  function computeGanttWeeks() {
     const today = new Date();
-    const start = new Date(today.getFullYear(), today.getMonth() - 2, 1);
-    const end = new Date(today.getFullYear(), today.getMonth() + 10, 0);
-    const days = [];
-    for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      days.push(new Date(d));
+    const rangeStart = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+    const rangeEnd = new Date(today.getFullYear(), today.getMonth() + 10, 0);
+    const weeks = [];
+    for (const d = mondayOf(rangeStart); d <= rangeEnd; d.setDate(d.getDate() + 7)) {
+      const startKey = localDateKey(d);
+      // Le jeudi décide du mois d'une semaine à cheval (même règle que l'ISO) ;
+      // les semaines rattachées au mois d'avant/après la fenêtre sont exclues.
+      const thursday = new Date(d);
+      thursday.setDate(thursday.getDate() + 3);
+      if (thursday < rangeStart || thursday > rangeEnd) continue;
+      weeks.push({
+        startKey,
+        endKey: addDaysToKey(startKey, 6),
+        number: isoWeekNumber(d),
+        monthKey: `${thursday.getFullYear()}-${thursday.getMonth()}`,
+        monthDate: thursday,
+      });
     }
-    return days;
+    return weeks;
   }
 
-  function renderGanttMonthHeader(days) {
+  function renderGanttHeader(weeks, todayKey) {
     const months = [];
-    days.forEach((d) => {
-      const key = `${d.getFullYear()}-${d.getMonth()}`;
+    weeks.forEach((w) => {
       const last = months[months.length - 1];
-      if (last && last.key === key) {
-        last.span += 1;
-      } else {
-        months.push({ key, span: 1, label: d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) });
-      }
+      if (last && last.key === w.monthKey) last.span += 1;
+      else months.push({ key: w.monthKey, span: 1, date: w.monthDate });
     });
-    return months.map((m) => `<div class="gantt-month" style="grid-column: span ${m.span};">${escapeHtml(m.label)}</div>`).join("");
-  }
-
-  function ganttSegmentsForService(service, dayKeys) {
-    const rangeStart = dayKeys[0];
-    const rangeEnd = dayKeys[dayKeys.length - 1];
-    const relevant = appData.aos.filter((ao) =>
-      ao.resultat === "En cours" &&
-      ao.date_entree_etude && ao.date_remise &&
-      (ao.service || []).includes(service) &&
-      ao.date_entree_etude <= rangeEnd && ao.date_remise >= rangeStart
-    );
-    const segments = relevant.map((ao) => {
-      const clippedStart = ao.date_entree_etude < rangeStart ? rangeStart : ao.date_entree_etude;
-      const clippedEnd = ao.date_remise > rangeEnd ? rangeEnd : ao.date_remise;
-      const startCol = daysBetweenKeys(rangeStart, clippedStart) + 1;
-      const span = daysBetweenKeys(clippedStart, clippedEnd) + 1;
-      return { ao, startCol, span };
-    });
-    return assignBarLanes(segments);
-  }
-
-  function renderGanttBar(seg) {
+    const monthCells = months.map((m) => {
+      const label = m.date.toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
+      return `<div class="gantt-month-cell" style="grid-column: span ${m.span};">${escapeHtml(label)}</div>`;
+    }).join("");
+    const weekCells = weeks.map((w, i) => {
+      const classes = ["gantt-week-cell"];
+      if (i === 0 || weeks[i - 1].monthKey !== w.monthKey) classes.push("month-start");
+      if (todayKey >= w.startKey && todayKey <= w.endKey) classes.push("is-today");
+      return `<div class="${classes.join(" ")}" title="Semaine ${w.number}, du ${formatDate(w.startKey)}">${w.number}</div>`;
+    }).join("");
     return `
-      <div class="gantt-bar" data-id="${seg.ao.id}"
-           style="grid-column: ${seg.startCol} / span ${seg.span}; grid-row: ${seg.lane + 1};"
-           title="${escapeHtml(seg.ao.nom_projet || "")} — remise ${formatDate(seg.ao.date_remise)}">
-        ${escapeHtml(seg.ao.nom_projet || "(sans nom)")}
+      <div class="gantt-corner" style="grid-row: span 2;">Projet</div>
+      ${monthCells}
+      ${weekCells}
+    `;
+  }
+
+  function renderGanttRow(ao, weeks, todayKey) {
+    const start = ao.date_entree_etude;
+    const end = ao.date_remise;
+    const cells = weeks.map((w, i) => {
+      const classes = ["gantt-cell"];
+      if (i === 0 || weeks[i - 1].monthKey !== w.monthKey) classes.push("month-start");
+      if (todayKey >= w.startKey && todayKey <= w.endKey) classes.push("is-today");
+      const filled = start <= w.endKey && end >= w.startKey;
+      if (filled) {
+        classes.push("filled");
+        if (start >= w.startKey && start <= w.endKey) classes.push("bar-start");
+        if (end >= w.startKey && end <= w.endKey) classes.push("bar-end");
+      }
+      return `<div class="${classes.join(" ")}"></div>`;
+    }).join("");
+    const days = daysBetween(end);
+    const sub = [`remise ${formatDate(end)}`];
+    if (ao.assigne_a.length) sub.push(ao.assigne_a.join(", "));
+    return `
+      <div class="gantt-row" data-id="${ao.id}" style="grid-column: 1 / -1;"
+           title="${escapeHtml(ao.nom_projet || "")} — entrée en étude ${formatDate(start)} → remise ${formatDate(end)}">
+        <div class="gantt-label ${AO_PRIORITE_CLASS[ao.priorite] || ""}">
+          <div class="gantt-label-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
+          <div class="gantt-label-sub">
+            ${escapeHtml(sub.join(" · "))}
+            ${days !== null && days >= 0 && days <= 7 ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : ""}
+          </div>
+        </div>
+        ${cells}
       </div>
     `;
   }
 
   function renderPlanCharge() {
-    const days = computeGanttDays();
-    const dayKeys = days.map((d) => localDateKey(d));
+    const weeks = computeGanttWeeks();
     const todayKey = localDateKey(new Date());
-    const todayCol = dayKeys.indexOf(todayKey) + 1;
-    const monthHeaderHtml = renderGanttMonthHeader(days);
-    const dayColsStyle = `grid-template-columns: repeat(${days.length}, ${GANTT_DAY_WIDTH}px);`;
-
+    const rangeStart = weeks[0].startKey;
+    const rangeEnd = weeks[weeks.length - 1].endKey;
     const services = availablePipelineServices();
     const container = document.getElementById("gantt-container");
 
@@ -3383,26 +3490,31 @@
       return;
     }
 
+    const gridStyle = `grid-template-columns: var(--gantt-label-width) repeat(${weeks.length}, minmax(0, 1fr));`;
     container.innerHTML = services.map((service) => {
-      const segments = ganttSegmentsForService(service, dayKeys);
-      const laneCount = Math.max(1, ...segments.map((s) => s.lane + 1));
+      const enCours = appData.aos.filter((ao) => ao.resultat === "En cours" && (ao.service || []).includes(service));
+      const shown = enCours
+        .filter((ao) => ao.date_entree_etude && ao.date_remise &&
+          ao.date_entree_etude <= rangeEnd && ao.date_remise >= rangeStart)
+        .sort((a, b) => a.date_remise.localeCompare(b.date_remise) || a.date_entree_etude.localeCompare(b.date_entree_etude));
+      const sansDates = enCours.filter((ao) => !ao.date_entree_etude || !ao.date_remise).length;
       return `
         <div class="gantt-service-section">
-          <h2>${escapeHtml(service)}</h2>
-          <div class="gantt-grid-wrap">
-            <div class="gantt-months" style="${dayColsStyle}">${monthHeaderHtml}</div>
-            <div class="gantt-bars" style="${dayColsStyle} grid-template-rows: repeat(${laneCount}, 28px);">
-              ${todayCol > 0 ? `<div class="gantt-today-line" style="grid-column: ${todayCol}; grid-row: 1 / span ${laneCount};"></div>` : ""}
-              ${segments.map(renderGanttBar).join("")}
-            </div>
+          <h2>${escapeHtml(service)} <span class="todo-group-count">${shown.length}</span></h2>
+          <div class="gantt-table" style="${gridStyle}">
+            ${renderGanttHeader(weeks, todayKey)}
+            ${shown.length
+              ? shown.map((ao) => renderGanttRow(ao, weeks, todayKey)).join("")
+              : `<div class="gantt-empty" style="grid-column: 1 / -1;">Aucun AO en cours sur la période.</div>`}
           </div>
+          ${sansDates ? `<p class="gantt-footnote">${sansDates} AO en cours non affiché${sansDates > 1 ? "s" : ""} : date d'entrée en étude ou de remise manquante.</p>` : ""}
         </div>
       `;
     }).join("");
 
-    container.querySelectorAll(".gantt-bar").forEach((el) => {
-      el.addEventListener("click", () => {
-        const ao = appData.aos.find((a) => a.id === el.dataset.id);
+    container.querySelectorAll(".gantt-row").forEach((row) => {
+      row.addEventListener("click", () => {
+        const ao = appData.aos.find((a) => a.id === row.dataset.id);
         if (ao) openAOForm(ao);
       });
     });
