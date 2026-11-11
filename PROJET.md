@@ -156,6 +156,7 @@ Repris du Todo Notion existant, enrichi.
 | `nom` | texte | |
 | `fonction` | texte | rôle / poste |
 | `organisme` | texte | structure (peut recouper `nom_client` d'un AO) |
+| `categorie` | liste | ajouté le 2026-11-11 (`supabase/migrate_contact_categorie.sql`) : Client, Prospect, AMO / Bureau d'études, Partenaire / Sous-traitant, Fournisseur, Interne Veolia, Autre, ou vide (liste `CONTACT_CATEGORIES` dans crm.html) |
 | `telephone` | texte | |
 | `email` | texte | |
 | `adresse` | texte | |
@@ -224,6 +225,10 @@ d'assignés : chacun ses tâches.
 - Cases à cocher pour marquer terminé.
 
 ### 5.4 Contacts
+- Refonte du 2026-11-11 : une seule barre de recherche sur tous les champs
+  (nom, organisme, fonction, téléphone, email, notes, nom des AO liés),
+  insensible aux accents, chaque mot tapé devant apparaître quelque part ;
+  pastilles de catégorie cliquables (avec compteur) pour filtrer.
 - Annuaire simple : liste + fiche détail.
 - Lien vers les AO associés.
 - Possibilité de poser un rappel de relance sur un contact.

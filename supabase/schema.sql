@@ -272,6 +272,9 @@ create table public.contacts (
   nom text not null default '',
   fonction text not null default '',
   organisme text not null default '',
+  -- Catégorie d'annuaire (2026-11-11, migrate_contact_categorie.sql) :
+  -- Client, Prospect, AMO / Bureau d'études… ou '' (sans catégorie).
+  categorie text not null default '',
   telephone text not null default '',
   email text not null default '',
   adresse text not null default '',
@@ -541,12 +544,13 @@ begin
 
     if expected is null then
       insert into public.contacts (
-        id, nom, fonction, organisme, telephone, email, adresse, notes,
+        id, nom, fonction, organisme, categorie, telephone, email, adresse, notes,
         rappel, ao_lies, last_modified, modified_by
       ) values (
         coalesce(row_id, gen_random_uuid()::text),
         coalesce(row_data->>'nom', ''), coalesce(row_data->>'fonction', ''),
-        coalesce(row_data->>'organisme', ''), coalesce(row_data->>'telephone', ''),
+        coalesce(row_data->>'organisme', ''), coalesce(row_data->>'categorie', ''),
+        coalesce(row_data->>'telephone', ''),
         coalesce(row_data->>'email', ''), coalesce(row_data->>'adresse', ''),
         coalesce(row_data->>'notes', ''), row_data->'rappel',
         coalesce((select array(select jsonb_array_elements_text(row_data->'ao_lies'))), '{}'),
@@ -557,6 +561,7 @@ begin
         nom = coalesce(row_data->>'nom', ''),
         fonction = coalesce(row_data->>'fonction', ''),
         organisme = coalesce(row_data->>'organisme', ''),
+        categorie = coalesce(row_data->>'categorie', ''),
         telephone = coalesce(row_data->>'telephone', ''),
         email = coalesce(row_data->>'email', ''),
         adresse = coalesce(row_data->>'adresse', ''),

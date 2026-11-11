@@ -1173,6 +1173,74 @@
 
   .clickable-item { cursor: pointer; }
 
+  #screen-contacts .toolbar { flex-wrap: nowrap; }
+
+  .contacts-search {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 14px;
+    font-size: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+  }
+
+  .contacts-search:focus { outline: none; border-color: var(--color-primary); }
+
+  .contact-category-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .contact-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .contact-chip:hover { border-color: var(--cat-color, var(--color-primary)); }
+
+  .contact-chip.active {
+    background: var(--cat-color, var(--color-primary));
+    border-color: var(--cat-color, var(--color-primary));
+    color: #fff;
+  }
+
+  .contact-chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--cat-color);
+  }
+
+  .contact-chip.active .contact-chip-dot { background: #fff; }
+
+  .contact-chip-count {
+    font-weight: 500;
+    opacity: 0.75;
+  }
+
+  .contact-category-badge {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    color: #fff;
+    background: var(--cat-color);
+  }
+
   .contacts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -1883,9 +1951,10 @@
   <section class="screen" id="screen-contacts">
     <h1>Contacts</h1>
     <div class="toolbar">
+      <input type="search" id="filter-contact-search" class="contacts-search" placeholder="🔍 Rechercher : nom, organisme, fonction, téléphone, email, AO lié…" autocomplete="off">
       <button type="button" class="btn-primary" id="btn-new-contact">+ Nouveau contact</button>
-      <input type="text" id="filter-contact-search" placeholder="Rechercher un nom ou un organisme…">
     </div>
+    <div class="contact-category-chips" id="contact-category-chips"></div>
     <div class="contacts-grid" id="contacts-list"></div>
   </section>
 
@@ -2116,6 +2185,9 @@
           </label>
           <label>Organisme
             <input type="text" id="f-c-organisme">
+          </label>
+          <label>Catégorie
+            <select id="f-c-categorie"></select>
           </label>
           <label>Téléphone
             <input type="text" id="f-c-telephone" placeholder="06 12 34 56 78">
@@ -2874,6 +2946,7 @@
       nom: "",
       fonction: "",
       organisme: "",
+      categorie: "",
       telephone: "",
       email: "",
       adresse: "",
@@ -4832,7 +4905,29 @@
   // ---------------------------------------------------------------------
 
   let contactSearch = "";
+  let contactCategoryFilter = null; // null = toutes, "" = sans catégorie
   let currentEditingContact = null;
+
+  // Catégories d'annuaire (2026-11-11). Pour en ajouter/renommer une, changer
+  // cette liste (et la couleur associée) : la valeur est stockée en clair.
+  const CONTACT_CATEGORIES = [
+    "Client", "Prospect", "AMO / Bureau d'études", "Partenaire / Sous-traitant",
+    "Fournisseur", "Interne Veolia", "Autre",
+  ];
+  const CONTACT_CATEGORY_COLORS = {
+    "Client": "#0f766e",
+    "Prospect": "#2563eb",
+    "AMO / Bureau d'études": "#7c3aed",
+    "Partenaire / Sous-traitant": "#c2410c",
+    "Fournisseur": "#a16207",
+    "Interne Veolia": "#d03b3b",
+    "Autre": "#6b7280",
+  };
+
+  // Minuscules sans accents, pour que "theo" trouve "Théo".
+  function normalizeSearchText(text) {
+    return (text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  }
 
   function contactInitials(nom) {
     const parts = (nom || "").trim().split(/\s+/).filter(Boolean);
@@ -4864,6 +4959,7 @@
         <div class="contact-avatar" style="background:${color}">${escapeHtml(initials)}</div>
         <div class="contact-card-body">
           <div class="contact-card-name">${escapeHtml(contact.nom || "(sans nom)")}</div>
+          ${contact.categorie ? `<span class="contact-category-badge" style="--cat-color:${CONTACT_CATEGORY_COLORS[contact.categorie] || "#6b7280"}">${escapeHtml(contact.categorie)}</span>` : ""}
           ${sub ? `<div class="contact-card-sub">${sub}</div>` : ""}
           ${meta.length ? `<div class="contact-card-meta">${meta.join("")}</div>` : ""}
         </div>
@@ -4882,21 +4978,67 @@
     });
   }
 
+  // Recherche unique sur tous les champs utiles (y compris le nom des AO
+  // liés) : chaque mot tapé doit apparaître quelque part, dans n'importe quel
+  // ordre ("eysines mairie" trouve le contact de la Mairie d'Eysines).
+  function contactSearchHaystack(c) {
+    const aoNames = (c.ao_lies || [])
+      .map((id) => appData.aos.find((a) => a.id === id))
+      .filter(Boolean)
+      .map((a) => a.nom_projet);
+    return normalizeSearchText([
+      c.nom, c.fonction, c.organisme, c.categorie, c.email, c.adresse, c.notes,
+      c.telephone, (c.telephone || "").replace(/\D/g, ""), ...aoNames,
+    ].join(" "));
+  }
+
   function contactMatchesSearch(c) {
-    if (!contactSearch) return true;
-    const q = contactSearch.toLowerCase();
-    return (c.nom || "").toLowerCase().includes(q) || (c.organisme || "").toLowerCase().includes(q);
+    const words = normalizeSearchText(contactSearch).split(/\s+/).filter(Boolean);
+    if (!words.length) return true;
+    const haystack = contactSearchHaystack(c);
+    return words.every((w) => haystack.includes(w));
+  }
+
+  function contactMatchesCategory(c) {
+    if (contactCategoryFilter === null) return true;
+    return (c.categorie || "") === contactCategoryFilter;
+  }
+
+  function renderContactCategoryChips() {
+    const searched = appData.contacts.filter(contactMatchesSearch);
+    const countFor = (cat) => searched.filter((c) => (c.categorie || "") === cat).length;
+    const chips = [{ value: null, label: "Tous", count: searched.length }]
+      .concat(CONTACT_CATEGORIES.map((cat) => ({ value: cat, label: cat, count: countFor(cat), color: CONTACT_CATEGORY_COLORS[cat] })))
+      .concat([{ value: "", label: "Sans catégorie", count: countFor("") }])
+      .filter((chip) => chip.value === null || chip.count > 0 || chip.value === contactCategoryFilter);
+    const wrap = document.getElementById("contact-category-chips");
+    wrap.innerHTML = chips.map((chip, idx) => `
+      <button type="button" class="contact-chip${chip.value === contactCategoryFilter ? " active" : ""}" data-idx="${idx}"
+              ${chip.color ? `style="--cat-color:${chip.color}"` : ""}>
+        ${chip.color ? `<span class="contact-chip-dot"></span>` : ""}${escapeHtml(chip.label)} <span class="contact-chip-count">${chip.count}</span>
+      </button>
+    `).join("");
+    wrap.querySelectorAll(".contact-chip").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const chip = chips[Number(btn.dataset.idx)];
+        contactCategoryFilter = chip.value === contactCategoryFilter ? null : chip.value;
+        renderContacts();
+      });
+    });
   }
 
   function renderContacts() {
+    renderContactCategoryChips();
     const listEl = document.getElementById("contacts-list");
     const filtered = appData.contacts
       .filter(contactMatchesSearch)
+      .filter(contactMatchesCategory)
       .slice()
       .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+    const filtering = contactSearch.trim() || contactCategoryFilter !== null;
     listEl.innerHTML = filtered.length
       ? filtered.map(renderContactItem).join("")
-      : `<div class="contacts-empty">${contactSearch ? "Aucun contact ne correspond à la recherche." : "Aucun contact pour l’instant."}</div>`;
+      : `<div class="contacts-empty">${filtering ? "Aucun contact ne correspond." : "Aucun contact pour l’instant."}</div>`;
     wireContactItemEvents(listEl);
   }
 
@@ -5020,6 +5162,11 @@
     document.getElementById("f-c-nom").value = data.nom || "";
     document.getElementById("f-c-fonction").value = data.fonction || "";
     document.getElementById("f-c-organisme").value = data.organisme || "";
+    populateSelect(document.getElementById("f-c-categorie"), CONTACT_CATEGORIES, "— Sans catégorie —");
+    // Nouveau contact créé depuis un filtre de catégorie : pré-rempli avec.
+    document.getElementById("f-c-categorie").value = contact
+      ? (data.categorie || "")
+      : (contactCategoryFilter || "");
     document.getElementById("f-c-telephone").value = data.telephone || "";
     document.getElementById("f-c-email").value = data.email || "";
     document.getElementById("f-c-adresse").value = data.adresse || "";
@@ -5062,6 +5209,7 @@
       nom: document.getElementById("f-c-nom").value.trim(),
       fonction: document.getElementById("f-c-fonction").value.trim(),
       organisme: document.getElementById("f-c-organisme").value.trim(),
+      categorie: document.getElementById("f-c-categorie").value,
       telephone: document.getElementById("f-c-telephone").value.trim(),
       email: document.getElementById("f-c-email").value.trim(),
       adresse: document.getElementById("f-c-adresse").value.trim(),
