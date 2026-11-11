@@ -118,11 +118,17 @@ Repris du Pipeline Notion existant, enrichi.
 Depuis le 2026-11-11, chaque onglet de service a ses propres colonnes
 (`PIPELINE_PHASES_BY_SERVICE` dans crm.html) et `Finalisation` est supprimée
 (ses AO repassent en `Étude`) :
-- **Commerce** : A venir → Étude → Négociation → En attente de réponse →
+- **Commerce** : A venir → A faire → Étude → Négociation → En attente de réponse →
   Gagné / Perdu / Abandonné
-- **Travaux** : A venir → Étude → En attente de réponse → Exécution →
+- **Travaux** : A venir → A faire → Étude → En attente de réponse → Exécution →
   Facturé / Fini (id `gagne`) / Perdu / Abandonné. `Exécution` compte comme
   `Gagné` côté résultat et Reporting.
+
+Colonne `A faire` (id `a_faire`, ajoutée le 2026-11-11) entre `A venir` et
+`Étude` : `A venir` = AO pas encore sortis (veille), `A faire` = travail
+demandé mais pas encore démarré (avenants, sollicitations…). Comme `A venir`,
+elle ne compte pas comme charge : `date_entree_etude` n'est posée qu'à la
+sortie des deux, et le Reporting les exclut toutes les deux.
 
 ### 4.2 Tâches
 

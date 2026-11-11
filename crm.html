@@ -2671,6 +2671,7 @@
   // ne bougent pas puisqu'ils ne référencent que l'id.
   const PHASES = [
     { id: "a_venir", label: "A venir" },
+    { id: "a_faire", label: "A faire" },
     { id: "etude", label: "Étude" },
     { id: "negociation", label: "Négociation" },
     { id: "attente_reponse", label: "En attente de réponse" },
@@ -2684,14 +2685,19 @@
   // son propre déroulé. Les id restent communs (Reporting, accueil, plan de
   // charge ne connaissent que l'id) ; seul l'affichage diffère.
   const PIPELINE_PHASES_BY_SERVICE = {
-    Commerce: ["a_venir", "etude", "negociation", "attente_reponse", "gagne", "perdu", "abandonne"],
-    Travaux: ["a_venir", "etude", "attente_reponse", "execution", "gagne", "perdu", "abandonne"],
+    Commerce: ["a_venir", "a_faire", "etude", "negociation", "attente_reponse", "gagne", "perdu", "abandonne"],
+    Travaux: ["a_venir", "a_faire", "etude", "attente_reponse", "execution", "gagne", "perdu", "abandonne"],
   };
   const PHASE_LABEL_OVERRIDES_BY_SERVICE = {
     Travaux: { gagne: "Facturé / Fini" },
   };
   // Un AO sans service apparaît dans les deux onglets : s'il est dans une
   // phase propre à l'autre service, il est rangé dans la colonne équivalente.
+  // Phases d'avant étude (2026-11-11) : "A venir" = AO pas encore sortis
+  // (veille), "A faire" = travail demandé pas encore démarré (avenants,
+  // sollicitations...). Aucune ne compte comme charge : la date d'entrée en
+  // étude n'est posée qu'en sortant des deux, et le Reporting les ignore.
+  const PRE_ETUDE_PHASES = ["a_venir", "a_faire"];
   // Phases finales : boutons à part dans la fiche AO, colonnes repliables
   // dans le pipeline.
   const AO_TERMINAL_PHASES = ["gagne", "perdu", "abandonne"];
@@ -2839,7 +2845,7 @@
       taches_liees: [],
       ...partial,
     });
-    if (ao.phase !== "a_venir" && !ao.date_entree_etude) {
+    if (!PRE_ETUDE_PHASES.includes(ao.phase) && !ao.date_entree_etude) {
       ao.date_entree_etude = localDateKey(new Date());
     }
     return ao;
@@ -2940,9 +2946,9 @@
       const record = findOrThrow(data.aos, id, "AO");
       checkRecordConflict(record, "ao", id, baseLastModified);
       Object.assign(record, changes);
-      // Première sortie de "A venir" -> pose la date de départ du plan de
-      // charge, une seule fois (reste modifiable à la main ensuite).
-      if (record.phase !== "a_venir" && !record.date_entree_etude) {
+      // Première sortie de "A venir" / "A faire" -> pose la date de départ du
+      // plan de charge, une seule fois (reste modifiable à la main ensuite).
+      if (!PRE_ETUDE_PHASES.includes(record.phase) && !record.date_entree_etude) {
         record.date_entree_etude = localDateKey(new Date());
       }
       stamp(record);
@@ -5119,7 +5125,7 @@
   function reportingAvailableYears(data) {
     const years = new Set(
       data.aos
-        .filter((a) => a.phase !== "a_venir" && a.date_remise)
+        .filter((a) => !PRE_ETUDE_PHASES.includes(a.phase) && a.date_remise)
         .map((a) => a.date_remise.slice(0, 4))
     );
     const currentYear = new Date().getFullYear();
@@ -5153,13 +5159,13 @@
   }
 
   function computeReportingData(data, period = "all") {
-    // Les AO encore "A venir" ne sont pas encore engagés (pas d'étude en
-    // cours) : on les exclut de tout le reporting, KPI compris. Le filtre de
+    // Les AO encore "A venir" / "A faire" ne sont pas encore engagés (pas
+    // d'étude en cours) : on les exclut de tout le reporting, KPI compris. Le filtre de
     // période restreint ensuite sur l'année de date_remise (les AO sans date
     // ne peuvent être rattachés à une année, donc n'apparaissent que sur
     // "Toutes les années").
     const aos = data.aos.filter((a) => {
-      if (a.phase === "a_venir") return false;
+      if (PRE_ETUDE_PHASES.includes(a.phase)) return false;
       if (period !== "all" && a.date_remise?.slice(0, 4) !== period) return false;
       return true;
     });
