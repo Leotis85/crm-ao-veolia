@@ -132,6 +132,9 @@ create table public.aos (
   id text primary key default gen_random_uuid()::text,
   nom_projet text not null default '',
   type_client text not null default 'Habitat',
+  -- Priorité commerciale (2026-11-11, migrate_ao_priorite.sql) : Haute,
+  -- Moyenne, Basse ou '' (non définie). Colore les cartes du pipeline.
+  priorite text not null default '',
   -- Tableau (comme taches.assigne_a) depuis migrate_ao_assignes.sql : un AO
   -- peut être suivi par plusieurs personnes.
   assigne_a text[] not null default '{}',
@@ -381,7 +384,7 @@ begin
 
     if expected is null then
       insert into public.aos (
-        id, nom_projet, type_client, assigne_a, phase, type, type_marche, service,
+        id, nom_projet, type_client, priorite, assigne_a, phase, type, type_marche, service,
         valeur_estimee_keur, amo, concurrence, date_remise, date_visite, date_prise_effet,
         date_entree_etude,
         lieu, notes, fichiers, resultat, motif_categorie, motif, rappel,
@@ -389,6 +392,7 @@ begin
       ) values (
         coalesce(row_id, gen_random_uuid()::text),
         coalesce(row_data->>'nom_projet', ''), coalesce(row_data->>'type_client', 'Habitat'),
+        coalesce(row_data->>'priorite', ''),
         public.jsonb_text_array_lenient(row_data->'assigne_a'), coalesce(row_data->>'phase', 'a_venir'),
         coalesce(row_data->>'type', 'Appel d''offres'),
         coalesce((select array(select jsonb_array_elements_text(row_data->'type_marche'))), '{}'),
@@ -410,6 +414,7 @@ begin
       update public.aos set
         nom_projet = coalesce(row_data->>'nom_projet', ''),
         type_client = coalesce(row_data->>'type_client', 'Habitat'),
+        priorite = coalesce(row_data->>'priorite', ''),
         assigne_a = public.jsonb_text_array_lenient(row_data->'assigne_a'),
         phase = coalesce(row_data->>'phase', 'a_venir'),
         type = coalesce(row_data->>'type', 'Appel d''offres'),

@@ -557,6 +557,59 @@
 
   .kanban-card.dragging { opacity: 0.4; }
 
+  /* Priorité AO : liseré coloré à gauche + pastille. */
+  .kanban-card.prio-haute { border-left: 4px solid #d03b3b; }
+  .kanban-card.prio-moyenne { border-left: 4px solid #f59e0b; }
+  .kanban-card.prio-basse { border-left: 4px solid #3b82f6; }
+
+  .kanban-card-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+  .kanban-card-badges:empty { display: none; }
+
+  .badge-prio {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    margin-bottom: 6px;
+    color: #fff;
+  }
+  .badge-prio.prio-haute { background: #d03b3b; }
+  .badge-prio.prio-moyenne { background: #f59e0b; }
+  .badge-prio.prio-basse { background: #3b82f6; }
+
+  /* Colonnes finales repliables. */
+  .kanban-column.collapsible .kanban-column-header { cursor: pointer; user-select: none; }
+  .kanban-column.collapsible .kanban-column-header:hover { color: var(--color-primary); }
+  .kanban-column.end-gagne { border-top: 3px solid #0ca30c; }
+  .kanban-column.end-perdu { border-top: 3px solid #d03b3b; }
+  .kanban-column.end-abandonne { border-top: 3px solid #fab219; }
+
+  .kanban-column.collapsed {
+    min-width: 46px;
+    max-width: 46px;
+    padding: 10px 4px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .kanban-column.collapsed .kanban-column-header {
+    flex-direction: column-reverse;
+    gap: 10px;
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .kanban-column.collapsed .kanban-column-header span:first-child {
+    writing-mode: vertical-rl;
+    white-space: nowrap;
+  }
+
+  /* Repliée : cartes masquées, mais la colonne reste une zone de dépôt. */
+  .kanban-column.collapsed .kanban-cards { flex: 1; min-height: 120px; }
+  .kanban-column.collapsed .kanban-card { display: none; }
+
   .kanban-card-footer {
     display: flex;
     justify-content: space-between;
@@ -1706,6 +1759,7 @@
       <button type="button" class="btn-primary" id="btn-new-ao">+ Nouvel AO</button>
       <select id="filter-type_client"></select>
       <select id="filter-type_marche"></select>
+      <select id="filter-priorite"></select>
       <select id="filter-assigne_a"></select>
       <button type="button" class="btn-secondary btn-small" id="btn-export-ao-csv">⬇ CSV</button>
     </div>
@@ -1819,6 +1873,9 @@
       <aside class="ao-fiche-side">
         <section class="ao-side-section">
           <h3>Informations</h3>
+          <label class="ao-field">Priorité
+            <select id="f-priorite" data-ao-key="priorite"></select>
+          </label>
           <label class="ao-field">Service
             <select id="f-service" data-ao-key="service"></select>
           </label>
@@ -2581,6 +2638,9 @@
   };
   // Un AO sans service apparaît dans les deux onglets : s'il est dans une
   // phase propre à l'autre service, il est rangé dans la colonne équivalente.
+  // Phases finales : boutons à part dans la fiche AO, colonnes repliables
+  // dans le pipeline.
+  const AO_TERMINAL_PHASES = ["gagne", "perdu", "abandonne"];
   const PHASE_FALLBACK_COLUMN = { negociation: "attente_reponse", execution: "gagne" };
   function pipelinePhasesFor(service) {
     return PIPELINE_PHASES_BY_SERVICE[service] || PHASE_OPTIONS;
@@ -2660,6 +2720,9 @@
   const RESULTAT_OPTIONS = ["En cours", "Gagné", "Perdu", "Abandonné"];
   const STATUT_TACHE_OPTIONS = ["Pas commencé", "En cours", "Terminé"];
   const PRIORITE_OPTIONS = ["Normale", "Haute"];
+  // Priorité d'un AO (code couleur du pipeline), distincte de celle des tâches.
+  const AO_PRIORITE_OPTIONS = ["Haute", "Moyenne", "Basse"];
+  const AO_PRIORITE_CLASS = { Haute: "prio-haute", Moyenne: "prio-moyenne", Basse: "prio-basse" };
 
   function generateId() {
     if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
@@ -2698,6 +2761,7 @@
       id: generateId(),
       nom_projet: "",
       type_client: "Habitat",
+      priorite: "",
       assigne_a: [],
       phase: "a_venir",
       type: "Appel d'offres",
@@ -3037,7 +3101,10 @@
   // Pipeline Kanban (étape 5, voir PROJET.md §5.2).
   // ---------------------------------------------------------------------
 
-  const pipelineFilters = { type_client: "", type_marche: "", assigne_a: "" };
+  const pipelineFilters = { type_client: "", type_marche: "", assigne_a: "", priorite: "" };
+  // Colonnes Gagné / Perdu / Abandonné repliées par défaut (gain de place) ;
+  // un clic sur l'en-tête les déplie le temps de la session.
+  const expandedTerminalColumns = new Set();
   let draggedAOId = null;
   let currentEditingAO = null;
 
@@ -3109,6 +3176,8 @@
     if (!tcSel.options.length) populateSelect(tcSel, TYPE_CLIENT_OPTIONS, "Tous types de client");
     if (!tmSel.options.length) populateSelect(tmSel, TYPE_MARCHE_OPTIONS, "Tous types de marché");
     if (!asSel.options.length) populateSelect(asSel, ASSIGNE_OPTIONS, "Tous les assignés");
+    const prSel = document.getElementById("filter-priorite");
+    if (!prSel.options.length) populateSelect(prSel, AO_PRIORITE_OPTIONS, "Toutes priorités");
   }
 
   function aoMatchesFilters(ao) {
@@ -3119,13 +3188,20 @@
     if (pipelineFilters.type_client && ao.type_client !== pipelineFilters.type_client) return false;
     if (pipelineFilters.type_marche && !(ao.type_marche || []).includes(pipelineFilters.type_marche)) return false;
     if (pipelineFilters.assigne_a && !ao.assigne_a.includes(pipelineFilters.assigne_a)) return false;
+    if (pipelineFilters.priorite && ao.priorite !== pipelineFilters.priorite) return false;
     return true;
   }
 
-  // Tri des cartes au sein d'une même colonne : date de remise la plus
-  // récente (la plus lointaine) en premier ; celles sans date en dernier.
+  // Tri des cartes au sein d'une même colonne : priorité d'abord (Haute en
+  // tête, non définie en dernier), puis date de remise la plus récente (la
+  // plus lointaine) en premier ; celles sans date en dernier.
   function sortAOsForColumn(list) {
+    const prioRank = (ao) => {
+      const idx = AO_PRIORITE_OPTIONS.indexOf(ao.priorite);
+      return idx === -1 ? AO_PRIORITE_OPTIONS.length : idx;
+    };
     return [...list].sort((a, b) => {
+      if (prioRank(a) !== prioRank(b)) return prioRank(a) - prioRank(b);
       if (!a.date_remise && !b.date_remise) return 0;
       if (!a.date_remise) return 1;
       if (!b.date_remise) return -1;
@@ -3139,8 +3215,11 @@
     const days = showDeadline ? daysBetween(ao.date_remise) : null;
     const marche = (ao.type_marche || []).join(", ");
     return `
-      <div class="kanban-card" draggable="true" data-id="${ao.id}">
-        ${ao.type ? `<span class="badge-type-ao">${escapeHtml(ao.type)}</span>` : ""}
+      <div class="kanban-card ${AO_PRIORITE_CLASS[ao.priorite] || ""}" draggable="true" data-id="${ao.id}">
+        <div class="kanban-card-badges">
+          ${ao.type ? `<span class="badge-type-ao">${escapeHtml(ao.type)}</span>` : ""}
+          ${AO_PRIORITE_CLASS[ao.priorite] ? `<span class="badge-prio ${AO_PRIORITE_CLASS[ao.priorite]}">${escapeHtml(ao.priorite)}</span>` : ""}
+        </div>
         <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
         <div class="list-item-sub">${escapeHtml(ao.type_client)}${marche ? " · " + escapeHtml(marche) : ""}</div>
         <div class="kanban-card-footer">
@@ -3160,10 +3239,12 @@
     board.innerHTML = pipelinePhasesFor(activePipelineService).map((id) => {
       const label = phaseLabel(id, activePipelineService);
       const cards = sortAOsForColumn(filtered.filter((ao) => pipelineColumnFor(ao.phase, activePipelineService) === id));
+      const collapsible = AO_TERMINAL_PHASES.includes(id);
+      const collapsed = collapsible && !expandedTerminalColumns.has(id);
       return `
-        <div class="kanban-column">
-          <div class="kanban-column-header">
-            <span>${escapeHtml(label)}</span>
+        <div class="kanban-column${collapsible ? " collapsible end-" + id : ""}${collapsed ? " collapsed" : ""}">
+          <div class="kanban-column-header" ${collapsible ? `data-toggle="${id}" title="${collapsed ? "Déplier" : "Replier"} la colonne"` : ""}>
+            <span>${collapsible ? (collapsed ? "▸ " : "▾ ") : ""}${escapeHtml(label)}</span>
             <span class="badge-type">${cards.length}</span>
           </div>
           <div class="kanban-cards" data-phase="${escapeHtml(id)}">
@@ -3172,6 +3253,15 @@
         </div>
       `;
     }).join("");
+
+    board.querySelectorAll("[data-toggle]").forEach((header) => {
+      header.addEventListener("click", () => {
+        const id = header.dataset.toggle;
+        if (expandedTerminalColumns.has(id)) expandedTerminalColumns.delete(id);
+        else expandedTerminalColumns.add(id);
+        renderPipeline();
+      });
+    });
 
     document.querySelectorAll(".kanban-card").forEach((card) => {
       card.addEventListener("click", () => {
@@ -3348,6 +3438,10 @@
     pipelineFilters.type_marche = e.target.value;
     renderPipeline();
   });
+  document.getElementById("filter-priorite").addEventListener("change", (e) => {
+    pipelineFilters.priorite = e.target.value;
+    renderPipeline();
+  });
   document.getElementById("filter-assigne_a").addEventListener("change", (e) => {
     pipelineFilters.assigne_a = e.target.value;
     renderPipeline();
@@ -3444,7 +3538,6 @@
   // sans s'écraser. Un nouvel AO garde un bouton "Créer" (pas d'AO vide
   // créé par accident).
 
-  const AO_TERMINAL_PHASES = ["gagne", "perdu", "abandonne"];
   let ficheDraftPhase = "a_venir";
   // Valeurs du formulaire telles que connues en base (dernier chargement ou
   // dernier enregistrement) : la différence avec le formulaire = à enregistrer.
@@ -3471,6 +3564,7 @@
     return {
       nom_projet: ficheEl("f-nom_projet").value.trim(),
       type_client: ficheEl("f-type_client").value,
+      priorite: ficheEl("f-priorite").value,
       type: ficheEl("f-type").value,
       service: serviceValue ? [serviceValue] : [],
       assigne_a: checkedAssignees(ficheEl("f-assigne_a")),
@@ -3500,6 +3594,7 @@
     set("nom_projet", () => { ficheEl("f-nom_projet").value = data.nom_projet || ""; });
     set("type_client", () => { ficheEl("f-type_client").value = data.type_client || TYPE_CLIENT_OPTIONS[0]; });
     set("type", () => { ficheEl("f-type").value = data.type || TYPE_AO_OPTIONS[0]; });
+    set("priorite", () => { ficheEl("f-priorite").value = data.priorite || ""; });
     set("service", () => { ficheEl("f-service").value = (data.service && data.service[0]) || ""; });
     set("assigne_a", () => renderAssigneCheckboxes(ficheEl("f-assigne_a"), data.assigne_a || []));
     set("type_marche", () => {
@@ -3675,6 +3770,7 @@
     ficheDraftPhase = "a_venir";
 
     populateSelect(ficheEl("f-type_client"), TYPE_CLIENT_OPTIONS);
+    populateSelect(ficheEl("f-priorite"), AO_PRIORITE_OPTIONS, "— Non définie —");
     populateSelect(ficheEl("f-type"), TYPE_AO_OPTIONS);
     populateSelect(ficheEl("f-resultat"), RESULTAT_OPTIONS);
     populateSelect(ficheEl("f-motif-categorie"), MOTIF_OPTIONS, "— Aucun —");
@@ -5228,7 +5324,7 @@
   // l'écran, pas systématiquement tous les AO.
   document.getElementById("btn-export-ao-csv").addEventListener("click", () => {
     const rows = [
-      ["Nom du projet", "Client", "Phase", "Type", "Type de marché", "Valeur (k€)", "AMO", "Concurrence", "Date de remise", "Date de visite", "Date de prise d'effet", "Lieu", "Résultat", "Motif", "Assigné à"],
+      ["Nom du projet", "Client", "Phase", "Type", "Type de marché", "Valeur (k€)", "AMO", "Concurrence", "Date de remise", "Date de visite", "Date de prise d'effet", "Lieu", "Résultat", "Motif", "Assigné à", "Priorité"],
       ...appData.aos.filter(aoMatchesFilters).map((ao) => [
         ao.nom_projet || "",
         ao.type_client || "",
@@ -5245,6 +5341,7 @@
         ao.resultat || "",
         ao.motif_categorie || "",
         ao.assigne_a.join(", "),
+        ao.priorite || "",
       ]),
     ];
     downloadCSV(`crm-ao-pipeline-${new Date().toISOString().slice(0, 10)}.csv`, rows);
