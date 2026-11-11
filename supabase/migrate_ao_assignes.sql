@@ -12,8 +12,10 @@ alter table public.aos alter column assigne_a drop default;
 alter table public.aos
   alter column assigne_a type text[]
   using case
-    when assigne_a = '' then '{}'::text[]
-    else array(select btrim(x) from unnest(string_to_array(assigne_a, '+')) as x where btrim(x) <> '')
+    when btrim(assigne_a) = '' then '{}'::text[]
+    -- Pas de sous-requête autorisée ici (USING d'un ALTER TYPE) : on retire
+    -- les espaces autour des "+" puis on découpe.
+    else string_to_array(regexp_replace(btrim(assigne_a), '\s*\+\s*', '+', 'g'), '+')
   end;
 
 alter table public.aos alter column assigne_a set default '{}'::text[];
