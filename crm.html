@@ -699,6 +699,217 @@
 
   .modal-footer-right { display: flex; gap: 8px; }
 
+  /* --- Fiche AO pleine page (refonte 2026-11-11) --- */
+  body.fiche-open { overflow: hidden; }
+
+  .ao-fiche-overlay { padding: 16px; align-items: stretch; overflow: hidden; }
+
+  .ao-fiche {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .ao-fiche-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px 10px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .ao-fiche-title-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+  .ao-fiche-kicker {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+  }
+
+  #ao-form .ao-fiche-title {
+    font-size: 20px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 4px 6px;
+    margin-left: -7px;
+    background: transparent;
+    color: var(--color-text);
+    width: 100%;
+  }
+
+  #ao-form .ao-fiche-title:hover { border-color: var(--color-border); }
+  #ao-form .ao-fiche-title:focus { border-color: var(--color-primary); outline: none; background: var(--color-surface); }
+
+  .ao-save-status { font-size: 12px; color: var(--color-text-muted); white-space: nowrap; }
+  .ao-save-status.error { color: var(--color-danger); font-weight: 600; }
+
+  .ao-phase-stepper {
+    display: flex;
+    gap: 12px;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--color-border);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .ao-steps { display: flex; flex: 1; min-width: 280px; }
+
+  .ao-step {
+    flex: 1;
+    border: none;
+    background: var(--color-bg);
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 8px 10px 8px 18px;
+    cursor: pointer;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%, 10px 50%);
+    margin-right: -6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ao-step:first-child { clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 50%, calc(100% - 10px) 100%, 0 100%); border-radius: 6px 0 0 6px; padding-left: 12px; }
+  .ao-step:hover { background: var(--color-border); }
+  .ao-step.past { background: #ccfbf1; color: var(--color-primary); }
+  .ao-step.current { background: var(--color-primary); color: #fff; }
+
+  .ao-step-ends { display: flex; gap: 6px; }
+
+  .ao-step-end {
+    border: 1px solid var(--color-border);
+    background: var(--color-surface);
+    border-radius: 6px;
+    padding: 7px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--color-text-muted);
+  }
+
+  .ao-step-end.end-gagne:hover, .ao-step-end.end-gagne.current { background: #0ca30c; border-color: #0ca30c; color: #fff; }
+  .ao-step-end.end-perdu:hover, .ao-step-end.end-perdu.current { background: #d03b3b; border-color: #d03b3b; color: #fff; }
+  .ao-step-end.end-abandonne:hover, .ao-step-end.end-abandonne.current { background: #fab219; border-color: #fab219; color: #1c1f26; }
+
+  .ao-fiche-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(300px, 380px) 1fr;
+  }
+
+  .ao-fiche-side {
+    overflow-y: auto;
+    padding: 12px 16px 24px 20px;
+    border-right: 1px solid var(--color-border);
+    background: #fafbfc;
+  }
+
+  .ao-side-section { padding: 10px 0 14px; border-bottom: 1px solid var(--color-border); }
+  .ao-side-section:last-child { border-bottom: none; }
+
+  .ao-side-section h3, .ao-notes-head h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    margin: 0 0 8px;
+  }
+
+  #ao-form label.ao-field, #ao-form .ao-field {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+    margin-bottom: 4px;
+    flex-direction: initial;
+  }
+
+  #ao-form .ao-field-stack { grid-template-columns: 1fr; gap: 4px; margin-top: 6px; }
+
+  #ao-form .ao-field input, #ao-form .ao-field select {
+    font-size: 13px;
+    color: var(--color-text);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 5px 6px;
+    background: transparent;
+    width: 100%;
+    min-width: 0;
+  }
+
+  #ao-form .ao-field input:hover, #ao-form .ao-field select:hover { border-color: var(--color-border); background: var(--color-surface); }
+  #ao-form .ao-field input:focus, #ao-form .ao-field select:focus { border-color: var(--color-primary); outline: none; background: var(--color-surface); }
+
+  #ao-form .ao-field .checkbox-group { gap: 4px 10px; color: var(--color-text); }
+  #ao-form .ao-field input[type="checkbox"] { width: auto; padding: 0; }
+  #ao-form .ao-field .checkbox-group label.checkbox-inline { display: inline-flex; flex-direction: row; gap: 5px; font-size: 13px; color: var(--color-text); }
+  #ao-form .ao-rappel-toggle { display: inline-flex; flex-direction: row; font-size: 13px; color: var(--color-text); margin-bottom: 6px; }
+  #f-rappel-fields[hidden] { display: none; }
+
+  .ao-fiche-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 16px 20px 20px;
+    gap: 16px;
+  }
+
+  .ao-notes { flex: 1; display: flex; flex-direction: column; min-height: 360px; }
+
+  .ao-notes-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .ao-notes-head h3 { margin-bottom: 8px; }
+  .ao-notes-hint { font-size: 12px; color: var(--color-text-muted); }
+
+  #ao-form #f-notes {
+    flex: 1;
+    width: 100%;
+    resize: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--color-text);
+    background: #fffef7;
+  }
+
+  #ao-form #f-notes:focus { outline: none; border-color: var(--color-primary); }
+
+  .ao-taches { flex-shrink: 0; }
+
+  .ao-fiche-create-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 20px;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .ao-fiche-create-footer[hidden] { display: none; }
+
+  @media (max-width: 800px) {
+    .ao-fiche-overlay { padding: 0; }
+    .ao-fiche { height: 100vh; border-radius: 0; }
+    .ao-fiche-body { grid-template-columns: 1fr; overflow-y: auto; }
+    .ao-fiche-side { overflow: visible; border-right: none; border-bottom: 1px solid var(--color-border); }
+    .ao-fiche-main { overflow: visible; }
+    .ao-steps { overflow-x: auto; }
+  }
+
   .motif-modal-intro {
     font-size: 13px;
     color: var(--color-text-muted);
@@ -1647,134 +1858,148 @@
 
 <div class="chart-tooltip" id="chart-tooltip" hidden></div>
 
-<div class="modal-overlay" id="ao-modal-overlay" hidden>
-  <div class="modal">
-    <div class="modal-header">
-      <h2 id="ao-modal-title">Nouvel AO</h2>
-      <button type="button" class="modal-close" id="ao-modal-close">✕</button>
+<div class="modal-overlay ao-fiche-overlay" id="ao-modal-overlay" hidden>
+  <form class="ao-fiche" id="ao-form" novalidate>
+    <div class="ao-fiche-header">
+      <div class="ao-fiche-title-wrap">
+        <span class="ao-fiche-kicker" id="ao-modal-title">Nouvel AO</span>
+        <input type="text" id="f-nom_projet" class="ao-fiche-title" data-ao-key="nom_projet" placeholder="Nom du projet" autocomplete="off">
+      </div>
+      <span class="ao-save-status" id="ao-save-status"></span>
+      <button type="button" class="btn-danger btn-small" id="ao-form-delete" hidden>Supprimer</button>
+      <button type="button" class="modal-close" id="ao-modal-close" title="Fermer (Échap)">✕</button>
     </div>
-    <form id="ao-form">
-      <div class="form-grid">
-        <label>Nom du projet
-          <input type="text" id="f-nom_projet" required>
-        </label>
-        <label>Type de client
-          <select id="f-type_client"></select>
-        </label>
-        <label>Phase
-          <select id="f-phase"></select>
-        </label>
-        <label>Type
-          <select id="f-type"></select>
-        </label>
-        <label>Valeur estimée (k€)
-          <input type="number" id="f-valeur_estimee_keur" step="0.1">
-        </label>
-        <label>AMO
-          <input type="text" id="f-amo">
-        </label>
-        <label>Concurrence
-          <input type="text" id="f-concurrence">
-        </label>
-        <label>Lieu
-          <input type="text" id="f-lieu">
-        </label>
-        <label>Date de remise
-          <input type="date" id="f-date_remise">
-        </label>
-        <label>Date de visite
-          <input type="date" id="f-date_visite">
-        </label>
-        <label>Date de prise d'effet
-          <input type="date" id="f-date_prise_effet">
-        </label>
-        <label>Entrée en étude <small>(posée auto., modifiable)</small>
-          <input type="date" id="f-date_entree_etude">
-        </label>
-        <label>Résultat
-          <select id="f-resultat"></select>
-        </label>
-        <label>Motif de perte
-          <select id="f-motif-categorie"></select>
-        </label>
-        <label>Détail du motif (facultatif)
-          <input type="text" id="f-motif">
-        </label>
-      </div>
+    <div class="ao-phase-stepper" id="ao-phase-stepper"></div>
 
-      <fieldset>
-        <legend>Assigné à (soi-même par défaut, cocher d'autres personnes pour partager le suivi)</legend>
-        <div class="checkbox-group" id="f-assigne_a"></div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Type de marché</legend>
-        <div class="checkbox-group" id="f-type_marche"></div>
-      </fieldset>
-
-      <label>Service
-        <select id="f-service"></select>
-      </label>
-
-      <label class="block">Notes
-        <textarea id="f-notes" rows="3"></textarea>
-      </label>
-
-      <fieldset>
-        <legend>Fichiers (liens)</legend>
-        <div id="f-fichiers-list"></div>
-        <button type="button" class="btn-secondary btn-small" id="f-fichiers-add">+ Ajouter un lien</button>
-      </fieldset>
-
-      <fieldset>
-        <legend>Rappel</legend>
-        <div class="form-grid">
-          <label>Déclenchement
-            <select id="f-rappel-declenchement"></select>
+    <div class="ao-fiche-body">
+      <aside class="ao-fiche-side">
+        <section class="ao-side-section">
+          <h3>Informations</h3>
+          <label class="ao-field">Service
+            <select id="f-service" data-ao-key="service"></select>
           </label>
-          <label id="f-rappel-date-wrap">Date
-            <input type="date" id="f-rappel-date">
+          <label class="ao-field">Type
+            <select id="f-type" data-ao-key="type"></select>
           </label>
-          <label id="f-rappel-jours-wrap">Jours avant
-            <input type="number" id="f-rappel-jours_avant" min="0">
+          <label class="ao-field">Type de client
+            <select id="f-type_client" data-ao-key="type_client"></select>
           </label>
-          <label>Message
-            <input type="text" id="f-rappel-message">
+          <label class="ao-field">Valeur (k€)
+            <input type="number" id="f-valeur_estimee_keur" placeholder="—" data-ao-key="valeur_estimee_keur" step="0.1">
           </label>
-        </div>
-        <label class="checkbox-inline">
-          <input type="checkbox" id="f-rappel-actif"> Rappel actif
-        </label>
-      </fieldset>
-
-      <fieldset id="ao-taches-section" hidden>
-        <legend>Tâches liées</legend>
-        <div class="list-panel" id="ao-taches-list"></div>
-        <button type="button" class="btn-secondary btn-small" id="ao-taches-add">+ Ajouter une tâche</button>
-      </fieldset>
-
-      <fieldset id="ao-contacts-section" hidden>
-        <legend>Contacts liés</legend>
-        <div class="tag-chips" id="ao-contacts-chips"></div>
-        <div class="tag-add-wrap">
-          <button type="button" class="btn-secondary btn-small" id="ao-contacts-link-toggle">+ Lier un contact</button>
-          <div class="tag-dropdown" id="ao-contacts-dropdown" hidden>
-            <input type="text" id="ao-contacts-dropdown-search" placeholder="Rechercher un contact…">
-            <div class="tag-dropdown-list" id="ao-contacts-dropdown-list"></div>
+          <label class="ao-field">Lieu
+            <input type="text" id="f-lieu" placeholder="—" data-ao-key="lieu">
+          </label>
+          <label class="ao-field">AMO
+            <input type="text" id="f-amo" placeholder="—" data-ao-key="amo">
+          </label>
+          <label class="ao-field">Concurrence
+            <input type="text" id="f-concurrence" placeholder="—" data-ao-key="concurrence">
+          </label>
+          <div class="ao-field ao-field-stack" data-ao-key="type_marche">
+            <span>Type de marché</span>
+            <div class="checkbox-group" id="f-type_marche"></div>
           </div>
-          <button type="button" class="btn-secondary btn-small" id="ao-contacts-add">+ Nouveau contact</button>
-        </div>
-      </fieldset>
+          <div class="ao-field ao-field-stack" data-ao-key="assigne_a">
+            <span>Assignés</span>
+            <div class="checkbox-group" id="f-assigne_a"></div>
+          </div>
+        </section>
 
-      <div class="modal-footer">
-        <button type="button" class="btn-danger" id="ao-form-delete" hidden>Supprimer</button>
-        <div class="modal-footer-right">
-          <button type="button" class="btn-secondary" id="ao-form-cancel">Annuler</button>
-          <button type="submit" class="btn-primary">Enregistrer</button>
+        <section class="ao-side-section">
+          <h3>Dates</h3>
+          <label class="ao-field">Remise
+            <input type="date" id="f-date_remise" data-ao-key="date_remise">
+          </label>
+          <label class="ao-field">Visite
+            <input type="date" id="f-date_visite" data-ao-key="date_visite">
+          </label>
+          <label class="ao-field">Prise d'effet
+            <input type="date" id="f-date_prise_effet" data-ao-key="date_prise_effet">
+          </label>
+          <label class="ao-field" title="Posée automatiquement à la sortie de « A venir », modifiable">Entrée en étude
+            <input type="date" id="f-date_entree_etude" data-ao-key="date_entree_etude">
+          </label>
+        </section>
+
+        <section class="ao-side-section">
+          <h3>Résultat</h3>
+          <label class="ao-field">Résultat
+            <select id="f-resultat" data-ao-key="resultat"></select>
+          </label>
+          <label class="ao-field">Motif de perte
+            <select id="f-motif-categorie" data-ao-key="motif_categorie"></select>
+          </label>
+          <label class="ao-field">Détail du motif
+            <input type="text" id="f-motif" placeholder="—" data-ao-key="motif">
+          </label>
+        </section>
+
+        <section class="ao-side-section" data-ao-key="rappel">
+          <h3>Rappel</h3>
+          <label class="checkbox-inline ao-rappel-toggle">
+            <input type="checkbox" id="f-rappel-actif"> Rappel actif
+          </label>
+          <div id="f-rappel-fields">
+            <label class="ao-field">Déclenchement
+              <select id="f-rappel-declenchement"></select>
+            </label>
+            <label class="ao-field" id="f-rappel-date-wrap">Date
+              <input type="date" id="f-rappel-date">
+            </label>
+            <label class="ao-field" id="f-rappel-jours-wrap">Jours avant
+              <input type="number" id="f-rappel-jours_avant" min="0">
+            </label>
+            <label class="ao-field">Message
+              <input type="text" id="f-rappel-message">
+            </label>
+          </div>
+        </section>
+
+        <section class="ao-side-section" data-ao-key="fichiers">
+          <h3>Fichiers (liens)</h3>
+          <div id="f-fichiers-list"></div>
+          <button type="button" class="btn-secondary btn-small" id="f-fichiers-add">+ Ajouter un lien</button>
+        </section>
+
+        <section class="ao-side-section" id="ao-contacts-section" hidden>
+          <h3>Contacts liés</h3>
+          <div class="tag-chips" id="ao-contacts-chips"></div>
+          <div class="tag-add-wrap">
+            <button type="button" class="btn-secondary btn-small" id="ao-contacts-link-toggle">+ Lier un contact</button>
+            <div class="tag-dropdown" id="ao-contacts-dropdown" hidden>
+              <input type="text" id="ao-contacts-dropdown-search" placeholder="Rechercher un contact…">
+              <div class="tag-dropdown-list" id="ao-contacts-dropdown-list"></div>
+            </div>
+            <button type="button" class="btn-secondary btn-small" id="ao-contacts-add">+ Nouveau contact</button>
+          </div>
+        </section>
+      </aside>
+
+      <div class="ao-fiche-main">
+        <div class="ao-notes">
+          <div class="ao-notes-head">
+            <h3>Bloc-notes</h3>
+            <span class="ao-notes-hint">Prise de notes libre, enregistrée automatiquement</span>
+          </div>
+          <textarea id="f-notes" data-ao-key="notes" placeholder="Comptes rendus, échanges, points d'attention, infos en vrac…"></textarea>
         </div>
+
+        <section class="ao-taches" id="ao-taches-section" hidden>
+          <div class="ao-notes-head">
+            <h3>Mes tâches liées</h3>
+            <button type="button" class="btn-secondary btn-small" id="ao-taches-add">+ Ajouter une tâche</button>
+          </div>
+          <div class="list-panel" id="ao-taches-list"></div>
+        </section>
       </div>
-    </form>
-  </div>
+    </div>
+
+    <div class="ao-fiche-create-footer" id="ao-create-footer">
+      <button type="button" class="btn-secondary" id="ao-form-cancel">Annuler</button>
+      <button type="submit" class="btn-primary">Créer l'AO</button>
+    </div>
+  </form>
 </div>
 
 <div class="modal-overlay" id="tache-modal-overlay" hidden>
@@ -3395,7 +3620,12 @@
     removeBtn.type = "button";
     removeBtn.className = "btn-icon";
     removeBtn.textContent = "✕";
-    removeBtn.addEventListener("click", () => row.remove());
+    removeBtn.addEventListener("click", () => {
+      const list = row.parentElement;
+      row.remove();
+      // Prévient l'enregistrement automatique de la fiche AO.
+      if (list) list.dispatchEvent(new Event("input", { bubbles: true }));
+    });
     row.appendChild(input);
     row.appendChild(removeBtn);
     return row;
@@ -3407,176 +3637,368 @@
     document.getElementById("f-rappel-jours-wrap").style.display = isManual ? "none" : "";
   }
 
-  // Les phases proposées suivent le service choisi dans le formulaire (mêmes
-  // colonnes que l'onglet du pipeline correspondant).
-  function populatePhaseSelect(currentPhase) {
-    const service = document.getElementById("f-service").value;
-    const phaseSelect = document.getElementById("f-phase");
-    const ids = pipelinePhasesFor(service);
-    populateSelect(phaseSelect, ids.map((id) => ({ value: id, label: phaseLabel(id, service) })));
-    phaseSelect.value = ids.includes(currentPhase) ? currentPhase : pipelineColumnFor(currentPhase, service);
+  // --- Fiche AO pleine page (refonte 2026-11-11, façon Pipedrive) ---
+  //
+  // Infos clés à gauche, bloc-notes libre à droite. Un AO existant
+  // s'enregistre tout seul (pas de bouton Enregistrer) : seuls les champs
+  // réellement modifiés sont envoyés, sans contrôle de version global, pour
+  // que deux personnes puissent éditer des champs différents du même AO
+  // sans s'écraser. Un nouvel AO garde un bouton "Créer" (pas d'AO vide
+  // créé par accident).
+
+  const AO_TERMINAL_PHASES = ["gagne", "perdu", "abandonne"];
+  let ficheDraftPhase = "a_venir";
+  // Valeurs du formulaire telles que connues en base (dernier chargement ou
+  // dernier enregistrement) : la différence avec le formulaire = à enregistrer.
+  let aoSaved = {};
+  let aoSaveTimer = null;
+  let aoSaving = null;
+  let aoSavePending = false;
+
+  function ficheEl(id) { return document.getElementById(id); }
+
+  function isFicheOpen() {
+    return !ficheEl("ao-modal-overlay").hidden;
   }
 
-  document.getElementById("f-service").addEventListener("change", () => {
-    populatePhaseSelect(document.getElementById("f-phase").value);
+  function setAOSaveStatus(text, isError) {
+    const el = ficheEl("ao-save-status");
+    el.textContent = text;
+    el.classList.toggle("error", !!isError);
+  }
+
+  function readAOForm() {
+    const serviceValue = ficheEl("f-service").value;
+    const valeur = ficheEl("f-valeur_estimee_keur").value;
+    const rappelActif = ficheEl("f-rappel-actif").checked;
+    return {
+      nom_projet: ficheEl("f-nom_projet").value.trim(),
+      type_client: ficheEl("f-type_client").value,
+      type: ficheEl("f-type").value,
+      service: serviceValue ? [serviceValue] : [],
+      assigne_a: checkedAssignees(ficheEl("f-assigne_a")),
+      type_marche: Array.from(document.querySelectorAll(".f-type_marche-item:checked")).map((cb) => cb.value),
+      valeur_estimee_keur: valeur ? Number(valeur) : null,
+      amo: ficheEl("f-amo").value.trim(),
+      concurrence: ficheEl("f-concurrence").value.trim(),
+      lieu: ficheEl("f-lieu").value.trim(),
+      date_remise: ficheEl("f-date_remise").value || null,
+      date_visite: ficheEl("f-date_visite").value || null,
+      date_prise_effet: ficheEl("f-date_prise_effet").value || null,
+      date_entree_etude: ficheEl("f-date_entree_etude").value || null,
+      resultat: ficheEl("f-resultat").value,
+      motif_categorie: ficheEl("f-motif-categorie").value,
+      motif: ficheEl("f-motif").value.trim(),
+      // Pas de trim : on enregistre pendant la frappe, un espace ou un retour
+      // à la ligne en fin de texte ne doit pas être mangé.
+      notes: ficheEl("f-notes").value,
+      fichiers: Array.from(document.querySelectorAll(".f-fichier-input")).map((i) => i.value.trim()).filter(Boolean),
+      rappel: rappelActif ? createRappel({
+        declenchement: ficheEl("f-rappel-declenchement").value,
+        date: ficheEl("f-rappel-date").value || null,
+        jours_avant: ficheEl("f-rappel-jours_avant").value ? Number(ficheEl("f-rappel-jours_avant").value) : null,
+        message: ficheEl("f-rappel-message").value.trim(),
+        actif: true,
+      }) : null,
+    };
+  }
+
+  // Remplit le formulaire, sauf les champs listés dans `skip` (en cours de
+  // saisie ou pas encore enregistrés) pour ne jamais écraser une frappe.
+  function writeAOForm(data, skip = new Set()) {
+    const set = (key, fn) => { if (!skip.has(key)) fn(); };
+    set("nom_projet", () => { ficheEl("f-nom_projet").value = data.nom_projet || ""; });
+    set("type_client", () => { ficheEl("f-type_client").value = data.type_client || TYPE_CLIENT_OPTIONS[0]; });
+    set("type", () => { ficheEl("f-type").value = data.type || TYPE_AO_OPTIONS[0]; });
+    set("service", () => { ficheEl("f-service").value = (data.service && data.service[0]) || ""; });
+    set("assigne_a", () => renderAssigneCheckboxes(ficheEl("f-assigne_a"), data.assigne_a || []));
+    set("type_marche", () => {
+      const selected = new Set(data.type_marche || []);
+      ficheEl("f-type_marche").innerHTML = TYPE_MARCHE_OPTIONS.map((m) => `
+        <label class="checkbox-inline"><input type="checkbox" class="f-type_marche-item" value="${escapeHtml(m)}"${selected.has(m) ? " checked" : ""}> ${escapeHtml(m)}</label>
+      `).join("");
+    });
+    set("valeur_estimee_keur", () => { ficheEl("f-valeur_estimee_keur").value = data.valeur_estimee_keur ?? ""; });
+    set("amo", () => { ficheEl("f-amo").value = data.amo || ""; });
+    set("concurrence", () => { ficheEl("f-concurrence").value = data.concurrence || ""; });
+    set("lieu", () => { ficheEl("f-lieu").value = data.lieu || ""; });
+    set("date_remise", () => { ficheEl("f-date_remise").value = data.date_remise || ""; });
+    set("date_visite", () => { ficheEl("f-date_visite").value = data.date_visite || ""; });
+    set("date_prise_effet", () => { ficheEl("f-date_prise_effet").value = data.date_prise_effet || ""; });
+    set("date_entree_etude", () => { ficheEl("f-date_entree_etude").value = data.date_entree_etude || ""; });
+    set("resultat", () => { ficheEl("f-resultat").value = data.resultat || RESULTAT_OPTIONS[0]; });
+    set("motif_categorie", () => { ficheEl("f-motif-categorie").value = data.motif_categorie || ""; });
+    set("motif", () => { ficheEl("f-motif").value = data.motif || ""; });
+    set("notes", () => { ficheEl("f-notes").value = data.notes || ""; });
+    set("fichiers", () => {
+      const list = ficheEl("f-fichiers-list");
+      list.innerHTML = "";
+      (data.fichiers || []).forEach((url) => list.appendChild(fichierRow(url)));
+    });
+    set("rappel", () => {
+      const rappel = data.rappel || {};
+      ficheEl("f-rappel-declenchement").value = rappel.declenchement || DECLENCHEMENT_OPTIONS[0];
+      ficheEl("f-rappel-date").value = rappel.date || "";
+      ficheEl("f-rappel-jours_avant").value = rappel.jours_avant ?? "";
+      ficheEl("f-rappel-message").value = rappel.message || "";
+      ficheEl("f-rappel-actif").checked = !!data.rappel && rappel.actif !== false;
+    });
+    updateRappelFieldsVisibility();
+    ficheEl("f-rappel-fields").hidden = !ficheEl("f-rappel-actif").checked;
+  }
+
+  function dirtyAOKeys() {
+    const values = readAOForm();
+    return Object.keys(values).filter((k) => JSON.stringify(values[k]) !== JSON.stringify(aoSaved[k]));
+  }
+
+  function focusedAOKey() {
+    const active = document.activeElement;
+    const holder = active && active.closest ? active.closest("#ao-form [data-ao-key]") : null;
+    return holder ? holder.dataset.aoKey : null;
+  }
+
+  function currentFichePhase() {
+    return currentEditingAO ? currentEditingAO.phase : ficheDraftPhase;
+  }
+
+  function renderPhaseStepper() {
+    const service = ficheEl("f-service").value;
+    const current = pipelineColumnFor(currentFichePhase(), service);
+    const phases = pipelinePhasesFor(service);
+    const steps = phases.filter((p) => !AO_TERMINAL_PHASES.includes(p));
+    const ends = phases.filter((p) => AO_TERMINAL_PHASES.includes(p));
+    const currentIdx = steps.indexOf(current);
+    const isTerminal = AO_TERMINAL_PHASES.includes(current);
+    ficheEl("ao-phase-stepper").innerHTML = `
+      <div class="ao-steps">
+        ${steps.map((p, i) => `
+          <button type="button" class="ao-step${p === current ? " current" : ""}${isTerminal || i < currentIdx ? " past" : ""}" data-phase="${p}">${escapeHtml(phaseLabel(p, service))}</button>
+        `).join("")}
+      </div>
+      <div class="ao-step-ends">
+        ${ends.map((p) => `
+          <button type="button" class="ao-step-end end-${p}${p === current ? " current" : ""}" data-phase="${p}">${escapeHtml(phaseLabel(p, service))}</button>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  ficheEl("ao-phase-stepper").addEventListener("click", async (event) => {
+    const btn = event.target.closest("[data-phase]");
+    if (!btn) return;
+    const newPhase = btn.dataset.phase;
+    if (!currentEditingAO) {
+      ficheDraftPhase = newPhase;
+      ficheEl("f-resultat").value = resultatForPhase(newPhase, ficheEl("f-resultat").value);
+      renderPhaseStepper();
+      return;
+    }
+    if (newPhase === currentEditingAO.phase) return;
+    await runAOSave();
+    const ao = currentEditingAO;
+    if (newPhase === "perdu" && !ao.motif_categorie) {
+      openMotifModal(ao, newPhase);
+      return;
+    }
+    await commitAOPhaseChange(ao, newPhase);
   });
 
-  function openAOForm(ao) {
-    currentEditingAO = ao || null;
-    document.getElementById("ao-modal-title").textContent = ao ? "Modifier l'AO" : "Nouvel AO";
-    document.getElementById("ao-form-delete").hidden = !ao;
-
-    populateSelect(document.getElementById("f-type_client"), TYPE_CLIENT_OPTIONS);
-    populateSelect(document.getElementById("f-type"), TYPE_AO_OPTIONS);
-    populateSelect(document.getElementById("f-resultat"), RESULTAT_OPTIONS);
-    populateSelect(document.getElementById("f-motif-categorie"), MOTIF_OPTIONS, "— Aucun —");
-    populateSelect(document.getElementById("f-rappel-declenchement"), DECLENCHEMENT_OPTIONS);
-
-    const marcheContainer = document.getElementById("f-type_marche");
-    marcheContainer.innerHTML = TYPE_MARCHE_OPTIONS.map((m) => `
-      <label class="checkbox-inline"><input type="checkbox" class="f-type_marche-item" value="${escapeHtml(m)}"> ${escapeHtml(m)}</label>
-    `).join("");
-
-    populateSelect(document.getElementById("f-service"), SERVICE_OPTIONS, "— Aucun —");
-
-    const data = ao || {};
-    document.getElementById("f-nom_projet").value = data.nom_projet || "";
-    document.getElementById("f-type_client").value = data.type_client || TYPE_CLIENT_OPTIONS[0];
-    document.getElementById("f-type").value = data.type || TYPE_AO_OPTIONS[0];
-    const defaultAoAssignees = ao ? (data.assigne_a || []) : [currentProfile.display_name];
-    renderAssigneCheckboxes(document.getElementById("f-assigne_a"), defaultAoAssignees);
-    document.getElementById("f-valeur_estimee_keur").value = data.valeur_estimee_keur ?? "";
-    document.getElementById("f-amo").value = data.amo || "";
-    document.getElementById("f-concurrence").value = data.concurrence || "";
-    document.getElementById("f-lieu").value = data.lieu || "";
-    document.getElementById("f-date_remise").value = data.date_remise || "";
-    document.getElementById("f-date_visite").value = data.date_visite || "";
-    document.getElementById("f-date_prise_effet").value = data.date_prise_effet || "";
-    document.getElementById("f-date_entree_etude").value = data.date_entree_etude || "";
-    document.getElementById("f-resultat").value = data.resultat || RESULTAT_OPTIONS[0];
-    document.getElementById("f-motif-categorie").value = data.motif_categorie || "";
-    document.getElementById("f-motif").value = data.motif || "";
-    document.getElementById("f-notes").value = data.notes || "";
-
-    const selectedMarche = new Set(data.type_marche || []);
-    marcheContainer.querySelectorAll(".f-type_marche-item").forEach((cb) => {
-      cb.checked = selectedMarche.has(cb.value);
-    });
-
-    document.getElementById("f-service").value = (data.service && data.service[0]) || activePipelineService || "";
-    populatePhaseSelect(data.phase || PHASE_OPTIONS[0]);
-
-    const fichiersList = document.getElementById("f-fichiers-list");
-    fichiersList.innerHTML = "";
-    (data.fichiers || []).forEach((url) => fichiersList.appendChild(fichierRow(url)));
-
-    const rappel = data.rappel || {};
-    document.getElementById("f-rappel-declenchement").value = rappel.declenchement || DECLENCHEMENT_OPTIONS[0];
-    document.getElementById("f-rappel-date").value = rappel.date || "";
-    document.getElementById("f-rappel-jours_avant").value = rappel.jours_avant ?? "";
-    document.getElementById("f-rappel-message").value = rappel.message || "";
-    document.getElementById("f-rappel-actif").checked = !!data.rappel && rappel.actif !== false;
-
-    document.getElementById("ao-taches-section").hidden = !ao;
-    if (ao) renderAOTachesSection(ao);
-
-    document.getElementById("ao-contacts-section").hidden = !ao;
-    document.getElementById("ao-contacts-dropdown").hidden = true;
-    if (ao) renderAOContactsSection(ao);
-
-    updateRappelFieldsVisibility();
-    document.getElementById("ao-modal-overlay").hidden = false;
+  function scheduleAOSave(delay) {
+    if (!currentEditingAO) return;
+    clearTimeout(aoSaveTimer);
+    setAOSaveStatus("Modifications en cours…");
+    aoSaveTimer = setTimeout(runAOSave, delay);
   }
 
-  function closeAOForm() {
-    document.getElementById("ao-modal-overlay").hidden = true;
-    document.getElementById("ao-contacts-dropdown").hidden = true;
+  async function runAOSave() {
+    clearTimeout(aoSaveTimer);
+    aoSaveTimer = null;
+    if (!currentEditingAO) return;
+    if (aoSaving) {
+      aoSavePending = true;
+      return aoSaving;
+    }
+    const values = readAOForm();
+    const changes = {};
+    Object.keys(values).forEach((k) => {
+      if (JSON.stringify(values[k]) !== JSON.stringify(aoSaved[k])) changes[k] = values[k];
+    });
+    if (!values.nom_projet) delete changes.nom_projet;
+    if (!Object.keys(changes).length) {
+      setAOSaveStatus(values.nom_projet ? "Enregistré ✓" : "Le nom du projet est obligatoire", !values.nom_projet);
+      return;
+    }
+    const id = currentEditingAO.id;
+    setAOSaveStatus("Enregistrement…");
+    aoSaving = (async () => {
+      try {
+        await updateAO(id, changes);
+        Object.assign(aoSaved, changes);
+        setAOSaveStatus("Enregistré ✓");
+      } catch (err) {
+        setAOSaveStatus("Erreur d'enregistrement", true);
+        alert("Erreur lors de l'enregistrement : " + err.message);
+      } finally {
+        aoSaving = null;
+      }
+    })();
+    await aoSaving;
+    if (aoSavePending) {
+      aoSavePending = false;
+      await runAOSave();
+    }
+  }
+
+  ficheEl("ao-form").addEventListener("input", (event) => {
+    if (!event.target.closest("[data-ao-key]")) return;
+    scheduleAOSave(event.target.id === "f-notes" ? 1200 : 800);
+  });
+  ficheEl("ao-form").addEventListener("change", (event) => {
+    if (event.target.id === "f-rappel-actif") {
+      ficheEl("f-rappel-fields").hidden = !event.target.checked;
+    }
+    if (event.target.id === "f-service") renderPhaseStepper();
+    if (!event.target.closest("[data-ao-key]")) return;
+    scheduleAOSave(200);
+  });
+
+  // Rafraîchit la fiche ouverte après une sauvegarde ou une modification
+  // venue d'ailleurs (temps réel), sans toucher aux champs en cours de saisie.
+  function refreshAOFiche() {
+    if (!currentEditingAO) return;
+    const latest = appData.aos.find((a) => a.id === currentEditingAO.id);
+    if (!latest) {
+      hideAOFiche();
+      alert("Cet AO a été supprimé entre-temps.");
+      return;
+    }
+    currentEditingAO = latest;
+    const skip = new Set(dirtyAOKeys());
+    const focused = focusedAOKey();
+    if (focused) skip.add(focused);
+    writeAOForm(latest, skip);
+    const values = readAOForm();
+    Object.keys(values).forEach((k) => { if (!skip.has(k)) aoSaved[k] = values[k]; });
+    ficheEl("ao-modal-title").textContent = aoFicheKicker(latest);
+    renderPhaseStepper();
+    renderAOTachesSection(latest);
+    renderAOContactsSection(latest);
+  }
+
+  function aoFicheKicker(ao) {
+    const parts = [ao.type || "AO"];
+    if (ao.modified_by) parts.push(`modifié par ${ao.modified_by}`);
+    return parts.join(" · ");
+  }
+
+  function openAOForm(ao) {
+    clearTimeout(aoSaveTimer);
+    currentEditingAO = ao || null;
+    ficheDraftPhase = "a_venir";
+
+    populateSelect(ficheEl("f-type_client"), TYPE_CLIENT_OPTIONS);
+    populateSelect(ficheEl("f-type"), TYPE_AO_OPTIONS);
+    populateSelect(ficheEl("f-resultat"), RESULTAT_OPTIONS);
+    populateSelect(ficheEl("f-motif-categorie"), MOTIF_OPTIONS, "— Aucun —");
+    populateSelect(ficheEl("f-rappel-declenchement"), DECLENCHEMENT_OPTIONS);
+    populateSelect(ficheEl("f-service"), SERVICE_OPTIONS, "— Aucun —");
+
+    const data = ao || {
+      assigne_a: [currentProfile.display_name],
+      service: activePipelineService ? [activePipelineService] : [],
+    };
+    writeAOForm(data);
+    aoSaved = readAOForm();
+
+    ficheEl("ao-modal-title").textContent = ao ? aoFicheKicker(ao) : "Nouvel AO";
+    ficheEl("ao-form-delete").hidden = !ao;
+    ficheEl("ao-create-footer").hidden = !!ao;
+    ficheEl("ao-taches-section").hidden = !ao;
+    ficheEl("ao-contacts-section").hidden = !ao;
+    ficheEl("ao-contacts-dropdown").hidden = true;
+    ficheEl("ao-modal-overlay").classList.toggle("is-new", !ao);
+    if (ao) {
+      renderAOTachesSection(ao);
+      renderAOContactsSection(ao);
+    }
+    setAOSaveStatus(ao ? "Enregistrement automatique" : "");
+    renderPhaseStepper();
+    ficheEl("ao-modal-overlay").hidden = false;
+    document.body.classList.add("fiche-open");
+    if (!ao) ficheEl("f-nom_projet").focus();
+  }
+
+  function hideAOFiche() {
+    clearTimeout(aoSaveTimer);
+    ficheEl("ao-modal-overlay").hidden = true;
+    ficheEl("ao-contacts-dropdown").hidden = true;
+    document.body.classList.remove("fiche-open");
     currentEditingAO = null;
   }
 
-  document.getElementById("f-rappel-declenchement").addEventListener("change", updateRappelFieldsVisibility);
-  document.getElementById("ao-modal-close").addEventListener("click", closeAOForm);
-  document.getElementById("ao-form-cancel").addEventListener("click", closeAOForm);
-  document.getElementById("ao-modal-overlay").addEventListener("click", (event) => {
+  // Fermer = enregistrer d'abord ce qui est en attente.
+  async function closeAOForm() {
+    if (currentEditingAO) await runAOSave();
+    hideAOFiche();
+  }
+
+  ficheEl("f-rappel-declenchement").addEventListener("change", updateRappelFieldsVisibility);
+  ficheEl("ao-modal-close").addEventListener("click", closeAOForm);
+  ficheEl("ao-form-cancel").addEventListener("click", hideAOFiche);
+  ficheEl("ao-modal-overlay").addEventListener("mousedown", (event) => {
     if (event.target.id === "ao-modal-overlay") closeAOForm();
   });
-  document.getElementById("f-fichiers-add").addEventListener("click", () => {
-    document.getElementById("f-fichiers-list").appendChild(fichierRow());
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !isFicheOpen()) return;
+    const otherModalOpen = ["tache-modal-overlay", "contact-modal-overlay", "motif-modal-overlay"]
+      .some((id) => !ficheEl(id).hidden);
+    if (!otherModalOpen) closeAOForm();
+  });
+  ficheEl("f-fichiers-add").addEventListener("click", () => {
+    const row = fichierRow();
+    ficheEl("f-fichiers-list").appendChild(row);
+    row.querySelector("input").focus();
   });
 
-  document.getElementById("ao-form").addEventListener("submit", async (event) => {
+  ficheEl("ao-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const selectedMarche = Array.from(document.querySelectorAll(".f-type_marche-item:checked")).map((cb) => cb.value);
-    const serviceValue = document.getElementById("f-service").value;
-    const selectedService = serviceValue ? [serviceValue] : [];
-    const fichiers = Array.from(document.querySelectorAll(".f-fichier-input")).map((i) => i.value.trim()).filter(Boolean);
-    const rappelActif = document.getElementById("f-rappel-actif").checked;
-    const rappel = rappelActif ? createRappel({
-      declenchement: document.getElementById("f-rappel-declenchement").value,
-      date: document.getElementById("f-rappel-date").value || null,
-      jours_avant: document.getElementById("f-rappel-jours_avant").value ? Number(document.getElementById("f-rappel-jours_avant").value) : null,
-      message: document.getElementById("f-rappel-message").value.trim(),
-      actif: true,
-    }) : null;
-
-    const changes = {
-      nom_projet: document.getElementById("f-nom_projet").value.trim(),
-      type_client: document.getElementById("f-type_client").value,
-      phase: document.getElementById("f-phase").value,
-      type: document.getElementById("f-type").value,
-      assigne_a: checkedAssignees(document.getElementById("f-assigne_a")),
-      type_marche: selectedMarche,
-      service: selectedService,
-      valeur_estimee_keur: document.getElementById("f-valeur_estimee_keur").value
-        ? Number(document.getElementById("f-valeur_estimee_keur").value) : null,
-      amo: document.getElementById("f-amo").value.trim(),
-      concurrence: document.getElementById("f-concurrence").value.trim(),
-      lieu: document.getElementById("f-lieu").value.trim(),
-      date_remise: document.getElementById("f-date_remise").value || null,
-      date_visite: document.getElementById("f-date_visite").value || null,
-      date_prise_effet: document.getElementById("f-date_prise_effet").value || null,
-      date_entree_etude: document.getElementById("f-date_entree_etude").value || null,
-      resultat: document.getElementById("f-resultat").value,
-      motif_categorie: document.getElementById("f-motif-categorie").value,
-      motif: document.getElementById("f-motif").value.trim(),
-      notes: document.getElementById("f-notes").value.trim(),
-      fichiers,
-      rappel,
-    };
-
+    if (currentEditingAO) {
+      await runAOSave();
+      return;
+    }
+    const values = readAOForm();
+    if (!values.nom_projet) {
+      setAOSaveStatus("Le nom du projet est obligatoire", true);
+      ficheEl("f-nom_projet").focus();
+      return;
+    }
+    const id = generateId();
     try {
-      if (currentEditingAO) {
-        await updateAO(currentEditingAO.id, changes, currentEditingAO.last_modified);
-      } else {
-        await addAO(changes);
-      }
-      closeAOForm();
+      await addAO({
+        ...values,
+        id,
+        phase: ficheDraftPhase,
+        resultat: resultatForPhase(ficheDraftPhase, values.resultat),
+      });
+      const created = appData.aos.find((a) => a.id === id);
+      if (created) openAOForm(created);
+      else hideAOFiche();
     } catch (err) {
-      if (err instanceof RecordConflictError) {
-        alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées, réessaie.");
-        await refreshFromStorage();
-        closeAOForm();
-      } else {
-        alert("Erreur lors de l'enregistrement : " + err.message);
-      }
+      alert("Erreur lors de l'enregistrement : " + err.message);
     }
   });
 
-  document.getElementById("ao-form-delete").addEventListener("click", async () => {
+  ficheEl("ao-form-delete").addEventListener("click", async () => {
     if (!currentEditingAO) return;
     const label = currentEditingAO.nom_projet || "(sans nom)";
     if (!confirm(`Supprimer l'AO "${label}" ? Cette action est irréversible (les tâches et contacts liés sont conservés mais délinkés).`)) return;
     try {
-      await deleteAO(currentEditingAO.id, currentEditingAO.last_modified);
-      closeAOForm();
+      clearTimeout(aoSaveTimer);
+      await deleteAO(currentEditingAO.id);
+      hideAOFiche();
     } catch (err) {
-      if (err instanceof RecordConflictError) {
-        alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
-        await refreshFromStorage();
-        closeAOForm();
-      } else {
-        alert("Erreur lors de la suppression : " + err.message);
-      }
+      alert("Erreur lors de la suppression : " + err.message);
     }
   });
 
@@ -3588,7 +4010,9 @@
   async function commitAOPhaseChange(ao, newPhase, extraChanges = {}) {
     try {
       const newResultat = resultatForPhase(newPhase, ao.resultat);
-      await updateAO(ao.id, { phase: newPhase, resultat: newResultat, ...extraChanges }, ao.last_modified);
+      // Changement ciblé (phase + résultat) : pas de contrôle de version
+      // global, comme l'enregistrement automatique de la fiche AO.
+      await updateAO(ao.id, { phase: newPhase, resultat: newResultat, ...extraChanges });
     } catch (err) {
       if (err instanceof RecordConflictError) {
         alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
@@ -5057,10 +5481,7 @@
     renderTodo();
     renderContacts();
     renderReporting();
-    if (!document.getElementById("ao-modal-overlay").hidden && currentEditingAO) {
-      renderAOTachesSection(currentEditingAO);
-      renderAOContactsSection(currentEditingAO);
-    }
+    if (isFicheOpen()) refreshAOFiche();
   }
 
   document.getElementById("btn-export").addEventListener("click", () => {

@@ -184,6 +184,16 @@ Un rappel est un petit objet porté par un AO, une Tâche ou un Contact :
 - Sur chaque carte : nom, client, type de marché, jours restants avant remise, assigné.
 - Filtres : par type de client, par type de marché, par personne.
 
+### 5.2 bis Fiche AO (refonte 2026-11-11)
+- Clic sur un AO = fiche quasi pleine page (façon Pipedrive) : nom éditable
+  en en-tête, barre de phases cliquable (Gagné / Perdu / Abandonné à droite,
+  pop-up motif obligatoire pour Perdu), infos clés dans une colonne à gauche,
+  grand **bloc-notes libre** (champ `notes`) à droite + mes tâches liées.
+- Enregistrement automatique champ par champ (pas de bouton Enregistrer) :
+  seuls les champs modifiés sont envoyés, sans contrôle de version global,
+  pour que deux personnes éditant des champs différents ne s'écrasent pas.
+  Un nouvel AO garde un bouton « Créer l'AO ».
+
 ### 5.3 ToDo (deux niveaux)
 
 Refonte du 2026-11-11 : vue **Liste** par défaut (tâches groupées En retard /
