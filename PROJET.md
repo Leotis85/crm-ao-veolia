@@ -131,13 +131,14 @@ Repris du Todo Notion existant, enrichi.
 |---|---|---|
 | `id` | identifiant unique | |
 | `tache` | texte | intitulé |
-| `statut` | liste | Pas commencé, En cours, Terminé |
+| `statut` | liste | Pas commencé, En cours, Terminé. Depuis la refonte ToDo du 2026-11-11, l'interface n'utilise plus qu'une case à cocher (Terminé / Pas commencé) ; « En cours » n'est plus proposé |
 | `date_debut` | date | ajouté ultérieurement, facultatif : si renseignée, la tâche s'étale sur plusieurs jours dans le calendrier ToDo (barre continue) — `echeance` reste la date de fin |
 | `echeance` | date | date de fin / échéance (seule date utilisée pour le tri, les rappels et les autres écrans si `date_debut` est vide) |
-| `assigne_a` | multi-personnes | modifié le 2026-09-29 : tableau, pas un texte simple. Une tâche est perso par défaut (soi-même seulement) mais peut être partagée en cochant d'autres personnes — pilote la visibilité (§9) |
+| `assigne_a` | multi-personnes | modifié le 2026-09-29 : tableau, pas un texte simple. Depuis le 2026-11-11, plus affiché ni modifiable : posé automatiquement à [soi-même] à la création, chacun ne voit que ses propres tâches (admin compris, filtre côté interface). Reste en base car il pilote le RLS (§9) |
 | `priorite` | liste | Normale, Haute (= flag rouge / critique) |
 | `notes` | texte | |
 | `rappel` | rappel | date + déclenchement (voir §4.4) |
+| `sous_taches` | liste | ajouté le 2026-11-11 (`supabase/migrate_sous_taches.sql`) : `[{id, texte, fait}]`, simples lignes à cocher portées par la tâche |
 | `ao_lie` | relation | vers l'AO parent |
 
 ### 4.3 Contacts (nouvelle entité)
@@ -184,6 +185,14 @@ Un rappel est un petit objet porté par un AO, une Tâche ou un Contact :
 - Filtres : par type de client, par type de marché, par personne.
 
 ### 5.3 ToDo (deux niveaux)
+
+Refonte du 2026-11-11 : vue **Liste** par défaut (tâches groupées En retard /
+Aujourd'hui / Demain / 7 prochains jours / Plus tard / Sans échéance, puis
+Terminées), case à cocher seule, sous-tâches ajoutables directement dans la
+liste, champ d'ajout rapide (titre + échéance). Bouton pour basculer en vue
+**Calendrier** (le calendrier mensuel existant). Plus de statut ni
+d'assignés : chacun ses tâches.
+
 - Tâches rattachées à leur AO (visibles sur la fiche AO).
 - Vue globale transversale, filtrable par personne, triée par échéance et priorité.
 - Tâches en priorité Haute remontées en tête avec flag rouge.

@@ -218,6 +218,9 @@ create table public.taches (
   priorite text not null default 'Normale',
   notes text not null default '',
   rappel jsonb,
+  -- Sous-tâches (2026-11-11, migrate_sous_taches.sql) : simples lignes à
+  -- cocher portées par la tâche, [{id, texte, fait}].
+  sous_taches jsonb not null default '[]'::jsonb,
   ao_lie text references public.aos (id) on delete set null,
   last_modified timestamptz not null default now(),
   modified_by text not null default ''
@@ -474,7 +477,7 @@ begin
     if expected is null then
       insert into public.taches (
         id, tache, statut, date_debut, echeance, assigne_a, priorite, notes,
-        rappel, ao_lie, last_modified, modified_by
+        rappel, sous_taches, ao_lie, last_modified, modified_by
       ) values (
         coalesce(row_id, gen_random_uuid()::text),
         coalesce(row_data->>'tache', ''), coalesce(row_data->>'statut', 'Pas commencé'),
@@ -482,6 +485,7 @@ begin
         coalesce((select array(select jsonb_array_elements_text(row_data->'assigne_a'))), '{}'),
         coalesce(row_data->>'priorite', 'Normale'),
         coalesce(row_data->>'notes', ''), row_data->'rappel',
+        coalesce(row_data->'sous_taches', '[]'::jsonb),
         nullif(row_data->>'ao_lie', ''), now(), caller_name
       );
     else
@@ -494,6 +498,7 @@ begin
         priorite = coalesce(row_data->>'priorite', 'Normale'),
         notes = coalesce(row_data->>'notes', ''),
         rappel = row_data->'rappel',
+        sous_taches = coalesce(row_data->'sous_taches', '[]'::jsonb),
         ao_lie = nullif(row_data->>'ao_lie', ''),
         last_modified = now(),
         modified_by = caller_name

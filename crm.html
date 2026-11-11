@@ -720,6 +720,136 @@
     color: var(--color-text-muted);
   }
 
+  /* --- ToDo : vue liste (refonte 2026-11-11) --- */
+  .todo-view-switch { margin-bottom: 0; }
+
+  .todo-quick-add {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .todo-quick-add input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    font-size: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+  }
+
+  .todo-quick-add input[type="date"] {
+    padding: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+  }
+
+  .todo-group + .todo-group { margin-top: 20px; }
+
+  .todo-group h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .todo-group.overdue h2 { color: var(--color-danger); }
+
+  .todo-group-count {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 7px;
+    border-radius: 999px;
+    background: var(--color-border);
+    color: var(--color-text);
+  }
+
+  .todo-entry { display: flex; flex-direction: column; }
+
+  .todo-item.is-done { opacity: 0.65; }
+
+  .todo-item-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .todo-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+
+  .todo-meta-date.overdue { color: var(--color-danger); font-weight: 600; }
+
+  .todo-sub-open {
+    border: none;
+    background: transparent;
+    color: var(--color-primary);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    visibility: hidden;
+  }
+
+  .todo-item:hover .todo-sub-open { visibility: visible; }
+  .todo-sub-open:hover { background: var(--color-surface); }
+  @media (hover: none) { .todo-sub-open { visibility: visible; } }
+
+  .todo-subtasks {
+    margin-left: 34px;
+    border-left: 2px solid var(--color-border);
+    padding-left: 10px;
+  }
+
+  .todo-sub-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+  }
+
+  .todo-sub-row input[type="checkbox"] { width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+
+  .todo-sub-text { flex: 1; min-width: 0; }
+  .todo-sub-text.done { text-decoration: line-through; color: var(--color-text-muted); }
+
+  .todo-sub-delete {
+    border: none;
+    background: transparent;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 12px;
+    visibility: hidden;
+  }
+
+  .todo-sub-row:hover .todo-sub-delete { visibility: visible; }
+  .todo-sub-delete:hover { color: var(--color-danger); }
+  @media (hover: none) { .todo-sub-delete { visibility: visible; } }
+
+  .todo-sub-add { padding: 4px 0; }
+
+  .todo-sub-add input {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 13px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+  }
+
+  .form-sub-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .form-sub-row .form-sub-texte { flex: 1; min-width: 0; }
+
   .clickable-item { cursor: pointer; }
 
   .contacts-grid {
@@ -1249,10 +1379,6 @@
     text-overflow: ellipsis;
   }
 
-  .calendar-task-chip.en-cours {
-    background: #dbeafe;
-  }
-
   .calendar-task-chip.flag-high {
     border-left-color: var(--color-danger);
   }
@@ -1295,10 +1421,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     line-height: 1;
-  }
-
-  .calendar-bar-segment.en-cours {
-    background: #60a5fa;
   }
 
   .calendar-bar-segment.flag-high {
@@ -1449,24 +1571,38 @@
   <section class="screen" id="screen-todo">
     <h1>ToDo</h1>
     <div class="toolbar">
-      <button type="button" class="btn-primary" id="btn-new-tache">+ Nouvelle tâche</button>
+      <div class="pipeline-service-tabs todo-view-switch" id="todo-view-switch">
+        <button type="button" class="active" data-view="liste">Liste</button>
+        <button type="button" data-view="calendrier">Calendrier</button>
+      </div>
       <select id="filter-tache-ao"></select>
-      <select id="filter-tache-assigne"></select>
       <label class="checkbox-inline">
         <input type="checkbox" id="filter-tache-hide-done" checked> Masquer les tâches terminées
       </label>
+      <button type="button" class="btn-secondary" id="btn-new-tache">+ Tâche détaillée</button>
     </div>
-    <div class="calendar-nav">
-      <button type="button" class="btn-secondary btn-small" id="calendar-prev">◀</button>
-      <span class="calendar-month-label" id="calendar-month-label"></span>
-      <button type="button" class="btn-secondary btn-small" id="calendar-next">▶</button>
-      <button type="button" class="btn-secondary btn-small" id="calendar-today">Aujourd'hui</button>
-    </div>
-    <div id="todo-calendar"></div>
 
-    <div class="panel">
-      <h2>Tâches sans échéance</h2>
-      <div class="list-panel" id="todo-undated-list"></div>
+    <form class="todo-quick-add" id="todo-quick-add">
+      <input type="text" id="todo-quick-title" placeholder="Ajouter une tâche… (Entrée pour valider)" autocomplete="off">
+      <input type="date" id="todo-quick-date" title="Échéance (facultatif)">
+      <button type="submit" class="btn-primary">Ajouter</button>
+    </form>
+
+    <div id="todo-list-view"></div>
+
+    <div id="todo-calendar-view" hidden>
+      <div class="calendar-nav">
+        <button type="button" class="btn-secondary btn-small" id="calendar-prev">◀</button>
+        <span class="calendar-month-label" id="calendar-month-label"></span>
+        <button type="button" class="btn-secondary btn-small" id="calendar-next">▶</button>
+        <button type="button" class="btn-secondary btn-small" id="calendar-today">Aujourd'hui</button>
+      </div>
+      <div id="todo-calendar"></div>
+
+      <div class="panel">
+        <h2>Tâches sans échéance</h2>
+        <div class="list-panel" id="todo-undated-list"></div>
+      </div>
     </div>
   </section>
 
@@ -1655,20 +1791,25 @@
         <label>AO lié
           <select id="f-t-ao_lie"></select>
         </label>
-        <label>Statut
-          <select id="f-t-statut"></select>
-        </label>
         <label>Priorité
           <select id="f-t-priorite"></select>
+        </label>
+        <label>Début <small>(facultatif, tâche sur plusieurs jours)</small>
+          <input type="date" id="f-t-date_debut">
         </label>
         <label>Échéance
           <input type="date" id="f-t-echeance">
         </label>
       </div>
 
+      <label class="checkbox-inline">
+        <input type="checkbox" id="f-t-fait"> Tâche terminée
+      </label>
+
       <fieldset>
-        <legend>Assigné à (soi-même par défaut, cocher d'autres personnes pour partager)</legend>
-        <div class="checkbox-group" id="f-t-assigne_a"></div>
+        <legend>Sous-tâches</legend>
+        <div id="f-t-sous-taches"></div>
+        <button type="button" class="btn-secondary btn-small" id="f-t-sous-tache-add">+ Ajouter une sous-tâche</button>
       </fieldset>
 
       <label class="block">Notes
@@ -2499,6 +2640,7 @@
       priorite: "Normale",
       notes: "",
       rappel: null,
+      sous_taches: [],
       ao_lie: null,
       ...partial,
     });
@@ -2545,7 +2687,11 @@
       }
       return normalized;
     });
-    data.taches = data.taches.map((t) => normalizeRecord(t, createTache));
+    data.taches = data.taches.map((t) => {
+      const normalized = normalizeRecord(t, createTache);
+      if (!Array.isArray(normalized.sous_taches)) normalized.sous_taches = [];
+      return normalized;
+    });
     data.contacts = data.contacts.map((c) => normalizeRecord(c, createContact));
     return data;
   }
@@ -2759,7 +2905,7 @@
         items.push({ type: "AO", label: ao.nom_projet, message: ao.rappel.message, entity: ao });
       }
     });
-    data.taches.forEach((t) => {
+    data.taches.filter(isMyTache).forEach((t) => {
       const relatedAO = t.ao_lie ? data.aos.find((a) => a.id === t.ao_lie) : null;
       if (isRappelActive(t.rappel, relatedAO)) {
         items.push({ type: "Tâche", label: t.tache, message: t.rappel.message, entity: t });
@@ -2862,7 +3008,7 @@
       .map((a) => ({ ao: a, days: daysBetween(a.date_remise) }))
       .filter((x) => x.days !== null);
     const echeances7j = echeancesAO.filter((x) => x.days >= 0 && x.days <= 7).length;
-    const tachesOuvertes = data.taches.filter((t) => t.statut !== "Terminé").length;
+    const tachesOuvertes = mesTaches(data.taches).filter((t) => !isTacheDone(t)).length;
     const aoEnAttente = data.aos.filter((a) => a.phase === "attente_reponse").length;
 
     document.getElementById("accueil-stats").innerHTML = [
@@ -2904,8 +3050,8 @@
       : `<div class="list-item-empty">Aucun rappel actif aujourd'hui.</div>`;
     wireReminderItemEvents(rappelsEl, activeReminders);
 
-    const highPriority = data.taches
-      .filter((t) => t.priorite === "Haute" && t.statut !== "Terminé")
+    const highPriority = mesTaches(data.taches)
+      .filter((t) => t.priorite === "Haute" && !isTacheDone(t))
       .sort((a, b) => (a.echeance || "").localeCompare(b.echeance || ""));
     const prioritesEl = document.getElementById("accueil-priorites");
     prioritesEl.innerHTML = highPriority.length
@@ -3489,13 +3635,37 @@
   // ToDo (étape 6, voir PROJET.md §5.3) — vue globale + tâches par AO.
   // ---------------------------------------------------------------------
 
-  const todoFilters = { ao: "", assigne_a: "", hideDone: true };
+  const todoFilters = { ao: "", hideDone: true };
+  let todoView = "liste";
+  // Tâche dont le champ "nouvelle sous-tâche" est ouvert : gardé hors du DOM
+  // car chaque sauvegarde (et chaque notification temps réel) re-rend la
+  // liste, ce qui refermerait le champ en pleine saisie.
+  let openSubAddFor = null;
   let currentEditingTache = null;
+
+  // Depuis la refonte ToDo (2026-11-11), chacun ne voit que ses propres
+  // tâches, admin compris : plus de partage ni d'assignés dans l'interface.
+  // assigne_a reste stocké (= [soi-même] à la création) car il pilote le RLS.
+  // Filtre d'AFFICHAGE uniquement : appData.taches garde toutes les lignes
+  // chargées, sinon SupabaseAdapter.save() prendrait les tâches masquées
+  // pour des suppressions.
+  function isMyTache(t) {
+    const assignees = t.assigne_a || [];
+    return !assignees.length || assignees.includes(currentProfile.display_name);
+  }
+
+  function mesTaches(list) {
+    return list.filter(isMyTache);
+  }
+
+  function isTacheDone(t) {
+    return t.statut === "Terminé";
+  }
 
   function sortTaches(list) {
     return [...list].sort((a, b) => {
-      const aHigh = a.priorite === "Haute" && a.statut !== "Terminé";
-      const bHigh = b.priorite === "Haute" && b.statut !== "Terminé";
+      const aHigh = a.priorite === "Haute" && !isTacheDone(a);
+      const bHigh = b.priorite === "Haute" && !isTacheDone(b);
       if (aHigh !== bHigh) return aHigh ? -1 : 1;
       const aEch = a.echeance || "9999-12-31";
       const bEch = b.echeance || "9999-12-31";
@@ -3503,53 +3673,162 @@
     });
   }
 
+  function formatShortDate(key) {
+    return parseDateKey(key).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+  }
+
+  // "📅 lun. 16 nov." ou "📅 12 nov. → 16 nov." pour une tâche sur plusieurs jours.
+  function tacheDateLabel(t) {
+    if (!t.echeance) return "";
+    if (t.date_debut && t.date_debut < t.echeance) {
+      return `${formatShortDate(t.date_debut)} → ${formatShortDate(t.echeance)}`;
+    }
+    return formatShortDate(t.echeance);
+  }
+
+  // options.hideAO : masque le nom de l'AO (déjà affiché dans la fiche AO).
+  // options.withSubtasks : affiche et rend éditables les sous-tâches (écran ToDo).
   function renderTacheItem(tache, options = {}) {
     const ao = tache.ao_lie ? appData.aos.find((a) => a.id === tache.ao_lie) : null;
-    const days = daysBetween(tache.echeance);
-    const isDone = tache.statut === "Terminé";
+    const isDone = isTacheDone(tache);
+    const days = isDone ? null : daysBetween(tache.echeance);
     const isHigh = tache.priorite === "Haute" && !isDone;
-    const subParts = [];
-    if (!options.hideAO && ao) subParts.push(escapeHtml(ao.nom_projet || "(sans nom)"));
-    if (tache.assigne_a && tache.assigne_a.length) subParts.push(escapeHtml(tache.assigne_a.join(", ")));
+    const sousTaches = tache.sous_taches || [];
+    const nbFaites = sousTaches.filter((st) => st.fait).length;
+
+    const meta = [];
+    if (tache.echeance) {
+      meta.push(`<span class="todo-meta-date${days !== null && days < 0 ? " overdue" : ""}">📅 ${escapeHtml(tacheDateLabel(tache))}</span>`);
+    }
+    if (!options.hideAO && ao) meta.push(`<span>${escapeHtml(ao.nom_projet || "(sans nom)")}</span>`);
+    if (sousTaches.length) meta.push(`<span>☑ ${nbFaites}/${sousTaches.length}</span>`);
+    if (tache.notes) meta.push(`<span title="${escapeHtml(tache.notes)}">📝</span>`);
+
+    const subtasksHtml = options.withSubtasks ? `
+      <div class="todo-subtasks">
+        ${sousTaches.map((st) => `
+          <div class="todo-sub-row">
+            <input type="checkbox" class="todo-sub-check" data-tache="${tache.id}" data-sub="${escapeHtml(st.id)}" ${st.fait ? "checked" : ""}>
+            <span class="todo-sub-text${st.fait ? " done" : ""}">${escapeHtml(st.texte)}</span>
+            <button type="button" class="todo-sub-delete" data-tache="${tache.id}" data-sub="${escapeHtml(st.id)}" title="Supprimer la sous-tâche">✕</button>
+          </div>
+        `).join("")}
+        <form class="todo-sub-add" data-tache="${tache.id}"${openSubAddFor === tache.id ? "" : " hidden"}>
+          <input type="text" placeholder="Nouvelle sous-tâche (Entrée pour valider, Échap pour annuler)" autocomplete="off">
+        </form>
+      </div>
+    ` : "";
+
     return `
-      <div class="list-item todo-item${isHigh ? " flag-high" : ""}" data-id="${tache.id}">
-        <div class="todo-item-main">
-          <input type="checkbox" class="todo-check" data-id="${tache.id}" ${isDone ? "checked" : ""}>
-          <div>
-            <div class="list-item-title${isDone ? " done" : ""}">${isHigh ? "🚩 " : ""}${escapeHtml(tache.tache || "(sans titre)")}</div>
-            <div class="list-item-sub">${subParts.join(" · ")}</div>
+      <div class="todo-entry">
+        <div class="list-item todo-item${isHigh ? " flag-high" : ""}${isDone ? " is-done" : ""}" data-id="${tache.id}">
+          <div class="todo-item-main">
+            <input type="checkbox" class="todo-check" data-id="${tache.id}" ${isDone ? "checked" : ""}>
+            <div>
+              <div class="list-item-title${isDone ? " done" : ""}">${isHigh ? "🚩 " : ""}${escapeHtml(tache.tache || "(sans titre)")}</div>
+              ${meta.length ? `<div class="list-item-sub todo-meta">${meta.join("")}</div>` : ""}
+            </div>
+          </div>
+          <div class="todo-item-right">
+            ${options.withSubtasks ? `<button type="button" class="todo-sub-open" data-tache="${tache.id}" title="Ajouter une sous-tâche">+ sous-tâche</button>` : ""}
+            ${days !== null ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : ""}
           </div>
         </div>
-        ${days !== null ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : "<span></span>"}
+        ${subtasksHtml}
       </div>
     `;
   }
 
+  async function saveTacheChange(tache, changes) {
+    try {
+      await updateTache(tache.id, changes, tache.last_modified);
+      return true;
+    } catch (err) {
+      if (err instanceof RecordConflictError) {
+        alert("Cette tâche a été modifiée entre-temps (autre onglet ?). Les données ont été rechargées.");
+        await refreshFromStorage();
+      } else {
+        alert("Erreur : " + err.message);
+      }
+      return false;
+    }
+  }
+
   function wireTacheItemEvents(container) {
+    const findTache = (id) => appData.taches.find((t) => t.id === id);
+
     container.querySelectorAll(".todo-check").forEach((cb) => {
       cb.addEventListener("click", (event) => event.stopPropagation());
       cb.addEventListener("change", async () => {
-        const id = cb.dataset.id;
-        const tache = appData.taches.find((t) => t.id === id);
+        const tache = findTache(cb.dataset.id);
         if (!tache) return;
-        const newStatut = cb.checked ? "Terminé" : "Pas commencé";
-        try {
-          await updateTache(id, { statut: newStatut }, tache.last_modified);
-        } catch (err) {
-          cb.checked = !cb.checked;
-          if (err instanceof RecordConflictError) {
-            alert("Cette tâche a été modifiée par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
-            await refreshFromStorage();
-          } else {
-            alert("Erreur : " + err.message);
-          }
-        }
+        const ok = await saveTacheChange(tache, { statut: cb.checked ? "Terminé" : "Pas commencé" });
+        if (!ok) cb.checked = !cb.checked;
       });
     });
     container.querySelectorAll(".todo-item").forEach((row) => {
       row.addEventListener("click", () => {
-        const tache = appData.taches.find((t) => t.id === row.dataset.id);
+        const tache = findTache(row.dataset.id);
         if (tache) openTacheForm(tache);
+      });
+    });
+
+    container.querySelectorAll(".todo-sub-check").forEach((cb) => {
+      cb.addEventListener("change", async () => {
+        const tache = findTache(cb.dataset.tache);
+        if (!tache) return;
+        const sous_taches = (tache.sous_taches || []).map((st) =>
+          st.id === cb.dataset.sub ? { ...st, fait: cb.checked } : st);
+        const ok = await saveTacheChange(tache, { sous_taches });
+        if (!ok) cb.checked = !cb.checked;
+      });
+    });
+    container.querySelectorAll(".todo-sub-delete").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const tache = findTache(btn.dataset.tache);
+        if (!tache) return;
+        const sous_taches = (tache.sous_taches || []).filter((st) => st.id !== btn.dataset.sub);
+        await saveTacheChange(tache, { sous_taches });
+      });
+    });
+    container.querySelectorAll(".todo-sub-open").forEach((btn) => {
+      btn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const form = container.querySelector(`.todo-sub-add[data-tache="${btn.dataset.tache}"]`);
+        if (!form) return;
+        openSubAddFor = btn.dataset.tache;
+        form.hidden = false;
+        form.querySelector("input").focus();
+      });
+    });
+    container.querySelectorAll(".todo-sub-add").forEach((form) => {
+      const input = form.querySelector("input");
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          input.value = "";
+          form.hidden = true;
+          openSubAddFor = null;
+        }
+      });
+      input.addEventListener("blur", () => {
+        // Un re-rendu détruit le champ (blur sans intention de l'utilisateur) :
+        // on ne referme que si le champ est encore dans la page et vide.
+        setTimeout(() => {
+          if (form.isConnected && !input.value.trim() && document.activeElement !== input) {
+            form.hidden = true;
+            if (openSubAddFor === form.dataset.tache) openSubAddFor = null;
+          }
+        }, 150);
+      });
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const texte = input.value.trim();
+        const tache = findTache(form.dataset.tache);
+        if (!texte || !tache) return;
+        const sous_taches = [...(tache.sous_taches || []), { id: generateId(), texte, fait: false }];
+        openSubAddFor = tache.id;
+        input.value = "";
+        await saveTacheChange(tache, { sous_taches });
       });
     });
   }
@@ -3559,16 +3838,59 @@
     aoSel.innerHTML = `<option value="">Tous les AO</option>` +
       appData.aos.map((a) => `<option value="${a.id}">${escapeHtml(a.nom_projet || "(sans nom)")}</option>`).join("");
     aoSel.value = todoFilters.ao;
-
-    const asSel = document.getElementById("filter-tache-assigne");
-    if (!asSel.options.length) populateSelect(asSel, ASSIGNE_OPTIONS, "Tous les assignés");
   }
 
   function tacheMatchesFilters(t) {
     if (todoFilters.ao && t.ao_lie !== todoFilters.ao) return false;
-    if (todoFilters.assigne_a && !(t.assigne_a || []).includes(todoFilters.assigne_a)) return false;
-    if (todoFilters.hideDone && t.statut === "Terminé") return false;
+    if (todoFilters.hideDone && isTacheDone(t)) return false;
     return true;
+  }
+
+  // Vue liste (vue par défaut) : tâches regroupées par échéance, façon
+  // ToDo classique. Les terminées sont regroupées à la fin.
+  function renderTodoList(filteredTaches) {
+    const todayKey = localDateKey(new Date());
+    const tomorrowKey = addDaysToKey(todayKey, 1);
+    const weekEndKey = addDaysToKey(todayKey, 7);
+    const groups = [
+      { title: "En retard", test: (t) => t.echeance && t.echeance < todayKey, cls: "overdue" },
+      { title: "Aujourd'hui", test: (t) => t.echeance === todayKey },
+      { title: "Demain", test: (t) => t.echeance === tomorrowKey },
+      { title: "7 prochains jours", test: (t) => t.echeance && t.echeance > tomorrowKey && t.echeance <= weekEndKey },
+      { title: "Plus tard", test: (t) => t.echeance && t.echeance > weekEndKey },
+      { title: "Sans échéance", test: (t) => !t.echeance },
+    ];
+    const open = filteredTaches.filter((t) => !isTacheDone(t));
+    const done = filteredTaches.filter(isTacheDone);
+
+    const sections = groups.map((g) => {
+      const items = sortTaches(open.filter(g.test));
+      if (!items.length) return "";
+      return `
+        <div class="todo-group${g.cls ? " " + g.cls : ""}">
+          <h2>${g.title} <span class="todo-group-count">${items.length}</span></h2>
+          <div class="list-panel">${items.map((t) => renderTacheItem(t, { withSubtasks: true })).join("")}</div>
+        </div>
+      `;
+    });
+    if (done.length) {
+      const sortedDone = [...done].sort((a, b) => (b.last_modified || "").localeCompare(a.last_modified || ""));
+      sections.push(`
+        <div class="todo-group">
+          <h2>Terminées <span class="todo-group-count">${done.length}</span></h2>
+          <div class="list-panel">${sortedDone.map((t) => renderTacheItem(t, { withSubtasks: true })).join("")}</div>
+        </div>
+      `);
+    }
+
+    const listEl = document.getElementById("todo-list-view");
+    const html = sections.join("");
+    listEl.innerHTML = html
+      ? `<div class="panel todo-list-panel">${html}</div>`
+      : `<div class="panel"><div class="list-item-empty">Aucune tâche. Ajoute-en une avec le champ ci-dessus.</div></div>`;
+    wireTacheItemEvents(listEl);
+    const openForm = openSubAddFor && listEl.querySelector(`.todo-sub-add[data-tache="${openSubAddFor}"]`);
+    if (openForm && !openForm.hidden) openForm.querySelector("input").focus();
   }
 
   // --- Calendrier mensuel (remplace la vue liste sur l'écran ToDo) ---
@@ -3638,16 +3960,16 @@
 
   function renderCalendarTaskChip(t) {
     const ao = t.ao_lie ? appData.aos.find((a) => a.id === t.ao_lie) : null;
-    const isDone = t.statut === "Terminé";
-    const isEnCours = t.statut === "En cours" && !isDone;
+    const isDone = isTacheDone(t);
     const isHigh = t.priorite === "Haute" && !isDone;
     const classes = ["calendar-task-chip"];
     if (isDone) classes.push("done");
-    if (isEnCours) classes.push("en-cours");
     if (isHigh) classes.push("flag-high");
+    const sousTaches = t.sous_taches || [];
+    const subCount = sousTaches.length ? ` · ☑ ${sousTaches.filter((st) => st.fait).length}/${sousTaches.length}` : "";
     return `
-      <div class="${classes.join(" ")}" data-id="${t.id}" draggable="true" title="${escapeHtml(t.statut)}">
-        <div class="calendar-task-chip-title">${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}</div>
+      <div class="${classes.join(" ")}" data-id="${t.id}" draggable="true" title="${escapeHtml(t.tache || "")}">
+        <div class="calendar-task-chip-title">${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}${subCount}</div>
         ${ao ? `<div class="calendar-task-chip-ao">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>` : ""}
         <span class="calendar-chip-resize-handle" data-id="${t.id}" title="Glisser pour étirer l'échéance"></span>
       </div>
@@ -3709,12 +4031,10 @@
   function renderBarSegment(seg) {
     const t = seg.tache;
     const ao = t.ao_lie ? appData.aos.find((a) => a.id === t.ao_lie) : null;
-    const isDone = t.statut === "Terminé";
-    const isEnCours = t.statut === "En cours" && !isDone;
+    const isDone = isTacheDone(t);
     const isHigh = t.priorite === "Haute" && !isDone;
     const classes = ["calendar-bar-segment"];
     if (isDone) classes.push("done");
-    if (isEnCours) classes.push("en-cours");
     if (isHigh) classes.push("flag-high");
     const parts = [`${isHigh ? "🚩 " : ""}${escapeHtml(t.tache || "(sans titre)")}`];
     if (ao) parts.push(escapeHtml(ao.nom_projet || "(sans nom)"));
@@ -3724,7 +4044,7 @@
     return `
       <div class="${classes.join(" ")}" data-id="${t.id}" draggable="true"
            style="grid-column: ${seg.startCol} / span ${seg.span}; grid-row: ${seg.lane + 1};"
-           title="${escapeHtml(t.tache || "")} — ${escapeHtml(t.statut)}">
+           title="${escapeHtml(t.tache || "")}">
         <span class="calendar-bar-segment-label">${parts.join(" · ")}</span>
         ${handle}
       </div>
@@ -3903,7 +4223,17 @@
 
   function renderTodo() {
     renderTodoFilters();
-    const filtered = appData.taches.filter(tacheMatchesFilters);
+    const filtered = mesTaches(appData.taches).filter(tacheMatchesFilters);
+
+    document.querySelectorAll("#todo-view-switch button").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.view === todoView);
+    });
+    document.getElementById("todo-list-view").hidden = todoView !== "liste";
+    document.getElementById("todo-calendar-view").hidden = todoView !== "calendrier";
+    if (todoView === "liste") {
+      renderTodoList(filtered);
+      return;
+    }
 
     renderTodoCalendar(filtered);
 
@@ -3917,8 +4247,8 @@
 
   function renderAOTachesSection(ao) {
     const container = document.getElementById("ao-taches-list");
-    const allLinked = appData.taches.filter((t) => t.ao_lie === ao.id);
-    const open = allLinked.filter((t) => t.statut !== "Terminé");
+    const allLinked = mesTaches(appData.taches).filter((t) => t.ao_lie === ao.id);
+    const open = allLinked.filter((t) => !isTacheDone(t));
     container.innerHTML = open.length
       ? sortTaches(open).map((t) => renderTacheItem(t, { hideAO: true })).join("")
       : `<div class="list-item-empty">${allLinked.length ? "Toutes les tâches sont terminées." : "Aucune tâche liée."}</div>`;
@@ -3929,9 +4259,31 @@
     todoFilters.ao = e.target.value;
     renderTodo();
   });
-  document.getElementById("filter-tache-assigne").addEventListener("change", (e) => {
-    todoFilters.assigne_a = e.target.value;
-    renderTodo();
+  document.querySelectorAll("#todo-view-switch button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      todoView = btn.dataset.view;
+      renderTodo();
+    });
+  });
+  document.getElementById("todo-quick-add").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const titleInput = document.getElementById("todo-quick-title");
+    const dateInput = document.getElementById("todo-quick-date");
+    const tache = titleInput.value.trim();
+    if (!tache) return;
+    try {
+      await addTache({
+        tache,
+        echeance: dateInput.value || null,
+        assigne_a: [currentProfile.display_name],
+        ao_lie: todoFilters.ao || null,
+      });
+      titleInput.value = "";
+      dateInput.value = "";
+      titleInput.focus();
+    } catch (err) {
+      alert("Erreur lors de l'enregistrement : " + err.message);
+    }
   });
   document.getElementById("filter-tache-hide-done").addEventListener("change", (e) => {
     todoFilters.hideDone = e.target.checked;
@@ -3959,7 +4311,6 @@
     aoSelect.innerHTML = `<option value="">Aucun</option>` +
       appData.aos.map((a) => `<option value="${a.id}">${escapeHtml(a.nom_projet || "(sans nom)")}</option>`).join("");
 
-    populateSelect(document.getElementById("f-t-statut"), STATUT_TACHE_OPTIONS);
     populateSelect(document.getElementById("f-t-priorite"), PRIORITE_OPTIONS);
     populateSelect(document.getElementById("f-t-rappel-declenchement"), DECLENCHEMENT_OPTIONS);
 
@@ -3967,11 +4318,12 @@
     const data = tache || {};
     document.getElementById("f-t-tache").value = data.tache || "";
     aoSelect.value = data.ao_lie || presetAoId || "";
-    document.getElementById("f-t-statut").value = data.statut || STATUT_TACHE_OPTIONS[0];
-    const defaultAssignees = tache ? (data.assigne_a || []) : [currentProfile.display_name];
-    renderAssigneCheckboxes(document.getElementById("f-t-assigne_a"), defaultAssignees);
+    document.getElementById("f-t-fait").checked = isTacheDone(data);
     document.getElementById("f-t-priorite").value = data.priorite || PRIORITE_OPTIONS[0];
+    document.getElementById("f-t-date_debut").value = data.date_debut || "";
     document.getElementById("f-t-echeance").value = data.echeance || "";
+    formSousTaches = (data.sous_taches || []).map((st) => ({ ...st }));
+    renderFormSousTaches();
     document.getElementById("f-t-notes").value = data.notes || "";
 
     const rappel = data.rappel || {};
@@ -3984,6 +4336,48 @@
     updateTacheRappelFieldsVisibility();
     document.getElementById("tache-modal-overlay").hidden = false;
   }
+
+  // Sous-tâches éditées dans le formulaire : copie de travail, écrite en
+  // base seulement à l'enregistrement de la tâche.
+  let formSousTaches = [];
+
+  function renderFormSousTaches() {
+    const container = document.getElementById("f-t-sous-taches");
+    container.innerHTML = formSousTaches.map((st, idx) => `
+      <div class="form-sub-row">
+        <input type="checkbox" class="form-sub-fait" data-idx="${idx}" ${st.fait ? "checked" : ""}>
+        <input type="text" class="form-sub-texte" data-idx="${idx}" value="${escapeHtml(st.texte)}" placeholder="Sous-tâche">
+        <button type="button" class="btn-secondary btn-small form-sub-delete" data-idx="${idx}" title="Supprimer">✕</button>
+      </div>
+    `).join("");
+    container.querySelectorAll(".form-sub-fait").forEach((cb) => {
+      cb.addEventListener("change", () => { formSousTaches[cb.dataset.idx].fait = cb.checked; });
+    });
+    container.querySelectorAll(".form-sub-texte").forEach((input) => {
+      input.addEventListener("input", () => { formSousTaches[input.dataset.idx].texte = input.value; });
+      input.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          addFormSousTache();
+        }
+      });
+    });
+    container.querySelectorAll(".form-sub-delete").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        formSousTaches.splice(Number(btn.dataset.idx), 1);
+        renderFormSousTaches();
+      });
+    });
+  }
+
+  function addFormSousTache() {
+    formSousTaches.push({ id: generateId(), texte: "", fait: false });
+    renderFormSousTaches();
+    const inputs = document.querySelectorAll("#f-t-sous-taches .form-sub-texte");
+    inputs[inputs.length - 1].focus();
+  }
+
+  document.getElementById("f-t-sous-tache-add").addEventListener("click", addFormSousTache);
 
   function closeTacheForm() {
     document.getElementById("tache-modal-overlay").hidden = true;
@@ -4008,19 +4402,21 @@
       actif: true,
     }) : null;
 
-    // date_debut n'est pas exposé dans le formulaire (réglable uniquement par
-    // glisser-étirer dans le calendrier) : on préserve la valeur existante et
-    // on la re-valide juste contre la nouvelle échéance si elle a changé.
-    const dates = normalizeTacheDates(
-      (currentEditingTache && currentEditingTache.date_debut) || null,
-      document.getElementById("f-t-echeance").value || null,
-    );
+    // date_debut aussi réglable par glisser-étirer dans le calendrier ; sans
+    // échéance, une date de début seule devient l'échéance.
+    const dateDebutValue = document.getElementById("f-t-date_debut").value || null;
+    const echeanceValue = document.getElementById("f-t-echeance").value || null;
+    const dates = echeanceValue
+      ? normalizeTacheDates(dateDebutValue, echeanceValue)
+      : { date_debut: null, echeance: dateDebutValue };
 
     const changes = {
       tache: document.getElementById("f-t-tache").value.trim(),
       ao_lie: document.getElementById("f-t-ao_lie").value || null,
-      statut: document.getElementById("f-t-statut").value,
-      assigne_a: checkedAssignees(document.getElementById("f-t-assigne_a")),
+      statut: document.getElementById("f-t-fait").checked ? "Terminé" : "Pas commencé",
+      sous_taches: formSousTaches
+        .map((st) => ({ ...st, texte: st.texte.trim() }))
+        .filter((st) => st.texte),
       priorite: document.getElementById("f-t-priorite").value,
       date_debut: dates.date_debut,
       echeance: dates.echeance,
@@ -4032,7 +4428,7 @@
       if (currentEditingTache) {
         await updateTache(currentEditingTache.id, changes, currentEditingTache.last_modified);
       } else {
-        await addTache(changes);
+        await addTache({ ...changes, assigne_a: [currentProfile.display_name] });
       }
       closeTacheForm();
     } catch (err) {
