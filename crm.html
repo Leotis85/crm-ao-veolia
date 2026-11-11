@@ -287,14 +287,6 @@
     background: var(--color-bg);
   }
 
-  #storage-status {
-    max-width: 1800px;
-    margin: 0 auto;
-    padding: 8px 24px;
-    font-size: 12px;
-    color: var(--color-text-muted);
-  }
-
   main {
     max-width: 1800px;
     margin: 24px auto;
@@ -1736,7 +1728,6 @@
   </div>
 </header>
 
-<div id="storage-status">Chargement des données…</div>
 
 <main>
   <section class="screen active" id="screen-accueil">
@@ -2461,21 +2452,10 @@
   }
 
   // ---------------------------------------------------------------------
-  // État applicatif + statut de stockage.
+  // État applicatif.
   // ---------------------------------------------------------------------
 
   let appData = emptyData();
-  const statusEl = document.getElementById("storage-status");
-
-  function renderStorageStatus() {
-    const meta = appData._meta || {};
-    const counts = `${appData.aos.length} AO · ${appData.taches.length} tâches · ${appData.contacts.length} contacts`;
-    const saved = meta.lastModified
-      ? `dernière sauvegarde ${new Date(meta.lastModified).toLocaleString("fr-FR")} par ${meta.modifiedBy}`
-      : "aucune donnée enregistrée pour l'instant";
-    statusEl.textContent = `${counts} — ${saved}`;
-  }
-
   async function refreshFromStorage() {
     appData = await storageAdapter.load();
     normalizeData(appData);
@@ -5304,7 +5284,6 @@
   }
 
   function renderAll() {
-    renderStorageStatus();
     renderAccueil();
     renderPipeline();
     renderPlanCharge();
