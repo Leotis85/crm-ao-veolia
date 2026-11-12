@@ -229,7 +229,12 @@ create table public.taches (
   modified_by text not null default ''
 );
 
-create or replace function public.tache_visible(t_assigne_a text[])
+-- Une tâche est visible par l'admin, par ses assignés, et (depuis
+-- migrate_taches_par_ao.sql, 2026-11-12) par toute personne qui voit l'AO
+-- auquel elle est liée : on retrouve toutes les tâches d'un projet sur sa
+-- fiche, assignées à quelqu'un d'autre ou à personne. Une tâche sans AO
+-- reste personnelle.
+create or replace function public.tache_visible(t_assigne_a text[], t_ao_lie text)
 returns boolean
 language sql
 security definer
@@ -241,14 +246,18 @@ as $$
     or coalesce(
       (select display_name from public.profiles where id = auth.uid()),
       ''
-    ) = any(t_assigne_a);
+    ) = any(t_assigne_a)
+    or (
+      t_ao_lie is not null
+      and exists (select 1 from public.aos a where a.id = t_ao_lie and public.ao_visible(a.service))
+    );
 $$;
 
 alter table public.taches enable row level security;
 
 create policy taches_select on public.taches
   for select to authenticated
-  using (public.tache_visible(assigne_a));
+  using (public.tache_visible(assigne_a, ao_lie));
 
 create policy taches_insert on public.taches
   for insert to authenticated
@@ -256,12 +265,12 @@ create policy taches_insert on public.taches
 
 create policy taches_update on public.taches
   for update to authenticated
-  using (public.tache_visible(assigne_a))
-  with check (public.tache_visible(assigne_a));
+  using (public.tache_visible(assigne_a, ao_lie))
+  with check (public.tache_visible(assigne_a, ao_lie));
 
 create policy taches_delete on public.taches
   for delete to authenticated
-  using (public.tache_visible(assigne_a));
+  using (public.tache_visible(assigne_a, ao_lie));
 
 -- ---------------------------------------------------------------------------
 -- 4. Contacts — PROJET.md §4.3 (aucun filtrage, visibles par tous)
@@ -476,7 +485,7 @@ begin
     -- Comme pour aos : contrôle sur la ligne existante, pas sur la nouvelle
     -- valeur d'assigne_a. Une création est toujours permise.
     if expected is not null and not exists (
-      select 1 from public.taches where id = row_id and public.tache_visible(assigne_a)
+      select 1 from public.taches where id = row_id and public.tache_visible(assigne_a, ao_lie)
     ) then
       forbidden := forbidden || jsonb_build_object('table', 'taches', 'id', row_id);
       continue;
@@ -524,7 +533,7 @@ begin
     row_id := row_data->>'id';
     expected := nullif(row_data->>'expected_last_modified', '')::timestamptz;
 
-    if not exists (select 1 from public.taches where id = row_id and public.tache_visible(assigne_a)) then
+    if not exists (select 1 from public.taches where id = row_id and public.tache_visible(assigne_a, ao_lie)) then
       forbidden := forbidden || jsonb_build_object('table', 'taches', 'id', row_id);
       continue;
     end if;

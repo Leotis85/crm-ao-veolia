@@ -1105,6 +1105,7 @@
 
   .todo-meta-date.overdue { color: var(--color-danger); font-weight: 600; }
   .todo-meta-assignes { color: var(--color-primary, inherit); font-weight: 500; }
+  .todo-meta-assignes.none { color: var(--color-text-muted, inherit); font-weight: 400; font-style: italic; }
 
   .todo-sub-open {
     border: none;
@@ -2156,7 +2157,7 @@
 
         <section class="ao-taches" id="ao-taches-section" hidden>
           <div class="ao-notes-head">
-            <h3>Mes tâches liées</h3>
+            <h3>Tâches du projet</h3>
             <button type="button" class="btn-secondary btn-small" id="ao-taches-add">+ Ajouter une tâche</button>
           </div>
           <div class="list-panel" id="ao-taches-list"></div>
@@ -4175,9 +4176,10 @@
   // Filtre d'AFFICHAGE uniquement : appData.taches garde toutes les lignes
   // chargées, sinon SupabaseAdapter.save() prendrait les tâches masquées
   // pour des suppressions.
+  // Une tâche sans assigné n'est à personne : elle n'apparaît que dans
+  // "Non assignées" / "Toutes les tâches" et sur la fiche de son AO.
   function isMyTache(t) {
-    const assignees = t.assigne_a || [];
-    return !assignees.length || assignees.includes(currentProfile.display_name);
+    return (t.assigne_a || []).includes(currentProfile.display_name);
   }
 
   function mesTaches(list) {
@@ -4186,6 +4188,7 @@
 
   function tachesSelonPersonne(list) {
     if (todoFilters.personne === "*") return list;
+    if (todoFilters.personne === "-") return list.filter((t) => !(t.assigne_a || []).length);
     if (todoFilters.personne) return list.filter((t) => (t.assigne_a || []).includes(todoFilters.personne));
     return mesTaches(list);
   }
@@ -4240,7 +4243,9 @@
     }
     if (!options.hideAO && ao) meta.push(`<span>${escapeHtml(ao.nom_projet || "(sans nom)")}</span>`);
     const autres = autresAssignes(tache);
-    if (autres.length) {
+    if (!(tache.assigne_a || []).length) {
+      meta.push(`<span class="todo-meta-assignes none">👤 Non assignée</span>`);
+    } else if (autres.length) {
       const avecMoi = (tache.assigne_a || []).includes(currentProfile.display_name);
       meta.push(`<span class="todo-meta-assignes" title="Assignée à : ${escapeHtml((tache.assigne_a || []).join(", "))}">👥 ${avecMoi ? "avec " : ""}${escapeHtml(autres.join(", "))}</span>`);
     }
@@ -4379,15 +4384,16 @@
   function renderTodoFilters() {
     const pSel = document.getElementById("filter-tache-personne");
     const others = ASSIGNE_OPTIONS.filter((n) => n !== currentProfile.display_name);
-    if (todoFilters.personne && todoFilters.personne !== "*" && !others.includes(todoFilters.personne)) {
+    if (todoFilters.personne && !["*", "-"].includes(todoFilters.personne) && !others.includes(todoFilters.personne)) {
       todoFilters.personne = "";
     }
     pSel.innerHTML = `<option value="">Mes tâches</option>` +
       others.map((n) => `<option value="${escapeHtml(n)}">Tâches de ${escapeHtml(n)}</option>`).join("") +
+      `<option value="-">Non assignées</option>` +
       `<option value="*">Toutes les tâches</option>`;
     pSel.value = todoFilters.personne;
     const quick = document.getElementById("todo-quick-title");
-    quick.placeholder = todoFilters.personne && todoFilters.personne !== "*"
+    quick.placeholder = todoFilters.personne && !["*", "-"].includes(todoFilters.personne)
       ? `Ajouter une tâche pour ${todoFilters.personne}… (Entrée pour valider)`
       : "Ajouter une tâche… (Entrée pour valider)";
 
@@ -4804,7 +4810,8 @@
 
   function renderAOTachesSection(ao) {
     const container = document.getElementById("ao-taches-list");
-    const allLinked = mesTaches(appData.taches).filter((t) => t.ao_lie === ao.id);
+    // Toutes les tâches du projet, quel que soit l'assigné (ou sans assigné).
+    const allLinked = appData.taches.filter((t) => t.ao_lie === ao.id);
     const open = allLinked.filter((t) => !isTacheDone(t));
     container.innerHTML = open.length
       ? sortTaches(open).map((t) => renderTacheItem(t, { hideAO: true })).join("")
@@ -4816,7 +4823,7 @@
   // filtrée dans la ToDo ("Tâches de X" → la tâche est pour X).
   function defaultAssignesNouvelleTache() {
     const list = [currentProfile.display_name];
-    if (todoFilters.personne && todoFilters.personne !== "*") list.push(todoFilters.personne);
+    if (todoFilters.personne && !["*", "-"].includes(todoFilters.personne)) list.push(todoFilters.personne);
     return list;
   }
 

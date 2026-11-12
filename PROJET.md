@@ -223,8 +223,13 @@ Tâches assignables (réintroduit le 2026-11-12) : filtre « Mes tâches »
 assignées) / « Tâches de X » / « Toutes les tâches » (toutes pour l'admin,
 celles partagées avec moi sinon, RLS oblige). Avec « Tâches de X » choisi,
 l'ajout rapide et le formulaire assignent par défaut soi-même + X. Chaque
-tâche partagée affiche « 👥 avec X » (ou « 👥 X » si je n'y suis pas). Accueil
-et fiche AO restent sur « mes tâches ».
+tâche partagée affiche « 👥 avec X » (ou « 👥 X » si je n'y suis pas). L'accueil
+reste sur « mes tâches ». Une tâche sans assigné n'est plus comptée comme
+« mienne » : elle apparaît dans « Non assignées » (option du filtre), dans
+« Toutes les tâches », et avec la mention « 👤 Non assignée ».
+
+La fiche AO affiche **toutes les tâches du projet** (section « Tâches du
+projet »), quel que soit l'assigné, avec la mention des assignés.
 
 - Tâches rattachées à leur AO (visibles sur la fiche AO).
 - Vue globale transversale, filtrable par personne, triée par échéance et priorité.
@@ -332,7 +337,10 @@ Postgres, `supabase/schema.sql`), pas seulement côté interface.
     tous par défaut).
   - **Tâches** : **personnelles par défaut, partageables** — visibles par
     toute personne présente dans `assigne_a` (tableau, comparé au
-    `display_name` du profil) et par l'admin. À la création, `assigne_a` est
+    `display_name` du profil) et par l'admin. Depuis le 2026-11-12
+    (`supabase/migrate_taches_par_ao.sql`), une tâche liée à un AO est aussi
+    visible et modifiable par toute personne qui voit cet AO (assignée à
+    quelqu'un d'autre ou à personne) ; une tâche sans AO reste personnelle. À la création, `assigne_a` est
     automatiquement initialisé avec soi-même ; cocher d'autres personnes dans
     le formulaire partage la tâche avec elles (elles peuvent alors la voir et
     la modifier). La liste des personnes assignables (`ASSIGNE_OPTIONS` dans
