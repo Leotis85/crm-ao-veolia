@@ -164,6 +164,29 @@ Repris du Todo Notion existant, enrichi.
 | `rappel` | rappel | ex. « relancer le 15 » |
 | `ao_lies` | relation | vers un ou plusieurs AO |
 
+### 4.3 bis Entreprises (ajouté le 2026-11-12, `supabase/migrate_entreprises.sql`)
+
+Référentiel unique des organismes, pour ne plus avoir de noms en champ libre
+un peu partout. **Un seul rôle par entreprise** (Actia Concept = toujours
+syndic, Soconer = toujours AMO / BE).
+
+| Champ | Type | Notes |
+|---|---|---|
+| `id` | identifiant unique | |
+| `nom` | texte | |
+| `role` | liste | Maître d'ouvrage, Syndic / Gestionnaire, AMO / BE, Partenaire / Sous-traitant, Fournisseur, Interne Veolia, Autre (`ENTREPRISE_ROLES` dans crm.html) |
+| `notes` | texte | |
+
+Liens : `contacts.entreprise_id`, `aos.maitre_ouvrage_id`, `aos.amo_id` (et
+plus tard les contrats). Un contact rattaché prend le rôle de son entreprise
+comme catégorie ; sans entreprise il garde sa propre `categorie`. Les
+anciennes colonnes texte (`aos.amo`, `contacts.organisme`) sont conservées :
+la migration a créé une entreprise par valeur distincte (variantes de
+casse / accents / espaces regroupées) et rattaché AO et contacts.
+Écran : Contacts > vue **Entreprises** (tuiles par rôle, fiche avec ses
+contacts et les AO où elle intervient) ; fiche AO : listes déroulantes
+« Maître d'ouvrage » et « AMO / BE » (avec création à la volée).
+
 ### 4.4 Rappel (mécanisme, pas une entité) — SUPPRIMÉ de l'interface le 2026-11-11
 
 > Jamais utilisé en pratique : cloche, panneau « Rappels actifs » de l'accueil
@@ -377,6 +400,18 @@ date de remise ; les AO en cours sans les deux dates sont comptés sous le
 tableau.
 
 ## 11. Travail futur demandé, pas commencé
+
+**Contrathèque (en cours, validé le 2026-11-12)** — remplace l'idée
+d'« onglet Client ». Ordre : 1. entreprises (fait) ; 2. table + onglet
+Contrathèque (nom de l'affaire en premier, maître d'ouvrage / AMO en
+champs) ; 3. AO gagné → contrat (titre de l'AO conservé), AO Avenant
+rattaché obligatoirement à un contrat ; 4. renégociations (alerte 12 mois
+avant échéance par défaut, prochaine échéance recalculée pour les tacites
+reconductions, AO de renouvellement en un clic, lignes dans le plan de
+charge) ; 5. import CSV dans l'app (contrathèque + portefeuille + feuille
+Commerce 2027), jamais de données dans le dépôt (public). Secteurs
+B1/B2/B3 = découpage de l'agence, champ des contrats pour le reporting.
+Jonzac Énergies Vertes reste hors import.
 
 Lors du même retour (2026-10-07), deux autres besoins ont été exprimés mais
 mis en attente par Mathis ("dans un premier temps" = plan de charge

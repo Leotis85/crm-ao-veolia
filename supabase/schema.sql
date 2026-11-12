@@ -22,6 +22,7 @@ drop trigger if exists on_auth_user_created on auth.users;
 drop table if exists public.taches cascade;
 drop table if exists public.aos cascade;
 drop table if exists public.contacts cascade;
+drop table if exists public.entreprises cascade;
 drop table if exists public.profiles cascade;
 drop table if exists public.app_meta cascade;
 
@@ -120,6 +121,30 @@ create policy profiles_update on public.profiles
 -- (SECURITY DEFINER) peut créer un profil ; aucune suppression via l'API.
 
 -- ---------------------------------------------------------------------------
+-- 3 bis. Entreprises (2026-11-12, migrate_entreprises.sql) — référentiel
+-- unique des organismes (maîtres d'ouvrage, syndics, AMO / BE…) : les
+-- contacts, les AO (maître d'ouvrage, AMO) et plus tard les contrats y sont
+-- rattachés au lieu de porter un nom en champ libre. Un seul rôle par
+-- entreprise. Aucun filtrage (visibles par tous, comme les contacts).
+-- ---------------------------------------------------------------------------
+
+create table public.entreprises (
+  id text primary key default gen_random_uuid()::text,
+  nom text not null default '',
+  role text not null default '',
+  notes text not null default '',
+  last_modified timestamptz not null default now(),
+  modified_by text not null default ''
+);
+
+alter table public.entreprises enable row level security;
+
+create policy entreprises_all on public.entreprises
+  for all to authenticated
+  using (true)
+  with check (true);
+
+-- ---------------------------------------------------------------------------
 -- 2. AO (appels d'offres) — PROJET.md §4.1
 -- ---------------------------------------------------------------------------
 
@@ -135,6 +160,11 @@ create table public.aos (
   -- Priorité commerciale (2026-11-11, migrate_ao_priorite.sql) : Haute,
   -- Moyenne, Basse ou '' (non définie). Colore les cartes du pipeline.
   priorite text not null default '',
+  -- Maître d'ouvrage et AMO / BE (2026-11-12) : liens vers le référentiel
+  -- entreprises. La colonne texte `amo` est l'ancien champ libre, conservée
+  -- pour l'historique (plus écrite par l'app).
+  maitre_ouvrage_id text references public.entreprises (id) on delete set null,
+  amo_id text references public.entreprises (id) on delete set null,
   -- Tableau (comme taches.assigne_a) depuis migrate_ao_assignes.sql : un AO
   -- peut être suivi par plusieurs personnes.
   assigne_a text[] not null default '{}',
@@ -284,6 +314,9 @@ create table public.contacts (
   -- Catégorie d'annuaire (2026-11-11, migrate_contact_categorie.sql) :
   -- Client, Prospect, AMO / Bureau d'études… ou '' (sans catégorie).
   categorie text not null default '',
+  -- Entreprise du contact (2026-11-12). Si renseignée, c'est son rôle qui
+  -- sert de catégorie ; `organisme` reste le nom en clair (recopié).
+  entreprise_id text references public.entreprises (id) on delete set null,
   telephone text not null default '',
   email text not null default '',
   adresse text not null default '',
@@ -377,6 +410,37 @@ begin
   select display_name into caller_name from public.profiles where id = auth.uid();
   caller_name := coalesce(caller_name, '');
 
+  -- ---- entreprises (créations/modifications en premier : un AO ou un
+  -- contact enregistré dans le même appel peut référencer une entreprise
+  -- qui vient d'être créée ; suppressions en dernier, voir plus bas) ----
+  for row_data in select * from jsonb_array_elements(coalesce(payload->'entreprises'->'upsert', '[]'::jsonb))
+  loop
+    row_id := row_data->>'id';
+    expected := nullif(row_data->>'expected_last_modified', '')::timestamptz;
+
+    if expected is null then
+      insert into public.entreprises (id, nom, role, notes, last_modified, modified_by)
+      values (
+        coalesce(row_id, gen_random_uuid()::text),
+        coalesce(row_data->>'nom', ''), coalesce(row_data->>'role', ''),
+        coalesce(row_data->>'notes', ''), now(), caller_name
+      );
+    else
+      update public.entreprises set
+        nom = coalesce(row_data->>'nom', ''),
+        role = coalesce(row_data->>'role', ''),
+        notes = coalesce(row_data->>'notes', ''),
+        last_modified = now(),
+        modified_by = caller_name
+      where id = row_id and last_modified = expected;
+
+      get diagnostics affected = row_count;
+      if affected = 0 then
+        conflicts := conflicts || jsonb_build_object('table', 'entreprises', 'id', row_id);
+      end if;
+    end if;
+  end loop;
+
   -- ---- aos ----
   for row_data in select * from jsonb_array_elements(coalesce(payload->'aos'->'upsert', '[]'::jsonb))
   loop
@@ -396,7 +460,7 @@ begin
 
     if expected is null then
       insert into public.aos (
-        id, nom_projet, type_client, priorite, assigne_a, phase, type, type_marche, service,
+        id, nom_projet, type_client, priorite, maitre_ouvrage_id, amo_id, assigne_a, phase, type, type_marche, service,
         valeur_estimee_keur, amo, concurrence, date_remise, date_visite, date_prise_effet,
         date_entree_etude,
         lieu, notes, fichiers, resultat, motif_categorie, motif, rappel,
@@ -405,6 +469,7 @@ begin
         coalesce(row_id, gen_random_uuid()::text),
         coalesce(row_data->>'nom_projet', ''), coalesce(row_data->>'type_client', 'Habitat'),
         coalesce(row_data->>'priorite', ''),
+        nullif(row_data->>'maitre_ouvrage_id', ''), nullif(row_data->>'amo_id', ''),
         public.jsonb_text_array_lenient(row_data->'assigne_a'), coalesce(row_data->>'phase', 'a_venir'),
         coalesce(row_data->>'type', 'Appel d''offres'),
         coalesce((select array(select jsonb_array_elements_text(row_data->'type_marche'))), '{}'),
@@ -427,6 +492,8 @@ begin
         nom_projet = coalesce(row_data->>'nom_projet', ''),
         type_client = coalesce(row_data->>'type_client', 'Habitat'),
         priorite = coalesce(row_data->>'priorite', ''),
+        maitre_ouvrage_id = nullif(row_data->>'maitre_ouvrage_id', ''),
+        amo_id = nullif(row_data->>'amo_id', ''),
         assigne_a = public.jsonb_text_array_lenient(row_data->'assigne_a'),
         phase = coalesce(row_data->>'phase', 'a_venir'),
         type = coalesce(row_data->>'type', 'Appel d''offres'),
@@ -553,12 +620,13 @@ begin
 
     if expected is null then
       insert into public.contacts (
-        id, nom, fonction, organisme, categorie, telephone, email, adresse, notes,
+        id, nom, fonction, organisme, categorie, entreprise_id, telephone, email, adresse, notes,
         rappel, ao_lies, last_modified, modified_by
       ) values (
         coalesce(row_id, gen_random_uuid()::text),
         coalesce(row_data->>'nom', ''), coalesce(row_data->>'fonction', ''),
         coalesce(row_data->>'organisme', ''), coalesce(row_data->>'categorie', ''),
+        nullif(row_data->>'entreprise_id', ''),
         coalesce(row_data->>'telephone', ''),
         coalesce(row_data->>'email', ''), coalesce(row_data->>'adresse', ''),
         coalesce(row_data->>'notes', ''), row_data->'rappel',
@@ -571,6 +639,7 @@ begin
         fonction = coalesce(row_data->>'fonction', ''),
         organisme = coalesce(row_data->>'organisme', ''),
         categorie = coalesce(row_data->>'categorie', ''),
+        entreprise_id = nullif(row_data->>'entreprise_id', ''),
         telephone = coalesce(row_data->>'telephone', ''),
         email = coalesce(row_data->>'email', ''),
         adresse = coalesce(row_data->>'adresse', ''),
@@ -599,6 +668,17 @@ begin
     end if;
   end loop;
 
+  for row_data in select * from jsonb_array_elements(coalesce(payload->'entreprises'->'delete', '[]'::jsonb))
+  loop
+    row_id := row_data->>'id';
+    expected := nullif(row_data->>'expected_last_modified', '')::timestamptz;
+    delete from public.entreprises where id = row_id and last_modified = expected;
+    get diagnostics affected = row_count;
+    if affected = 0 then
+      conflicts := conflicts || jsonb_build_object('table', 'entreprises', 'id', row_id);
+    end if;
+  end loop;
+
   update public.app_meta set last_modified = now(), modified_by = caller_name where id = true;
 
   return jsonb_build_object('conflicts', conflicts, 'forbidden', forbidden, 'last_modified', now());
@@ -616,6 +696,7 @@ grant execute on function public.save_crm_data(jsonb) to authenticated;
 alter publication supabase_realtime add table public.aos;
 alter publication supabase_realtime add table public.taches;
 alter publication supabase_realtime add table public.contacts;
+alter publication supabase_realtime add table public.entreprises;
 
 -- ---------------------------------------------------------------------------
 -- 8. Rattrapage des comptes Auth déjà créés avant ce (re)passage du script

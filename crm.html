@@ -1254,6 +1254,18 @@
     opacity: 0.75;
   }
 
+  #contact-form #f-c-categorie-wrap[hidden] { display: none; }
+  .contacts-view-switch { margin-bottom: 0; flex-shrink: 0; }
+  .entreprise-avatar { border-radius: 10px; }
+  #entreprise-form label, #entreprise-form .block {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+  #entreprise-form .block { margin-bottom: 12px; }
+
   .contact-tiles {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -2029,8 +2041,13 @@
   <section class="screen" id="screen-contacts">
     <h1>Contacts</h1>
     <div class="toolbar">
-      <input type="search" id="filter-contact-search" class="contacts-search" placeholder="🔍 Rechercher : nom, organisme, fonction, téléphone, email, AO lié…" autocomplete="off">
+      <div class="pipeline-service-tabs contacts-view-switch" id="contacts-view-switch">
+        <button type="button" class="active" data-view="personnes">Personnes</button>
+        <button type="button" data-view="entreprises">Entreprises</button>
+      </div>
+      <input type="search" id="filter-contact-search" class="contacts-search" placeholder="🔍 Rechercher" autocomplete="off">
       <button type="button" class="btn-primary" id="btn-new-contact">+ Nouveau contact</button>
+      <button type="button" class="btn-secondary" id="btn-new-entreprise">+ Nouvelle entreprise</button>
     </div>
     <div class="contact-category-chips" id="contact-category-chips"></div>
     <div class="contacts-grid" id="contacts-list"></div>
@@ -2088,6 +2105,9 @@
           <label class="ao-field">Priorité
             <select id="f-priorite" data-ao-key="priorite"></select>
           </label>
+          <label class="ao-field">Maître d'ouvrage
+            <select id="f-maitre_ouvrage_id" data-ao-key="maitre_ouvrage_id"></select>
+          </label>
           <label class="ao-field">Service
             <select id="f-service" data-ao-key="service"></select>
           </label>
@@ -2103,8 +2123,8 @@
           <label class="ao-field">Lieu
             <input type="text" id="f-lieu" placeholder="—" data-ao-key="lieu">
           </label>
-          <label class="ao-field">AMO
-            <input type="text" id="f-amo" placeholder="—" data-ao-key="amo">
+          <label class="ao-field">AMO / BE
+            <select id="f-amo_id" data-ao-key="amo_id"></select>
           </label>
           <label class="ao-field">Concurrence
             <input type="text" id="f-concurrence" placeholder="—" data-ao-key="concurrence">
@@ -2249,6 +2269,48 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="entreprise-modal-overlay" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="entreprise-modal-title">Nouvelle entreprise</h2>
+      <button type="button" class="modal-close" id="entreprise-modal-close">✕</button>
+    </div>
+    <form id="entreprise-form">
+      <div class="form-grid">
+        <label>Nom
+          <input type="text" id="f-e-nom" required placeholder="Nom de l'entreprise">
+        </label>
+        <label>Rôle
+          <select id="f-e-role"></select>
+        </label>
+      </div>
+      <label class="block">Notes
+        <textarea id="f-e-notes" rows="3"></textarea>
+      </label>
+
+      <div id="entreprise-links" hidden>
+        <fieldset>
+          <legend>Contacts</legend>
+          <div class="list-panel" id="entreprise-contacts-list"></div>
+          <button type="button" class="btn-secondary btn-small" id="entreprise-contact-add">+ Nouveau contact</button>
+        </fieldset>
+        <fieldset>
+          <legend>AO où elle intervient</legend>
+          <div class="list-panel" id="entreprise-aos-list"></div>
+        </fieldset>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-danger" id="entreprise-form-delete" hidden>Supprimer</button>
+        <div class="modal-footer-right">
+          <button type="button" class="btn-secondary" id="entreprise-form-cancel">Annuler</button>
+          <button type="submit" class="btn-primary">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="modal-overlay" id="contact-modal-overlay" hidden>
   <div class="modal">
     <div class="modal-header">
@@ -2266,10 +2328,10 @@
           <label>Fonction
             <input type="text" id="f-c-fonction">
           </label>
-          <label>Organisme
-            <input type="text" id="f-c-organisme">
+          <label>Entreprise
+            <select id="f-c-entreprise_id"></select>
           </label>
-          <label>Catégorie
+          <label id="f-c-categorie-wrap">Catégorie <small>(sans entreprise)</small>
             <select id="f-c-categorie"></select>
           </label>
           <label>Téléphone
@@ -2409,6 +2471,7 @@
       aos: [],
       taches: [],
       contacts: [],
+      entreprises: [],
       _meta: { lastModified: null, modifiedBy: null },
     };
   }
@@ -2436,6 +2499,7 @@
       const raw = localStorage.getItem(this.key);
       const data = raw ? JSON.parse(raw) : emptyData();
       if (!data._meta) data._meta = { lastModified: null, modifiedBy: null };
+      if (!Array.isArray(data.entreprises)) data.entreprises = [];
       return data;
     }
 
@@ -2494,6 +2558,10 @@
   // puisqu'il ne renvoie que le diff de ce qu'il a réellement en mémoire.
   // ---------------------------------------------------------------------
 
+  // Tables synchronisées. "entreprises" en premier : save_crm_data crée les
+  // entreprises avant les AO / contacts qui peuvent y faire référence.
+  const CRM_TABLES = ["entreprises", "aos", "taches", "contacts"];
+
   class SupabaseAdapter {
     constructor(client) {
       this.client = client;
@@ -2513,29 +2581,25 @@
     }
 
     async load() {
-      const [aosRes, tachesRes, contactsRes, metaRes] = await Promise.all([
-        this.client.from("aos").select("*"),
-        this.client.from("taches").select("*"),
-        this.client.from("contacts").select("*"),
+      const [metaRes, ...tableRes] = await Promise.all([
         this.client.from("app_meta").select("*").eq("id", true).maybeSingle(),
+        ...CRM_TABLES.map((t) => this.client.from(t).select("*")),
       ]);
-      for (const res of [aosRes, tachesRes, contactsRes, metaRes]) {
+      for (const res of [metaRes, ...tableRes]) {
         if (res.error) throw res.error;
       }
       const result = {
-        aos: aosRes.data,
-        taches: tachesRes.data,
-        contacts: contactsRes.data,
         _meta: {
           lastModified: metaRes.data ? metaRes.data.last_modified : null,
           modifiedBy: metaRes.data ? metaRes.data.modified_by : null,
         },
       };
-      this._snapshots.set(result, {
-        aos: new Map(aosRes.data.map((r) => [r.id, r])),
-        taches: new Map(tachesRes.data.map((r) => [r.id, r])),
-        contacts: new Map(contactsRes.data.map((r) => [r.id, r])),
+      const snapshot = {};
+      CRM_TABLES.forEach((t, i) => {
+        result[t] = tableRes[i].data;
+        snapshot[t] = new Map(tableRes[i].data.map((r) => [r.id, r]));
       });
+      this._snapshots.set(result, snapshot);
       return result;
     }
 
@@ -2567,12 +2631,9 @@
       if (!snapshot) {
         throw new Error("SupabaseAdapter.save() appelé sur des données qui ne viennent pas de load().");
       }
-      const payload = {
-        aos: this._diffTable(snapshot, "aos", data.aos),
-        taches: this._diffTable(snapshot, "taches", data.taches),
-        contacts: this._diffTable(snapshot, "contacts", data.contacts),
-      };
-      const hasChanges = ["aos", "taches", "contacts"].some(
+      const payload = {};
+      CRM_TABLES.forEach((t) => { payload[t] = this._diffTable(snapshot, t, data[t] || []); });
+      const hasChanges = CRM_TABLES.some(
         (t) => payload[t].upsert.length || payload[t].delete.length
       );
       if (!hasChanges) {
@@ -2595,12 +2656,11 @@
       this._listeners.add(cb);
       if (!this._channel) {
         const notify = () => this._listeners.forEach((fn) => fn());
-        this._channel = this.client
-          .channel("crm-ao-changes")
-          .on("postgres_changes", { event: "*", schema: "public", table: "aos" }, notify)
-          .on("postgres_changes", { event: "*", schema: "public", table: "taches" }, notify)
-          .on("postgres_changes", { event: "*", schema: "public", table: "contacts" }, notify)
-          .subscribe();
+        let channel = this.client.channel("crm-ao-changes");
+        CRM_TABLES.forEach((table) => {
+          channel = channel.on("postgres_changes", { event: "*", schema: "public", table }, notify);
+        });
+        this._channel = channel.subscribe();
       }
       return () => this._listeners.delete(cb);
     }
@@ -2935,6 +2995,69 @@
   const RESULTAT_OPTIONS = ["En cours", "Gagné", "Perdu", "Abandonné"];
   const STATUT_TACHE_OPTIONS = ["Pas commencé", "En cours", "Terminé"];
   const PRIORITE_OPTIONS = ["Normale", "Haute"];
+  // Rôles d'entreprise (2026-11-12) : un seul par entreprise. Pour en
+  // ajouter/renommer un, changer cette liste (la valeur est stockée en clair).
+  const ENTREPRISE_ROLES = [
+    "Maître d'ouvrage", "Syndic / Gestionnaire", "AMO / BE", "Partenaire / Sous-traitant",
+    "Fournisseur", "Interne Veolia", "Autre",
+  ];
+  const ENTREPRISE_ROLE_COLORS = {
+    "Maître d'ouvrage": "#0f766e",
+    "Syndic / Gestionnaire": "#2563eb",
+    "AMO / BE": "#7c3aed",
+    "Partenaire / Sous-traitant": "#c2410c",
+    "Fournisseur": "#a16207",
+    "Interne Veolia": "#d03b3b",
+    "Autre": "#6b7280",
+  };
+
+  function findEntreprise(id) {
+    return id ? (appData.entreprises || []).find((e) => e.id === id) || null : null;
+  }
+
+  function entrepriseNom(id) {
+    const e = findEntreprise(id);
+    return e ? e.nom : "";
+  }
+
+  // Options d'un <select> d'entreprise : celles du rôle demandé d'abord (ou
+  // toutes si roles est vide), triées par nom, puis "+ Nouvelle entreprise…".
+  function entrepriseSelectOptions(roles, currentId) {
+    const all = [...(appData.entreprises || [])].sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+    const main = roles.length ? all.filter((e) => roles.includes(e.role)) : all;
+    const current = findEntreprise(currentId);
+    if (current && !main.includes(current)) main.unshift(current);
+    return `<option value="">— Aucune —</option>`
+      + main.map((e) => `<option value="${e.id}">${escapeHtml(e.nom || "(sans nom)")}</option>`).join("")
+      + `<option value="__new__">+ Nouvelle entreprise…</option>`;
+  }
+
+  // Branché sur un <select> d'entreprise : l'option "+ Nouvelle entreprise…"
+  // demande un nom, crée l'entreprise avec le rôle par défaut, la sélectionne
+  // puis déclenche "change" (pour l'enregistrement automatique de la fiche AO).
+  function wireEntrepriseSelect(select, defaultRole) {
+    let previous = select.value;
+    select.addEventListener("focus", () => { previous = select.value; });
+    select.addEventListener("change", async (event) => {
+      if (select.value !== "__new__") { previous = select.value; return; }
+      event.stopImmediatePropagation();
+      const nom = (prompt(`Nom de la nouvelle entreprise${defaultRole ? ` (${defaultRole})` : ""} :`) || "").trim();
+      if (!nom) { select.value = previous; return; }
+      const existing = (appData.entreprises || []).find((e) => normalizeSearchText(e.nom) === normalizeSearchText(nom));
+      try {
+        const id = existing ? existing.id : await addEntreprise({ nom, role: defaultRole || "" });
+        if (![...select.options].some((o) => o.value === id)) {
+          select.insertAdjacentHTML("afterbegin", `<option value="${id}">${escapeHtml(nom)}</option>`);
+        }
+        select.value = id;
+        previous = id;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+      } catch (err) {
+        select.value = previous;
+        alert("Erreur lors de la création de l'entreprise : " + err.message);
+      }
+    });
+  }
   // Priorité d'un AO (code couleur du pipeline), distincte de celle des tâches.
   const AO_PRIORITE_OPTIONS = ["Haute", "Moyenne", "Basse"];
   const AO_PRIORITE_CLASS = { Haute: "prio-haute", Moyenne: "prio-moyenne", Basse: "prio-basse" };
@@ -2977,6 +3100,8 @@
       nom_projet: "",
       type_client: "Habitat",
       priorite: "",
+      maitre_ouvrage_id: null,
+      amo_id: null,
       assigne_a: [],
       phase: "a_venir",
       type: "Appel d'offres",
@@ -3030,12 +3155,23 @@
       fonction: "",
       organisme: "",
       categorie: "",
+      entreprise_id: null,
       telephone: "",
       email: "",
       adresse: "",
       notes: "",
       rappel: null,
       ao_lies: [],
+      ...partial,
+    });
+  }
+
+  function createEntreprise(partial = {}) {
+    return stamp({
+      id: generateId(),
+      nom: "",
+      role: "",
+      notes: "",
       ...partial,
     });
   }
@@ -3071,6 +3207,7 @@
       return normalized;
     });
     data.contacts = data.contacts.map((c) => normalizeRecord(c, createContact));
+    data.entreprises = (data.entreprises || []).map((e) => normalizeRecord(e, createEntreprise));
     return data;
   }
 
@@ -3169,6 +3306,36 @@
         const ao = data.aos.find((a) => a.id === record.ao_lie);
         if (ao) ao.taches_liees = (ao.taches_liees || []).filter((tid) => tid !== id);
       }
+    });
+  }
+
+  // --- Entreprises ---
+
+  async function addEntreprise(partial) {
+    const entreprise = createEntreprise(partial);
+    await mutateData((data) => { data.entreprises.push({ ...entreprise }); });
+    return entreprise.id;
+  }
+
+  async function updateEntreprise(id, changes) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.entreprises, id, "Entreprise");
+      Object.assign(record, changes);
+      stamp(record);
+    });
+  }
+
+  // La base met déjà les liens à null (on delete set null) : on fait pareil
+  // en mémoire pour un affichage cohérent avant le prochain rechargement.
+  async function deleteEntreprise(id) {
+    return mutateData((data) => {
+      findOrThrow(data.entreprises, id, "Entreprise");
+      data.entreprises = data.entreprises.filter((r) => r.id !== id);
+      data.aos.forEach((ao) => {
+        if (ao.maitre_ouvrage_id === id) ao.maitre_ouvrage_id = null;
+        if (ao.amo_id === id) ao.amo_id = null;
+      });
+      data.contacts.forEach((c) => { if (c.entreprise_id === id) c.entreprise_id = null; });
     });
   }
 
@@ -3433,7 +3600,7 @@
           ${AO_PRIORITE_CLASS[ao.priorite] ? `<span class="badge-prio ${AO_PRIORITE_CLASS[ao.priorite]}">${escapeHtml(ao.priorite)}</span>` : ""}
         </div>
         <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
-        <div class="list-item-sub">${escapeHtml(ao.type_client)}${marche ? " · " + escapeHtml(marche) : ""}</div>
+        <div class="list-item-sub">${escapeHtml([entrepriseNom(ao.maitre_ouvrage_id), ao.type_client, marche].filter(Boolean).join(" · "))}</div>
         <div class="kanban-card-footer">
           ${days !== null ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : "<span></span>"}
           ${ao.assigne_a.length ? `<span class="badge-type">${escapeHtml(ao.assigne_a.join(", "))}</span>` : ""}
@@ -3819,6 +3986,20 @@
     el.classList.toggle("error", !!isError);
   }
 
+  // Maître d'ouvrage d'un AO : maître d'ouvrage ou syndic / gestionnaire (les
+  // autres rôles restent choisissables s'ils sont déjà affectés).
+  const AO_MAITRE_OUVRAGE_ROLES = ["Maître d'ouvrage", "Syndic / Gestionnaire"];
+
+  // "__new__" = l'option de création en cours : on garde la valeur connue.
+  function entrepriseSelectValue(elId, key) {
+    const v = ficheEl(elId).value;
+    if (v === "__new__") return aoSaved[key] ?? null;
+    return v || null;
+  }
+
+  wireEntrepriseSelect(document.getElementById("f-maitre_ouvrage_id"), "Maître d'ouvrage");
+  wireEntrepriseSelect(document.getElementById("f-amo_id"), "AMO / BE");
+
   function readAOForm() {
     const serviceValue = ficheEl("f-service").value;
     const valeur = ficheEl("f-valeur_estimee_keur").value;
@@ -3831,7 +4012,8 @@
       assigne_a: checkedAssignees(ficheEl("f-assigne_a")),
       type_marche: Array.from(document.querySelectorAll(".f-type_marche-item:checked")).map((cb) => cb.value),
       valeur_estimee_keur: valeur ? Number(valeur) : null,
-      amo: ficheEl("f-amo").value.trim(),
+      maitre_ouvrage_id: entrepriseSelectValue("f-maitre_ouvrage_id", "maitre_ouvrage_id"),
+      amo_id: entrepriseSelectValue("f-amo_id", "amo_id"),
       concurrence: ficheEl("f-concurrence").value.trim(),
       lieu: ficheEl("f-lieu").value.trim(),
       date_remise: ficheEl("f-date_remise").value || null,
@@ -3865,7 +4047,16 @@
       `).join("");
     });
     set("valeur_estimee_keur", () => { ficheEl("f-valeur_estimee_keur").value = data.valeur_estimee_keur ?? ""; });
-    set("amo", () => { ficheEl("f-amo").value = data.amo || ""; });
+    set("maitre_ouvrage_id", () => {
+      const el = ficheEl("f-maitre_ouvrage_id");
+      el.innerHTML = entrepriseSelectOptions(AO_MAITRE_OUVRAGE_ROLES, data.maitre_ouvrage_id);
+      el.value = data.maitre_ouvrage_id || "";
+    });
+    set("amo_id", () => {
+      const el = ficheEl("f-amo_id");
+      el.innerHTML = entrepriseSelectOptions(["AMO / BE"], data.amo_id);
+      el.value = data.amo_id || "";
+    });
     set("concurrence", () => { ficheEl("f-concurrence").value = data.concurrence || ""; });
     set("lieu", () => { ficheEl("f-lieu").value = data.lieu || ""; });
     set("date_remise", () => { ficheEl("f-date_remise").value = data.date_remise || ""; });
@@ -4084,7 +4275,7 @@
   });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || !isFicheOpen()) return;
-    const otherModalOpen = ["tache-modal-overlay", "contact-modal-overlay", "motif-modal-overlay"]
+    const otherModalOpen = ["tache-modal-overlay", "contact-modal-overlay", "motif-modal-overlay", "entreprise-modal-overlay"]
       .some((id) => !ficheEl(id).hidden);
     if (!otherModalOpen) closeAOForm();
   });
@@ -5065,31 +5256,33 @@
   // ---------------------------------------------------------------------
 
   let contactSearch = "";
-  // null = accueil (tuiles de catégories), ALL_CONTACTS = tous les contacts,
-  // "" = sans catégorie, sinon le nom de la catégorie.
+  // null = accueil (tuiles de catégories), ALL_CONTACTS = tous,
+  // "" = sans catégorie, sinon le nom de la catégorie / du rôle.
   const ALL_CONTACTS = "__all__";
   let contactCategoryFilter = null;
+  // "personnes" (contacts) ou "entreprises" (référentiel, 2026-11-12) : même
+  // mécanique de tuiles / pastilles / recherche, sur l'une ou l'autre liste.
+  let contactsView = "personnes";
   let currentEditingContact = null;
 
-  // Catégories d'annuaire (2026-11-11). Pour en ajouter/renommer une, changer
-  // cette liste (et la couleur associée) : la valeur est stockée en clair.
-  const CONTACT_CATEGORIES = [
-    "Client", "Prospect", "AMO / Bureau d'études", "Partenaire / Sous-traitant",
-    "Fournisseur", "Interne Veolia", "Autre",
-  ];
-  const CONTACT_CATEGORY_COLORS = {
-    "Client": "#0f766e",
-    "Prospect": "#2563eb",
-    "AMO / Bureau d'études": "#7c3aed",
-    "Partenaire / Sous-traitant": "#c2410c",
-    "Fournisseur": "#a16207",
-    "Interne Veolia": "#d03b3b",
-    "Autre": "#6b7280",
-  };
+  // Les catégories de contacts sont les rôles d'entreprise (2026-11-12) : un
+  // contact rattaché à une entreprise prend son rôle (voir contactCategorie).
+  const CONTACT_CATEGORIES = ENTREPRISE_ROLES;
+  const CONTACT_CATEGORY_COLORS = ENTREPRISE_ROLE_COLORS;
+
+  function contactCategorie(c) {
+    const e = findEntreprise(c.entreprise_id);
+    return e ? (e.role || "") : (c.categorie || "");
+  }
+
+  // Nom affiché de l'organisme : l'entreprise liée, sinon l'ancien texte libre.
+  function contactOrganisme(c) {
+    return entrepriseNom(c.entreprise_id) || c.organisme || "";
+  }
 
   // Minuscules sans accents, pour que "theo" trouve "Théo".
   function normalizeSearchText(text) {
-    return (text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    return (text || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   }
 
   function contactInitials(nom) {
@@ -5105,9 +5298,15 @@
     return `hsl(${hue}, 45%, 42%)`;
   }
 
+  function categoryBadge(cat) {
+    return cat
+      ? `<span class="contact-category-badge" style="--cat-color:${CONTACT_CATEGORY_COLORS[cat] || "#6b7280"}">${escapeHtml(cat)}</span>`
+      : "";
+  }
+
   function renderContactItem(contact) {
     const aoCount = (contact.ao_lies || []).length;
-    const sub = [contact.fonction, contact.organisme].filter(Boolean).map(escapeHtml).join(" · ");
+    const sub = [contact.fonction, contactOrganisme(contact)].filter(Boolean).map(escapeHtml).join(" · ");
     const initials = contactInitials(contact.nom);
     const color = contactAvatarColor(contact.nom || contact.id);
     const meta = [];
@@ -5118,11 +5317,11 @@
       meta.push(`<a href="mailto:${escapeHtml(contact.email)}"><span class="contact-card-meta-icon">✉</span>${escapeHtml(contact.email)}</a>`);
     }
     return `
-      <div class="contact-card" data-id="${contact.id}">
+      <div class="contact-card" data-id="${contact.id}" data-kind="contact">
         <div class="contact-avatar" style="background:${color}">${escapeHtml(initials)}</div>
         <div class="contact-card-body">
           <div class="contact-card-name">${escapeHtml(contact.nom || "(sans nom)")}</div>
-          ${contact.categorie ? `<span class="contact-category-badge" style="--cat-color:${CONTACT_CATEGORY_COLORS[contact.categorie] || "#6b7280"}">${escapeHtml(contact.categorie)}</span>` : ""}
+          ${categoryBadge(contactCategorie(contact))}
           ${sub ? `<div class="contact-card-sub">${sub}</div>` : ""}
           ${meta.length ? `<div class="contact-card-meta">${meta.join("")}</div>` : ""}
         </div>
@@ -5131,10 +5330,43 @@
     `;
   }
 
+  // AO où l'entreprise intervient (maître d'ouvrage ou AMO / BE).
+  function entrepriseAOs(id) {
+    return appData.aos.filter((a) => a.maitre_ouvrage_id === id || a.amo_id === id);
+  }
+
+  function entrepriseContacts(id) {
+    return appData.contacts.filter((c) => c.entreprise_id === id);
+  }
+
+  function renderEntrepriseItem(e) {
+    const nbContacts = entrepriseContacts(e.id).length;
+    const nbAO = entrepriseAOs(e.id).length;
+    const counts = [
+      nbContacts ? `${nbContacts} contact${nbContacts > 1 ? "s" : ""}` : "",
+      nbAO ? `${nbAO} AO` : "",
+    ].filter(Boolean).join(" · ");
+    return `
+      <div class="contact-card" data-id="${e.id}" data-kind="entreprise">
+        <div class="contact-avatar entreprise-avatar" style="background:${CONTACT_CATEGORY_COLORS[e.role] || "#6b7280"}">${escapeHtml(contactInitials(e.nom))}</div>
+        <div class="contact-card-body">
+          <div class="contact-card-name">${escapeHtml(e.nom || "(sans nom)")}</div>
+          ${categoryBadge(e.role)}
+          ${counts ? `<div class="contact-card-sub">${counts}</div>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
   function wireContactItemEvents(container) {
     container.querySelectorAll(".contact-card").forEach((row) => {
       row.addEventListener("click", (event) => {
         if (event.target.closest("a")) return;
+        if (row.dataset.kind === "entreprise") {
+          const e = findEntreprise(row.dataset.id);
+          if (e) openEntrepriseForm(e);
+          return;
+        }
         const contact = appData.contacts.find((c) => c.id === row.dataset.id);
         if (contact) openContactForm(contact);
       });
@@ -5150,34 +5382,64 @@
       .filter(Boolean)
       .map((a) => a.nom_projet);
     return normalizeSearchText([
-      c.nom, c.fonction, c.organisme, c.categorie, c.email, c.adresse, c.notes,
+      c.nom, c.fonction, contactOrganisme(c), contactCategorie(c), c.email, c.adresse, c.notes,
       c.telephone, (c.telephone || "").replace(/\D/g, ""), ...aoNames,
     ].join(" "));
   }
 
-  function contactMatchesSearch(c) {
+  function entrepriseSearchHaystack(e) {
+    return normalizeSearchText([
+      e.nom, e.role, e.notes,
+      ...entrepriseContacts(e.id).map((c) => c.nom),
+      ...entrepriseAOs(e.id).map((a) => a.nom_projet),
+    ].join(" "));
+  }
+
+  // Liste courante (personnes ou entreprises) avec ses accesseurs.
+  function directoryModel() {
+    if (contactsView === "entreprises") {
+      return {
+        items: appData.entreprises || [],
+        categoryOf: (e) => e.role || "",
+        haystack: entrepriseSearchHaystack,
+        render: renderEntrepriseItem,
+        nameOf: (e) => e.nom || "",
+        allLabel: "Toutes les entreprises",
+      };
+    }
+    return {
+      items: appData.contacts,
+      categoryOf: contactCategorie,
+      haystack: contactSearchHaystack,
+      render: renderContactItem,
+      nameOf: (c) => c.nom || "",
+      allLabel: "Tous les contacts",
+    };
+  }
+
+  function contactMatchesSearch(item, model = directoryModel()) {
     const words = normalizeSearchText(contactSearch).split(/\s+/).filter(Boolean);
     if (!words.length) return true;
-    const haystack = contactSearchHaystack(c);
+    const haystack = model.haystack(item);
     return words.every((w) => haystack.includes(w));
   }
 
-  function contactMatchesCategory(c) {
+  function contactMatchesCategory(item, model = directoryModel()) {
     if (contactCategoryFilter === null || contactCategoryFilter === ALL_CONTACTS) return true;
-    return (c.categorie || "") === contactCategoryFilter;
+    return model.categoryOf(item) === contactCategoryFilter;
   }
 
-  function contactCategoryEntries(list) {
-    const countFor = (cat) => list.filter((c) => (c.categorie || "") === cat).length;
-    return [{ value: ALL_CONTACTS, label: "Tous les contacts", count: list.length }]
+  function contactCategoryEntries(list, model) {
+    const countFor = (cat) => list.filter((x) => model.categoryOf(x) === cat).length;
+    return [{ value: ALL_CONTACTS, label: model.allLabel, count: list.length }]
       .concat(CONTACT_CATEGORIES.map((cat) => ({ value: cat, label: cat, count: countFor(cat), color: CONTACT_CATEGORY_COLORS[cat] })))
       .concat([{ value: "", label: "Sans catégorie", count: countFor("") }]);
   }
 
   // Accueil de l'annuaire : uniquement les catégories, en tuiles ; un clic
   // ouvre la liste de la catégorie.
-  function renderContactCategoryTiles(container) {
-    const entries = contactCategoryEntries(appData.contacts)
+  function renderContactCategoryTiles(container, model) {
+    const entries = contactCategoryEntries(model.items, model)
       .filter((e) => e.value !== "" || e.count > 0);
     container.innerHTML = entries.map((e, idx) => `
       <button type="button" class="contact-tile${e.value === ALL_CONTACTS ? " is-all" : ""}" data-idx="${idx}"
@@ -5194,16 +5456,16 @@
     });
   }
 
-  function renderContactCategoryChips() {
+  function renderContactCategoryChips(model) {
     const wrap = document.getElementById("contact-category-chips");
     const searching = !!contactSearch.trim();
     if (contactCategoryFilter === null && !searching) {
       wrap.innerHTML = "";
       return;
     }
-    const searched = appData.contacts.filter(contactMatchesSearch);
+    const searched = model.items.filter((x) => contactMatchesSearch(x, model));
     const active = contactCategoryFilter === null ? ALL_CONTACTS : contactCategoryFilter;
-    const chips = contactCategoryEntries(searched)
+    const chips = contactCategoryEntries(searched, model)
       .map((chip) => chip.value === ALL_CONTACTS ? { ...chip, label: "Tous" } : chip)
       .filter((chip) => chip.value === ALL_CONTACTS || chip.count > 0 || chip.value === active);
     wrap.innerHTML = `
@@ -5229,22 +5491,29 @@
   }
 
   function renderContacts() {
-    renderContactCategoryChips();
+    const model = directoryModel();
+    document.querySelectorAll("#contacts-view-switch button").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.view === contactsView);
+    });
+    document.getElementById("filter-contact-search").placeholder = contactsView === "entreprises"
+      ? "🔍 Rechercher une entreprise, un de ses contacts ou AO…"
+      : "🔍 Rechercher : nom, entreprise, fonction, téléphone, email, AO lié…";
+    renderContactCategoryChips(model);
     const listEl = document.getElementById("contacts-list");
     if (contactCategoryFilter === null && !contactSearch.trim()) {
       listEl.className = "contact-tiles";
-      renderContactCategoryTiles(listEl);
+      renderContactCategoryTiles(listEl, model);
       return;
     }
     listEl.className = "contacts-grid";
-    const filtered = appData.contacts
-      .filter(contactMatchesSearch)
-      .filter(contactMatchesCategory)
+    const filtered = model.items
+      .filter((x) => contactMatchesSearch(x, model))
+      .filter((x) => contactMatchesCategory(x, model))
       .slice()
-      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+      .sort((a, b) => model.nameOf(a).localeCompare(model.nameOf(b)));
     listEl.innerHTML = filtered.length
-      ? filtered.map(renderContactItem).join("")
-      : `<div class="contacts-empty">Aucun contact ne correspond.</div>`;
+      ? filtered.map(model.render).join("")
+      : `<div class="contacts-empty">Aucun résultat.</div>`;
     wireContactItemEvents(listEl);
   }
 
@@ -5271,14 +5540,14 @@
     const query = document.getElementById("ao-contacts-dropdown-search").value.trim().toLowerCase();
     const available = appData.contacts
       .filter((c) => !linkedIds.has(c.id))
-      .filter((c) => !query || (c.nom || "").toLowerCase().includes(query) || (c.organisme || "").toLowerCase().includes(query))
+      .filter((c) => !query || normalizeSearchText(`${c.nom} ${contactOrganisme(c)}`).includes(normalizeSearchText(query)))
       .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
 
     const listEl = document.getElementById("ao-contacts-dropdown-list");
     listEl.innerHTML = available.length
       ? available.map((c) => `
           <div class="tag-dropdown-item" data-id="${c.id}">
-            ${escapeHtml(c.nom || "(sans nom)")}${c.organisme ? " · " + escapeHtml(c.organisme) : ""}
+            ${escapeHtml(c.nom || "(sans nom)")}${contactOrganisme(c) ? " · " + escapeHtml(contactOrganisme(c)) : ""}
           </div>
         `).join("")
       : `<div class="list-item-empty">Aucun contact disponible.</div>`;
@@ -5297,7 +5566,7 @@
     chipsEl.innerHTML = linked.length
       ? linked.map((c) => `
           <span class="tag-chip">
-            <span class="tag-chip-label" data-id="${c.id}">${escapeHtml(c.nom || "(sans nom)")}${c.organisme ? " · " + escapeHtml(c.organisme) : ""}</span>
+            <span class="tag-chip-label" data-id="${c.id}">${escapeHtml(c.nom || "(sans nom)")}${contactOrganisme(c) ? " · " + escapeHtml(contactOrganisme(c)) : ""}</span>
             <button type="button" class="tag-chip-remove" data-id="${c.id}" title="Retirer">✕</button>
           </span>
         `).join("")
@@ -5356,10 +5625,169 @@
   document.getElementById("ao-contacts-add").addEventListener("click", () => {
     if (currentEditingAO) openContactForm(null, currentEditingAO.id);
   });
+  document.querySelectorAll("#contacts-view-switch button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (contactsView === btn.dataset.view) return;
+      contactsView = btn.dataset.view;
+      contactCategoryFilter = null;
+      renderContacts();
+    });
+  });
+  document.getElementById("btn-new-entreprise").addEventListener("click", () => openEntrepriseForm(null));
+
+  // --- Fiche Entreprise (référentiel, 2026-11-12) ---
+
+  let currentEditingEntreprise = null;
+
+  function isEntrepriseFormOpen() {
+    return !document.getElementById("entreprise-modal-overlay").hidden;
+  }
+
+  // Listes liées (contacts, AO) : re-rendues aussi après chaque sauvegarde
+  // (renderAll), par ex. quand on vient d'ajouter un contact depuis la fiche.
+  function renderEntrepriseLinks() {
+    const e = currentEditingEntreprise;
+    document.getElementById("entreprise-links").hidden = !e;
+    if (!e) return;
+    const contacts = entrepriseContacts(e.id).sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+    const contactsEl = document.getElementById("entreprise-contacts-list");
+    contactsEl.innerHTML = contacts.length
+      ? contacts.map((c) => `
+          <div class="list-item clickable-item" data-contact="${c.id}">
+            <div>
+              <div class="list-item-title">${escapeHtml(c.nom || "(sans nom)")}</div>
+              <div class="list-item-sub">${escapeHtml([c.fonction, c.telephone, c.email].filter(Boolean).join(" · "))}</div>
+            </div>
+          </div>
+        `).join("")
+      : `<div class="list-item-empty">Aucun contact rattaché.</div>`;
+    contactsEl.querySelectorAll("[data-contact]").forEach((row) => {
+      row.addEventListener("click", () => {
+        const c = appData.contacts.find((x) => x.id === row.dataset.contact);
+        if (c) openContactForm(c);
+      });
+    });
+
+    const aos = entrepriseAOs(e.id).sort((a, b) => (b.date_remise || "").localeCompare(a.date_remise || ""));
+    const aosEl = document.getElementById("entreprise-aos-list");
+    aosEl.innerHTML = aos.length
+      ? aos.map((a) => `
+          <div class="list-item clickable-item" data-ao="${a.id}">
+            <div>
+              <div class="list-item-title">${escapeHtml(a.nom_projet || "(sans nom)")}</div>
+              <div class="list-item-sub">${escapeHtml([a.amo_id === e.id ? "AMO / BE" : "Maître d'ouvrage", phaseLabel(a.phase, (a.service || [])[0]), a.resultat].filter(Boolean).join(" · "))}</div>
+            </div>
+          </div>
+        `).join("")
+      : `<div class="list-item-empty">Aucun AO lié.</div>`;
+    aosEl.querySelectorAll("[data-ao]").forEach((row) => {
+      row.addEventListener("click", () => {
+        const ao = appData.aos.find((x) => x.id === row.dataset.ao);
+        if (!ao) return;
+        closeEntrepriseForm();
+        openAOForm(ao);
+      });
+    });
+  }
+
+  function openEntrepriseForm(entreprise) {
+    currentEditingEntreprise = entreprise || null;
+    document.getElementById("entreprise-modal-title").textContent = entreprise ? "Fiche entreprise" : "Nouvelle entreprise";
+    document.getElementById("entreprise-form-delete").hidden = !entreprise;
+    populateSelect(document.getElementById("f-e-role"), ENTREPRISE_ROLES, "— Rôle —");
+    const data = entreprise || {};
+    document.getElementById("f-e-nom").value = data.nom || "";
+    // Nouvelle entreprise créée depuis une tuile de rôle : pré-remplie avec.
+    document.getElementById("f-e-role").value = entreprise
+      ? (data.role || "")
+      : (contactsView === "entreprises" && contactCategoryFilter && contactCategoryFilter !== ALL_CONTACTS ? contactCategoryFilter : "");
+    document.getElementById("f-e-notes").value = data.notes || "";
+    renderEntrepriseLinks();
+    document.getElementById("entreprise-modal-overlay").hidden = false;
+    if (!entreprise) document.getElementById("f-e-nom").focus();
+  }
+
+  function closeEntrepriseForm() {
+    document.getElementById("entreprise-modal-overlay").hidden = true;
+    currentEditingEntreprise = null;
+  }
+
+  // Appelé par renderAll() : garde la fiche ouverte à jour (ou la ferme si
+  // l'entreprise a été supprimée entre-temps).
+  function refreshEntrepriseForm() {
+    if (!isEntrepriseFormOpen() || !currentEditingEntreprise) return;
+    const latest = findEntreprise(currentEditingEntreprise.id);
+    if (!latest) { closeEntrepriseForm(); return; }
+    currentEditingEntreprise = latest;
+    renderEntrepriseLinks();
+  }
+
+  document.getElementById("entreprise-modal-close").addEventListener("click", closeEntrepriseForm);
+  document.getElementById("entreprise-form-cancel").addEventListener("click", closeEntrepriseForm);
+  document.getElementById("entreprise-modal-overlay").addEventListener("click", (event) => {
+    if (event.target.id === "entreprise-modal-overlay") closeEntrepriseForm();
+  });
+  document.getElementById("entreprise-contact-add").addEventListener("click", () => {
+    if (currentEditingEntreprise) openContactForm(null, null, currentEditingEntreprise.id);
+  });
+
+  document.getElementById("entreprise-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const nom = document.getElementById("f-e-nom").value.trim();
+    if (!nom) return;
+    const changes = {
+      nom,
+      role: document.getElementById("f-e-role").value,
+      notes: document.getElementById("f-e-notes").value.trim(),
+    };
+    const duplicate = (appData.entreprises || []).find((e) =>
+      normalizeSearchText(e.nom) === normalizeSearchText(nom)
+      && (!currentEditingEntreprise || e.id !== currentEditingEntreprise.id));
+    if (duplicate && !confirm(`Une entreprise « ${duplicate.nom} » existe déjà. Enregistrer quand même ?`)) return;
+    try {
+      if (currentEditingEntreprise) {
+        await updateEntreprise(currentEditingEntreprise.id, changes);
+        // Le nom en clair recopié sur les contacts suit le renommage.
+        const renamed = entrepriseContacts(currentEditingEntreprise.id).filter((c) => c.organisme !== nom);
+        for (const c of renamed) await updateContact(c.id, { organisme: nom });
+      } else {
+        await addEntreprise(changes);
+      }
+      closeEntrepriseForm();
+    } catch (err) {
+      alert("Erreur lors de l'enregistrement : " + err.message);
+    }
+  });
+
+  document.getElementById("entreprise-form-delete").addEventListener("click", async () => {
+    const e = currentEditingEntreprise;
+    if (!e) return;
+    const nbLinks = entrepriseContacts(e.id).length + entrepriseAOs(e.id).length;
+    const warning = nbLinks ? ` Elle est liée à ${nbLinks} contact(s) / AO, qui seront détachés (pas supprimés).` : "";
+    if (!confirm(`Supprimer l'entreprise « ${e.nom || "(sans nom)"} » ?${warning}`)) return;
+    try {
+      await deleteEntreprise(e.id);
+      closeEntrepriseForm();
+    } catch (err) {
+      alert("Erreur lors de la suppression : " + err.message);
+    }
+  });
 
   // --- Formulaire Contact (création / édition) ---
 
-  function openContactForm(contact, presetAoId) {
+  // Sans entreprise, un contact garde sa propre catégorie ; avec, il prend
+  // le rôle de l'entreprise (la liste des catégories est alors masquée).
+  function updateContactCategorieVisibility() {
+    const hasEntreprise = !!document.getElementById("f-c-entreprise_id").value
+      && document.getElementById("f-c-entreprise_id").value !== "__new__";
+    document.getElementById("f-c-categorie-wrap").hidden = hasEntreprise;
+  }
+
+  wireEntrepriseSelect(document.getElementById("f-c-entreprise_id"), "");
+  document.getElementById("f-c-entreprise_id").addEventListener("change", updateContactCategorieVisibility);
+
+  // presetEntrepriseId : contact créé depuis la fiche d'une entreprise.
+  function openContactForm(contact, presetAoId, presetEntrepriseId) {
     currentEditingContact = contact || null;
     document.getElementById("contact-modal-title").textContent = contact ? "Modifier le contact" : "Nouveau contact";
     document.getElementById("contact-form-delete").hidden = !contact;
@@ -5367,7 +5795,10 @@
     const data = contact || {};
     document.getElementById("f-c-nom").value = data.nom || "";
     document.getElementById("f-c-fonction").value = data.fonction || "";
-    document.getElementById("f-c-organisme").value = data.organisme || "";
+    const entrepriseId = contact ? data.entreprise_id : (presetEntrepriseId || null);
+    const entrepriseSelect = document.getElementById("f-c-entreprise_id");
+    entrepriseSelect.innerHTML = entrepriseSelectOptions([], entrepriseId);
+    entrepriseSelect.value = entrepriseId || "";
     populateSelect(document.getElementById("f-c-categorie"), CONTACT_CATEGORIES, "— Sans catégorie —");
     // Nouveau contact créé depuis un filtre de catégorie : pré-rempli avec.
     document.getElementById("f-c-categorie").value = contact
@@ -5387,6 +5818,7 @@
       : `<div class="list-item-empty">Aucun AO créé pour l'instant.</div>`;
     document.getElementById("f-c-ao-search").value = "";
 
+    updateContactCategorieVisibility();
     document.getElementById("contact-modal-overlay").hidden = false;
   }
 
@@ -5408,14 +5840,22 @@
     if (event.target.id === "contact-modal-overlay") closeContactForm();
   });
 
+  function contactFormEntrepriseId() {
+    const v = document.getElementById("f-c-entreprise_id").value;
+    return v && v !== "__new__" ? v : null;
+  }
+
   document.getElementById("contact-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const selectedAO = Array.from(document.querySelectorAll(".f-c-ao-item:checked")).map((cb) => cb.value);
     const changes = {
       nom: document.getElementById("f-c-nom").value.trim(),
       fonction: document.getElementById("f-c-fonction").value.trim(),
-      organisme: document.getElementById("f-c-organisme").value.trim(),
-      categorie: document.getElementById("f-c-categorie").value,
+      entreprise_id: contactFormEntrepriseId(),
+      // Nom en clair recopié (recherche, export) ; la catégorie propre ne
+      // sert que sans entreprise.
+      organisme: entrepriseNom(contactFormEntrepriseId()) || (currentEditingContact && !contactFormEntrepriseId() ? currentEditingContact.organisme || "" : ""),
+      categorie: contactFormEntrepriseId() ? "" : document.getElementById("f-c-categorie").value,
       telephone: document.getElementById("f-c-telephone").value.trim(),
       email: document.getElementById("f-c-email").value.trim(),
       adresse: document.getElementById("f-c-adresse").value.trim(),
@@ -5763,6 +6203,7 @@
     renderContacts();
     renderReporting();
     if (isFicheOpen()) refreshAOFiche();
+    refreshEntrepriseForm();
   }
 
   document.getElementById("btn-export").addEventListener("click", () => {
@@ -5773,7 +6214,7 @@
   // l'écran, pas systématiquement tous les AO.
   document.getElementById("btn-export-ao-csv").addEventListener("click", () => {
     const rows = [
-      ["Nom du projet", "Client", "Phase", "Type", "Type de marché", "Valeur (k€)", "AMO", "Concurrence", "Date de remise", "Date de visite", "Date de prise d'effet", "Lieu", "Résultat", "Motif", "Assigné à", "Priorité"],
+      ["Nom du projet", "Client", "Phase", "Type", "Type de marché", "Valeur (k€)", "AMO", "Concurrence", "Date de remise", "Date de visite", "Date de prise d'effet", "Lieu", "Résultat", "Motif", "Assigné à", "Priorité", "Maître d'ouvrage"],
       ...appData.aos.filter(aoMatchesFilters).map((ao) => [
         ao.nom_projet || "",
         ao.type_client || "",
@@ -5781,7 +6222,7 @@
         ao.type || "",
         (ao.type_marche || []).join(", "),
         ao.valeur_estimee_keur ?? "",
-        ao.amo || "",
+        entrepriseNom(ao.amo_id) || ao.amo || "",
         ao.concurrence || "",
         formatDate(ao.date_remise),
         formatDate(ao.date_visite),
@@ -5791,6 +6232,7 @@
         ao.motif_categorie || "",
         ao.assigne_a.join(", "),
         ao.priorite || "",
+        entrepriseNom(ao.maitre_ouvrage_id),
       ]),
     ];
     downloadCSV(`crm-ao-pipeline-${new Date().toISOString().slice(0, 10)}.csv`, rows);
