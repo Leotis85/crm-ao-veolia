@@ -1265,6 +1265,9 @@
     color: var(--color-text-muted);
   }
   #entreprise-form .block { margin-bottom: 12px; }
+  .entreprise-merge-hint { font-size: 12px; color: var(--color-text-muted); margin: 0 0 8px; }
+  .entreprise-merge-row { display: flex; gap: 8px; }
+  .entreprise-merge-row select { flex: 1; min-width: 0; }
 
   .contact-tiles {
     display: grid;
@@ -2298,6 +2301,15 @@
           <legend>AO où elle intervient</legend>
           <div class="list-panel" id="entreprise-aos-list"></div>
         </fieldset>
+
+        <fieldset class="entreprise-merge">
+          <legend>Doublon ?</legend>
+          <p class="entreprise-merge-hint">Fusionner cette entreprise dans une autre : ses contacts et ses AO y sont rattachés, puis elle est supprimée.</p>
+          <div class="entreprise-merge-row">
+            <select id="f-e-merge-target"></select>
+            <button type="button" class="btn-secondary btn-small" id="entreprise-merge-btn">Fusionner</button>
+          </div>
+        </fieldset>
       </div>
 
       <div class="modal-footer">
@@ -3322,6 +3334,34 @@
       const record = findOrThrow(data.entreprises, id, "Entreprise");
       Object.assign(record, changes);
       stamp(record);
+    });
+  }
+
+  // Fusion de doublons : tout ce qui pointe vers sourceId passe sur targetId
+  // (enregistrements tamponnés pour être bien envoyés), les notes sont
+  // ajoutées à la cible, puis la source est supprimée. Un seul enregistrement.
+  async function mergeEntreprise(sourceId, targetId) {
+    return mutateData((data) => {
+      const source = findOrThrow(data.entreprises, sourceId, "Entreprise");
+      const target = findOrThrow(data.entreprises, targetId, "Entreprise");
+      data.aos.forEach((ao) => {
+        let changed = false;
+        if (ao.maitre_ouvrage_id === sourceId) { ao.maitre_ouvrage_id = targetId; changed = true; }
+        if (ao.amo_id === sourceId) { ao.amo_id = targetId; changed = true; }
+        if (changed) stamp(ao);
+      });
+      data.contacts.forEach((c) => {
+        if (c.entreprise_id !== sourceId) return;
+        c.entreprise_id = targetId;
+        c.organisme = target.nom;
+        stamp(c);
+      });
+      if (source.notes && !(target.notes || "").includes(source.notes)) {
+        target.notes = [target.notes, source.notes].filter(Boolean).join("\n");
+      }
+      if (!target.role && source.role) target.role = source.role;
+      stamp(target);
+      data.entreprises = data.entreprises.filter((e) => e.id !== sourceId);
     });
   }
 
@@ -5668,6 +5708,15 @@
       });
     });
 
+    const others = (appData.entreprises || [])
+      .filter((x) => x.id !== e.id)
+      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+    const mergeSelect = document.getElementById("f-e-merge-target");
+    const keep = mergeSelect.value;
+    mergeSelect.innerHTML = `<option value="">— Fusionner dans… —</option>`
+      + others.map((x) => `<option value="${x.id}">${escapeHtml(x.nom || "(sans nom)")}${x.role ? " (" + escapeHtml(x.role) + ")" : ""}</option>`).join("");
+    if (others.some((x) => x.id === keep)) mergeSelect.value = keep;
+
     const aos = entrepriseAOs(e.id).sort((a, b) => (b.date_remise || "").localeCompare(a.date_remise || ""));
     const aosEl = document.getElementById("entreprise-aos-list");
     aosEl.innerHTML = aos.length
@@ -5756,6 +5805,22 @@
       closeEntrepriseForm();
     } catch (err) {
       alert("Erreur lors de l'enregistrement : " + err.message);
+    }
+  });
+
+  document.getElementById("entreprise-merge-btn").addEventListener("click", async () => {
+    const source = currentEditingEntreprise;
+    const targetId = document.getElementById("f-e-merge-target").value;
+    const target = findEntreprise(targetId);
+    if (!source || !target) return;
+    const nbContacts = entrepriseContacts(source.id).length;
+    const nbAO = entrepriseAOs(source.id).length;
+    if (!confirm(`Fusionner « ${source.nom} » dans « ${target.nom} » ?\n\n${nbContacts} contact(s) et ${nbAO} AO seront rattachés à « ${target.nom} », puis « ${source.nom} » sera supprimée.`)) return;
+    try {
+      await mergeEntreprise(source.id, target.id);
+      openEntrepriseForm(findEntreprise(target.id));
+    } catch (err) {
+      alert("Erreur lors de la fusion : " + err.message);
     }
   });
 
