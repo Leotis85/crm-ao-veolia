@@ -723,6 +723,25 @@
     .avenant-head { display: none; }
   }
 
+  /* --- Import contrathèque --- */
+  .modal.import-modal { max-width: min(1500px, 96vw); }
+  .import-intro { font-size: 13px; color: var(--color-text-muted); margin: 0 0 14px; }
+  .import-file { display: flex; flex-direction: column; gap: 4px; font-size: 13px; margin-bottom: 14px; }
+  .import-file small { color: var(--color-text-muted); font-size: 12px; }
+  .import-error { color: var(--color-danger); font-size: 13px; font-weight: 600; min-height: 1em; }
+  .import-h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.03em; color: var(--color-text-muted); margin: 16px 0 8px; }
+  .import-table-wrap { max-height: 46vh; overflow: auto; border: 1px solid var(--color-border); border-radius: var(--radius); }
+  .import-table th { position: sticky; top: 0; z-index: 1; }
+  .import-table td { padding: 5px 8px; font-size: 12px; }
+  .import-table input[type="text"], .import-table select { width: 100%; min-width: 120px; font-size: 12px; padding: 3px 5px; border: 1px solid var(--color-border); border-radius: 4px; }
+  .import-table td:nth-child(2) input { min-width: 240px; }
+  .import-table tr.is-off td { opacity: 0.45; }
+  .import-sub { color: var(--color-text-muted); font-size: 11px; }
+  .import-warn { color: #b45309; font-size: 11px; min-width: 160px; }
+  .import-notes { font-size: 11px; color: var(--color-text-muted); min-width: 220px; }
+  .import-new { font-size: 10px; color: var(--color-primary); font-weight: 700; }
+  #import-step-files[hidden], #import-step-preview[hidden], #import-aos-section[hidden] { display: none; }
+
   .kanban-column-header-right { display: flex; align-items: center; gap: 6px; }
 
   .kanban-add {
@@ -2180,6 +2199,7 @@
       <select id="filter-contrat-prestation"></select>
       <label class="checkbox-inline"><input type="checkbox" id="filter-contrat-renego"> À renégocier</label>
       <button type="button" class="btn-primary" id="btn-new-contrat">+ Nouveau contrat</button>
+      <button type="button" class="btn-secondary" id="btn-import-contrats">⬆ Importer…</button>
     </div>
     <div class="contrats-summary" id="contrats-summary"></div>
     <div class="panel contrats-panel">
@@ -2583,6 +2603,69 @@
       <button type="submit" class="btn-primary" id="contrat-form-submit">Enregistrer</button>
     </div>
   </form>
+</div>
+
+<div class="modal-overlay" id="import-modal-overlay" hidden>
+  <div class="modal import-modal">
+    <div class="modal-header">
+      <h2>Importer la contrathèque</h2>
+      <button type="button" class="modal-close" id="import-modal-close">✕</button>
+    </div>
+
+    <div id="import-step-files">
+      <p class="import-intro">Les fichiers sont lus dans ton navigateur, rien n'est envoyé avant que tu valides l'aperçu. Exporte chaque feuille en CSV.</p>
+      <label class="import-file">Export de la <strong>Contrathèque</strong> (obligatoire)
+        <input type="file" id="import-file-contratheque" accept=".csv,text/csv">
+        <small>Seuls les contrats de base « Actif » sont repris, avec leurs avenants.</small>
+      </label>
+      <label class="import-file">Feuille <strong>Portefeuille</strong> (recommandé)
+        <input type="file" id="import-file-portefeuille" accept=".csv,text/csv">
+        <small>Apporte les durées, reconductions, dates de fin et montants.</small>
+      </label>
+      <label class="import-file">Feuille <strong>Commerce 2027</strong> (facultatif)
+        <input type="file" id="import-file-commerce" accept=".csv,text/csv">
+        <small>Les renouvellements et le développement deviennent des AO dans la colonne « A venir ».</small>
+      </label>
+      <p class="import-error" id="import-error"></p>
+      <div class="modal-footer">
+        <span></span>
+        <div class="modal-footer-right">
+          <button type="button" class="btn-secondary" id="import-cancel">Annuler</button>
+          <button type="button" class="btn-primary" id="import-analyse">Analyser</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="import-step-preview" hidden>
+      <p class="import-intro" id="import-summary"></p>
+      <h3 class="import-h3">Contrats (<span id="import-contrats-count"></span>)</h3>
+      <div class="import-table-wrap">
+        <table class="contrats-table import-table">
+          <thead><tr>
+            <th></th><th>Affaire</th><th>Maître d'ouvrage</th><th>Statut</th><th>Secteur</th><th>Prestations</th>
+            <th>Début</th><th>Fin</th><th>Reconduction</th><th class="num">Montant</th><th class="num">Av.</th><th>À vérifier</th>
+          </tr></thead>
+          <tbody id="import-contrats-body"></tbody>
+        </table>
+      </div>
+      <div id="import-aos-section">
+        <h3 class="import-h3">AO à créer (<span id="import-aos-count"></span>)</h3>
+        <div class="import-table-wrap">
+          <table class="contrats-table import-table">
+            <thead><tr><th></th><th>Type</th><th>Nom</th><th>Contrat</th><th class="num">Montant</th><th>Notes</th><th>À vérifier</th></tr></thead>
+            <tbody id="import-aos-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <datalist id="import-entreprises"></datalist>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" id="import-back">← Changer de fichiers</button>
+        <div class="modal-footer-right">
+          <button type="button" class="btn-primary" id="import-submit">Importer</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="contact-modal-overlay" hidden>
@@ -6793,6 +6876,524 @@
       alert("Erreur lors de la suppression : " + err.message);
     }
   });
+
+  // ---------------------------------------------------------------------
+  // Import de la contrathèque (2026-11-12). Tout se passe dans le
+  // navigateur : les CSV (export Contrathèque, feuille Portefeuille, feuille
+  // Commerce 2027) sont lus et rapprochés ici, un aperçu permet de corriger
+  // / décocher, puis tout est enregistré en un seul appel. Aucune donnée ne
+  // transite par le dépôt (public).
+  // ---------------------------------------------------------------------
+
+  // CSV (séparateur , ou ; détecté, guillemets, retours à la ligne dans un
+  // champ entre guillemets, BOM) -> tableau de lignes (tableaux de cellules).
+  function parseCSV(text) {
+    text = text.replace(/^﻿/, "");
+    const firstLine = text.split(/\r?\n/, 1)[0] || "";
+    const sep = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ";" : ",";
+    const rows = [];
+    let row = [];
+    let cell = "";
+    let inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (inQuotes) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { cell += '"'; i++; } else inQuotes = false;
+        } else cell += ch;
+      } else if (ch === '"') inQuotes = true;
+      else if (ch === sep) { row.push(cell); cell = ""; }
+      else if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && text[i + 1] === "\n") i++;
+        row.push(cell); rows.push(row); row = []; cell = "";
+      } else cell += ch;
+    }
+    if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter((r) => r.some((c) => c.trim() !== ""));
+  }
+
+  // Clé de rapprochement : majuscules sans accents, _ ' - et espaces réduits.
+  function importKey(s) {
+    return normalizeSearchText(s || "").toUpperCase().replace(/[_'’\-]/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  const FR_MONTHS = { janv: 1, janvier: 1, fevr: 2, fevrier: 2, mars: 3, avr: 4, avril: 4, mai: 5, juin: 6, juil: 7, juillet: 7, aout: 8, sept: 9, septembre: 9, oct: 10, octobre: 10, nov: 11, novembre: 11, dec: 12, decembre: 12 };
+
+  // "1 juin 2004", "18 déc. 2025", "1/9/2004", "31/09/2029" (jour ramené au
+  // dernier du mois si invalide) -> "AAAA-MM-JJ" ou null.
+  function parseFrDate(s) {
+    const v = normalizeSearchText((s || "").trim()).replace(/\./g, "");
+    if (!v) return null;
+    let d, m, y;
+    let match = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (match) [, d, m, y] = match.map(Number);
+    else {
+      match = v.match(/^(\d{1,2})\s+([a-z]+)\s+(\d{4})$/);
+      if (!match || !FR_MONTHS[match[2]]) return null;
+      d = Number(match[1]); m = FR_MONTHS[match[2]]; y = Number(match[3]);
+    }
+    if (m < 1 || m > 12) return null;
+    const lastDay = new Date(y, m, 0).getDate();
+    return localDateKey(new Date(y, m - 1, Math.min(d, lastDay)));
+  }
+
+  // "3 ANS", "32 MOIS", "4 ANS et 6 MOIS", "5,5 ANS", "5 ANS 9 MOIS", "1"
+  // (nombre seul = années) -> mois, ou null (NDEF, -, 0, vide).
+  function parseDureeMois(s) {
+    const v = normalizeSearchText(s || "").replace(",", ".").trim();
+    if (!v || v === "ndef" || v === "-" || v === "0") return null;
+    if (/^\d+(\.\d+)?$/.test(v)) return Math.round(Number(v) * 12);
+    let months = 0;
+    let found = false;
+    const years = v.match(/(\d+(?:\.\d+)?)\s*ans?\b/);
+    if (years) { months += Number(years[1]) * 12; found = true; }
+    const mois = v.match(/(\d+)\s*mois/);
+    if (mois) { months += Number(mois[1]); found = true; }
+    return found && months > 0 ? Math.round(months) : null;
+  }
+
+  // "1 483 517,39€", "10 797,00 €" -> 1483517.39
+  function parseEuros(s) {
+    const v = (s || "").replace(/[€\s  ]/g, "").replace(",", ".");
+    return v && !isNaN(Number(v)) ? Number(v) : null;
+  }
+
+  function findHeaderIndex(rows, predicate) {
+    return rows.findIndex((r) => r.some((c) => predicate(normalizeSearchText(c).replace(/\s+/g, " ").trim())));
+  }
+
+  function columnIndex(header, predicate) {
+    return header.findIndex((c) => predicate(normalizeSearchText(c).replace(/\s+/g, " ").trim()));
+  }
+
+  // Export Contrathèque -> contrats actifs (BASE MARCHE "Actif") regroupés
+  // avec leurs avenants. Lignes vides en double (ni statut ni lien) ignorées.
+  function parseContratheque(rows) {
+    const h = findHeaderIndex(rows, (c) => c === "type de document contractuel");
+    if (h === -1) throw new Error("Fichier Contrathèque : colonne « Type de document contractuel » introuvable.");
+    const header = rows[h];
+    const col = {
+      secteur: columnIndex(header, (c) => c === "secteur"),
+      client: columnIndex(header, (c) => c === "client"),
+      type: columnIndex(header, (c) => c === "type de document contractuel"),
+      presta: columnIndex(header, (c) => c.startsWith("type de prestation")),
+      date: columnIndex(header, (c) => c.startsWith("date d")),
+      statut: columnIndex(header, (c) => c === "statut"),
+      lien: columnIndex(header, (c) => c === "lien"),
+    };
+    const groups = new Map();
+    rows.slice(h + 1).forEach((r) => {
+      const client = (r[col.client] || "").trim();
+      if (!client) return;
+      const key = importKey(client);
+      if (!groups.has(key)) groups.set(key, { client, bases: [], avenants: [] });
+      const g = groups.get(key);
+      const entry = {
+        secteur: (r[col.secteur] || "").trim(),
+        prestations: (r[col.presta] || "").trim().split(/\s+/).filter(Boolean),
+        date: parseFrDate(r[col.date]),
+        statut: (r[col.statut] || "").trim(),
+        lien: (r[col.lien] || "").trim(),
+      };
+      const type = normalizeSearchText(r[col.type] || "").trim();
+      if (type === "base marche") g.bases.push(entry);
+      else if (type === "avenant" && (entry.statut || entry.lien)) g.avenants.push(entry);
+    });
+    return [...groups.values()]
+      .map((g) => ({ ...g, base: g.bases.find((b) => b.statut === "Actif") }))
+      .filter((g) => g.base);
+  }
+
+  // Feuille Portefeuille -> Map(clé du nom -> durée, reconduction, fin, CA…).
+  function parsePortefeuille(rows) {
+    const h = findHeaderIndex(rows, (c) => c === "nom du client");
+    if (h === -1) throw new Error("Fichier Portefeuille : colonne « Nom du client » introuvable.");
+    const header = rows[h];
+    const col = {
+      nom: columnIndex(header, (c) => c === "nom du client"),
+      debut: columnIndex(header, (c) => c.includes("date de demarrage")),
+      duree: columnIndex(header, (c) => c.startsWith("duree du contrat")),
+      recon: columnIndex(header, (c) => c === "reconduction"),
+      dureeRecon: columnIndex(header, (c) => c === "duree reconduction"),
+      tacite: columnIndex(header, (c) => c === "tacite reconduction"),
+      fin: columnIndex(header, (c) => c.startsWith("date de fin y/c") && c.includes("reconduction")),
+      ca: columnIndex(header, (c) => c.startsWith("ca p1")),
+    };
+    const map = new Map();
+    rows.slice(h + 1).forEach((r) => {
+      const nom = (r[col.nom] || "").trim();
+      if (!nom) return;
+      const recon = normalizeSearchText(r[col.recon] || "").trim();
+      const tacite = normalizeSearchText(r[col.tacite] || "").trim() === "tr";
+      map.set(importKey(nom), {
+        nom,
+        debut: parseFrDate(r[col.debut]),
+        duree_mois: parseDureeMois(r[col.duree]),
+        reconduction: recon === "non" ? "Non" : recon === "oui" ? (tacite ? "Tacite" : "Expresse") : "",
+        duree_reconduction_mois: parseDureeMois(r[col.dureeRecon]),
+        date_fin: parseFrDate(r[col.fin]),
+        montant: parseEuros(r[col.ca]),
+        // Colonne sans titre après "Date de fin y/c TR" : résilié, en cours…
+        remarque: (r[col.ca + 2] || "").trim(),
+      });
+    });
+    return map;
+  }
+
+  // Feuille Commerce 2027 -> blocs "Renouvellement" et "Développement"
+  // (tableaux posés côte à côte : on repère les lignes d'en-tête "Client |
+  // Secteur" et on lit jusqu'au TOTAL).
+  function parseCommerce(rows) {
+    const blocks = [];
+    rows.forEach((r, i) => {
+      const c = r.findIndex((cell, j) => cell.trim() === "Client" && (r[j + 1] || "").trim() === "Secteur");
+      if (c === -1) return;
+      const header = r.slice(c).map((x) => normalizeSearchText(x).trim());
+      const kind = header.some((x) => x.startsWith("date de renouvellement")) ? "renouvellement" : "developpement";
+      const idx = (pred) => header.findIndex(pred);
+      const ci = {
+        montant: idx((x) => x.startsWith("montant")),
+        comment: idx((x) => x.startsWith("commentaire")),
+        reussite: idx((x) => x.includes("reussite")),
+        projete: idx((x) => x.startsWith("ca projete")),
+        prolong: idx((x) => x.startsWith("prolongation")),
+        date: idx((x) => x.startsWith("date de")),
+      };
+      const items = [];
+      for (let k = i + 1; k < rows.length; k++) {
+        const client = (rows[k][c] || "").trim();
+        if (normalizeSearchText(client) === "total") break;
+        if (!client) continue;
+        const cell = (n) => (n >= 0 ? (rows[k][c + n] || "").trim() : "");
+        items.push({
+          kind,
+          client,
+          secteur: cell(1),
+          montant: parseEuros(cell(ci.montant)),
+          commentaire: cell(ci.comment),
+          reussite: cell(ci.reussite),
+          projete: cell(ci.projete),
+          prolongation: cell(ci.prolong),
+          date: parseFrDate(cell(ci.date)),
+        });
+      }
+      blocks.push(...items);
+    });
+    return blocks;
+  }
+
+  // Nom de l'affaire à partir de "ORGANISME_SITE".
+  function importNomAffaire(client) {
+    return client.split("_").map((p) => p.trim().replace(/\s+/g, " ")).filter(Boolean).join(" – ");
+  }
+
+  // Maître d'ouvrage proposé : la partie avant "_", sauf pour une résidence /
+  // copropriété (son nom EST l'affaire, le syndic est inconnu).
+  function importMaitreOuvrage(client) {
+    const org = client.split("_")[0].trim().replace(/\s+/g, " ");
+    return /^(RES|SDC|ASL|RC)\b/i.test(org) ? "" : org;
+  }
+
+  // Deux noms désignent la même affaire : identiques, ou l'un prolonge
+  // l'autre (RES ALHAMBRA / RES ALHAMBRA BORDEAUX, Ville AGEN / VILLE AGEN
+  // BAT COMMUNAUX).
+  function importKeysMatch(a, b) {
+    return a === b || a.startsWith(b + " ") || b.startsWith(a + " ");
+  }
+
+  function matchPortefeuille(key, pf) {
+    if (pf.has(key)) return pf.get(key);
+    for (const [k, v] of pf) if (importKeysMatch(key, k)) return v;
+    return null;
+  }
+
+  // Construit l'aperçu : une ligne par contrat (avec choix par défaut) et une
+  // ligne par AO à créer depuis la feuille Commerce.
+  function buildImportPlan(contratheque, pf, commerce) {
+    const existing = new Set((appData.contrats || []).map((c) => importKey(c.nom)));
+    const keys = contratheque.map((g) => importKey(g.client));
+    const contrats = contratheque
+      .filter((g) => !/^JONZAC\b/.test(importKey(g.client)))
+      .map((g) => {
+        const key = importKey(g.client);
+        const p = pf ? matchPortefeuille(key, pf) : null;
+        const nom = importNomAffaire(g.client);
+        const warnings = [];
+        let selected = true;
+        let statut = "Actif";
+        // Ancien contrat remplacé par un plus récent "même nom + année".
+        if (keys.some((k) => k !== key && k.startsWith(key + " ") && /\s\d{4}$/.test(k))) {
+          warnings.push("remplacé par un contrat plus récent : importé en Terminé");
+          statut = "Terminé";
+        }
+        if (p && /resili/i.test(normalizeSearchText(p.remarque))) warnings.push("noté « résilié » dans le portefeuille");
+        else if (p && p.remarque) warnings.push(`portefeuille : ${p.remarque}`);
+        if (pf && !p) warnings.push("absent du portefeuille : pas de date de fin");
+        if (existing.has(importKey(nom))) { warnings.push("déjà dans la contrathèque"); selected = false; }
+        return {
+          id: generateId(),
+          key,
+          selected,
+          nom,
+          maitre_ouvrage: importMaitreOuvrage(g.client),
+          statut,
+          secteur: SECTEUR_OPTIONS.includes(g.base.secteur) ? g.base.secteur : "",
+          secteurSource: g.base.secteur,
+          prestations: g.base.prestations,
+          date_debut: (p && p.debut) || g.base.date,
+          duree_mois: p ? p.duree_mois : null,
+          date_fin: p ? p.date_fin : null,
+          reconduction: p ? p.reconduction : "",
+          duree_reconduction_mois: p ? p.duree_reconduction_mois : null,
+          montant: p ? p.montant : null,
+          lien: g.base.lien,
+          avenants: g.avenants.map((a) => ({
+            id: generateId(), date: a.date, prestations: a.prestations.join(" "),
+            statut: a.statut || "Actif", lien: a.lien, notes: "", ao_id: null,
+          })),
+          warnings,
+        };
+      });
+    // Même affaire saisie deux fois sous deux noms (ex. « GHT 47_POLE SANTE
+    // VALLEE DU LOT » / « POLE DE SANTÉ VALLÉE DU LOT_BORDEAUX ») : les mots
+    // significatifs de l'un (au moins 3) sont tous dans l'autre. On décoche
+    // celle notée résiliée dans le portefeuille (sinon la seconde).
+    // Mots vides et mots génériques (ville, bâtiments, lot…) ignorés.
+    const STOP = new Set(["DE", "DU", "DES", "LA", "LE", "LES", "D", "L", "ET", "BORDEAUX",
+      "VILLE", "MAIRIE", "BAT", "COMMUNAUX", "LOT", "RES", "SDC", "ASL", "DEPT"]);
+    const words = (c) => new Set(importKey(c.nom).split(" ").filter((w) => w && !STOP.has(w)));
+    const pairs = [];
+    contrats.forEach((a, i) => contrats.slice(i + 1).forEach((b) => {
+      if (a.statut !== "Actif" || b.statut !== "Actif") return;
+      const [small, big] = words(a).size <= words(b).size ? [words(a), words(b)] : [words(b), words(a)];
+      if (small.size >= 3 && [...small].every((w) => big.has(w))) pairs.push([a, b]);
+    }));
+    pairs.forEach(([a, b]) => {
+      const isResilie = (c) => c.warnings.some((w) => w.includes("résilié"));
+      const [drop, keep] = isResilie(a) && !isResilie(b) ? [a, b] : [b, a];
+      drop.selected = false;
+      drop.warnings.push(`doublon probable de « ${keep.nom} »`);
+    });
+
+    const aos = (commerce || []).map((it) => {
+      const k = importKey(it.client);
+      const contrat = it.kind === "renouvellement"
+        ? contrats.find((c) => c.selected && importKeysMatch(c.key, k))
+        : null;
+      const notes = [
+        it.commentaire,
+        it.reussite ? `% de réussite : ${it.reussite}` : "",
+        it.projete ? `CA projeté : ${it.projete}` : "",
+        it.prolongation ? `Prolongation possible : ${it.prolongation}` : "",
+        it.secteur ? `Secteur ${it.secteur}` : "",
+      ].filter(Boolean).join("\n");
+      return {
+        id: generateId(),
+        selected: it.kind === "developpement" || !!contrat,
+        kind: it.kind,
+        nom: it.kind === "renouvellement" && contrat ? contrat.nom : it.client,
+        contratId: contrat ? contrat.id : null,
+        contratNom: contrat ? contrat.nom : "",
+        montant: it.montant,
+        date: it.date,
+        notes,
+        warnings: it.kind === "renouvellement" && !contrat ? ["contrat introuvable : à rattacher à la main"] : [],
+      };
+    });
+    return { contrats, aos };
+  }
+
+  let importPlan = null;
+
+  function importEl(id) { return document.getElementById(id); }
+
+  function readFileText(input) {
+    const file = input.files[0];
+    if (!file) return Promise.resolve(null);
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error(`Lecture impossible : ${file.name}`));
+      reader.readAsText(file, "utf-8");
+    });
+  }
+
+  function openImportModal() {
+    importPlan = null;
+    ["import-file-contratheque", "import-file-portefeuille", "import-file-commerce"].forEach((id) => { importEl(id).value = ""; });
+    importEl("import-error").textContent = "";
+    importEl("import-step-files").hidden = false;
+    importEl("import-step-preview").hidden = true;
+    importEl("import-modal-overlay").hidden = false;
+  }
+
+  function closeImportModal() {
+    importEl("import-modal-overlay").hidden = true;
+    importPlan = null;
+  }
+
+  function renderImportPreview() {
+    const { contrats, aos } = importPlan;
+    const nbC = contrats.filter((c) => c.selected).length;
+    const nbA = aos.filter((a) => a.selected).length;
+    const nbAv = contrats.filter((c) => c.selected).reduce((n, c) => n + c.avenants.length, 0);
+    importEl("import-summary").textContent =
+      `${nbC} contrat(s) et ${nbAv} avenant(s) à importer, ${nbA} AO à créer dans le pipeline (colonne « A venir »). Décoche ce que tu ne veux pas, corrige les noms si besoin.`;
+    importEl("import-submit").textContent = `Importer ${nbC} contrat(s) et ${nbA} AO`;
+    importEl("import-entreprises").innerHTML = (appData.entreprises || [])
+      .map((e) => `<option value="${escapeHtml(e.nom)}">`).join("");
+    const known = new Set((appData.entreprises || []).map((e) => importKey(e.nom)));
+    importEl("import-contrats-count").textContent = contrats.length;
+    importEl("import-contrats-body").innerHTML = contrats.map((c, i) => `
+      <tr class="${c.selected ? "" : "is-off"}">
+        <td><input type="checkbox" data-c="${i}" data-f="selected"${c.selected ? " checked" : ""}></td>
+        <td><input type="text" data-c="${i}" data-f="nom" value="${escapeHtml(c.nom)}"></td>
+        <td>
+          <input type="text" list="import-entreprises" data-c="${i}" data-f="maitre_ouvrage" value="${escapeHtml(c.maitre_ouvrage)}" placeholder="—">
+          ${c.maitre_ouvrage && !known.has(importKey(c.maitre_ouvrage)) ? `<span class="import-new">nouvelle</span>` : ""}
+        </td>
+        <td>
+          <select data-c="${i}" data-f="statut">${CONTRAT_STATUTS.map((st) => `<option${st === c.statut ? " selected" : ""}>${st}</option>`).join("")}</select>
+        </td>
+        <td>${escapeHtml(c.secteur || c.secteurSource || "")}</td>
+        <td>${escapeHtml(c.prestations.join(" "))}</td>
+        <td>${c.date_debut ? formatDate(c.date_debut) : ""}</td>
+        <td>${c.date_fin ? formatDate(c.date_fin) : "—"}${c.duree_mois ? `<div class="import-sub">${c.duree_mois} mois</div>` : ""}</td>
+        <td>${escapeHtml(c.reconduction || "")}${c.duree_reconduction_mois ? `<div class="import-sub">${c.duree_reconduction_mois} mois</div>` : ""}</td>
+        <td class="num">${c.montant ? formatEuros(c.montant) : ""}</td>
+        <td class="num">${c.avenants.length || ""}</td>
+        <td class="import-warn">${c.warnings.map(escapeHtml).join("<br>")}</td>
+      </tr>
+    `).join("");
+    importEl("import-aos-section").hidden = !aos.length;
+    importEl("import-aos-count").textContent = aos.length;
+    const selectedContrats = contrats.filter((c) => c.selected);
+    importEl("import-aos-body").innerHTML = aos.map((a, i) => `
+      <tr class="${a.selected ? "" : "is-off"}">
+        <td><input type="checkbox" data-a="${i}" data-f="selected"${a.selected ? " checked" : ""}></td>
+        <td>${a.kind === "renouvellement" ? "Renouvellement" : "Développement"}</td>
+        <td><input type="text" data-a="${i}" data-f="nom" value="${escapeHtml(a.nom)}"></td>
+        <td>
+          ${a.kind === "renouvellement" ? `<select data-a="${i}" data-f="contratId">
+            <option value="">— Aucun —</option>
+            ${selectedContrats.map((c) => `<option value="${c.id}"${c.id === a.contratId ? " selected" : ""}>${escapeHtml(c.nom)}</option>`).join("")}
+          </select>` : ""}
+        </td>
+        <td class="num">${a.montant ? formatEuros(a.montant) : ""}</td>
+        <td class="import-notes">${escapeHtml(a.notes).replace(/\n/g, "<br>")}</td>
+        <td class="import-warn">${a.warnings.map(escapeHtml).join("<br>")}</td>
+      </tr>
+    `).join("");
+  }
+
+  // Édition dans l'aperçu : met à jour le plan (pas de re-rendu pendant la
+  // frappe, seulement pour les cases / listes).
+  importEl("import-step-preview").addEventListener("input", (event) => {
+    const t = event.target;
+    const list = t.dataset.c !== undefined ? importPlan.contrats : t.dataset.a !== undefined ? importPlan.aos : null;
+    if (!list || !t.dataset.f) return;
+    const item = list[Number(t.dataset.c ?? t.dataset.a)];
+    item[t.dataset.f] = t.type === "checkbox" ? t.checked : t.value;
+    if (t.type === "checkbox" || t.tagName === "SELECT") renderImportPreview();
+  });
+
+  importEl("import-analyse").addEventListener("click", async () => {
+    importEl("import-error").textContent = "";
+    try {
+      const [ct, pf, cm] = await Promise.all([
+        readFileText(importEl("import-file-contratheque")),
+        readFileText(importEl("import-file-portefeuille")),
+        readFileText(importEl("import-file-commerce")),
+      ]);
+      if (!ct) throw new Error("Choisis au moins l'export de la contrathèque.");
+      importPlan = buildImportPlan(
+        parseContratheque(parseCSV(ct)),
+        pf ? parsePortefeuille(parseCSV(pf)) : null,
+        cm ? parseCommerce(parseCSV(cm)) : [],
+      );
+      importEl("import-step-files").hidden = true;
+      importEl("import-step-preview").hidden = false;
+      renderImportPreview();
+    } catch (err) {
+      importEl("import-error").textContent = err.message;
+    }
+  });
+
+  importEl("import-back").addEventListener("click", () => {
+    importEl("import-step-files").hidden = false;
+    importEl("import-step-preview").hidden = true;
+  });
+
+  // Tout en un seul enregistrement : entreprises manquantes (maîtres
+  // d'ouvrage), contrats avec leurs avenants, AO du pipeline.
+  importEl("import-submit").addEventListener("click", async () => {
+    const contrats = importPlan.contrats.filter((c) => c.selected && c.nom.trim());
+    const contratIds = new Set(contrats.map((c) => c.id));
+    const aos = importPlan.aos.filter((a) => a.selected && a.nom.trim());
+    if (!contrats.length && !aos.length) return;
+    if (!confirm(`Importer ${contrats.length} contrat(s) et créer ${aos.length} AO ?`)) return;
+    importEl("import-submit").disabled = true;
+    try {
+      await mutateData((data) => {
+        const entreprisesByKey = new Map(data.entreprises.map((e) => [importKey(e.nom), e]));
+        const entrepriseFor = (nom) => {
+          const n = (nom || "").trim();
+          if (!n) return null;
+          const k = importKey(n);
+          if (!entreprisesByKey.has(k)) {
+            const e = createEntreprise({ nom: n, role: "Maître d'ouvrage" });
+            data.entreprises.push(e);
+            entreprisesByKey.set(k, e);
+          }
+          return entreprisesByKey.get(k).id;
+        };
+        contrats.forEach((c) => {
+          data.contrats.push(createContrat({
+            id: c.id,
+            nom: c.nom.trim(),
+            maitre_ouvrage_id: entrepriseFor(c.maitre_ouvrage),
+            secteur: c.secteur,
+            prestations: c.prestations,
+            statut: c.statut,
+            date_debut: c.date_debut,
+            duree_mois: c.duree_mois,
+            date_fin: c.date_fin,
+            reconduction: c.reconduction,
+            duree_reconduction_mois: c.duree_reconduction_mois,
+            montant: c.montant,
+            lien: c.lien,
+            avenants: c.avenants,
+          }));
+        });
+        aos.forEach((a) => {
+          const contrat = a.contratId && contratIds.has(a.contratId) ? contrats.find((c) => c.id === a.contratId) : null;
+          data.aos.push(createAO({
+            nom_projet: a.nom.trim(),
+            type: a.kind === "renouvellement" ? "Renouvellement" : "Appel d'offres",
+            phase: "a_venir",
+            service: ["Commerce"],
+            assigne_a: [currentProfile.display_name],
+            contrat_id: contrat ? contrat.id : null,
+            maitre_ouvrage_id: contrat ? entrepriseFor(contrat.maitre_ouvrage) : null,
+            type_marche: contrat ? contrat.prestations.filter((p) => TYPE_MARCHE_OPTIONS.includes(p)) : [],
+            valeur_estimee_keur: a.montant ? Math.round(a.montant / 100) / 10 : null,
+            date_prise_effet: a.date || null,
+            notes: a.notes,
+          }));
+        });
+      });
+      closeImportModal();
+      alert(`Import terminé : ${contrats.length} contrat(s) et ${aos.length} AO.`);
+    } catch (err) {
+      alert("Erreur pendant l'import : " + err.message);
+    } finally {
+      importEl("import-submit").disabled = false;
+    }
+  });
+
+  importEl("btn-import-contrats").addEventListener("click", openImportModal);
+  importEl("import-modal-close").addEventListener("click", closeImportModal);
+  importEl("import-cancel").addEventListener("click", closeImportModal);
 
   // --- Formulaire Contact (création / édition) ---
 

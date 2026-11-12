@@ -244,6 +244,20 @@ bouton ouvre l'AO existant. Plan de charge : section « Renégociations »
 (barre de l'ouverture de l'alerte à l'échéance ; orange à lancer, bleu en
 cours). Aucune colonne en base : tout est calculé.
 
+**Import de la contrathèque (2026-11-12)** : bouton « Importer… » de
+l'onglet Contrathèque. Lit dans le navigateur, sans rien envoyer avant
+validation, trois CSV : export Contrathèque (obligatoire : contrats de base
+« Actif » + leurs avenants), feuille Portefeuille (durées, reconductions,
+date de fin, montant ; rapprochement par nom, préfixe toléré) et feuille
+Commerce 2027 (renouvellements → AO « Renouvellement » rattachés au contrat,
+développement → AO, colonne « A venir », % / CA projeté / commentaire en
+notes). Aperçu éditable (cocher / décocher, nom de l'affaire, maître
+d'ouvrage, statut) avec alertes : contrat remplacé par un plus récent
+(importé en Terminé), doublon probable (décoché), noté résilié dans le
+portefeuille, absent du portefeuille, déjà présent (décoché). Maîtres
+d'ouvrage manquants créés comme entreprises. Jonzac Énergies Vertes exclu.
+Les fichiers ne sont jamais dans le dépôt (public).
+
 ### 4.4 Rappel (mécanisme, pas une entité) — SUPPRIMÉ de l'interface le 2026-11-11
 
 > Jamais utilisé en pratique : cloche, panneau « Rappels actifs » de l'accueil
@@ -466,7 +480,7 @@ rattaché obligatoirement à un contrat (fait) ; 4. renégociations (alerte 12 m
 avant échéance par défaut, prochaine échéance recalculée pour les tacites
 reconductions, AO de renouvellement en un clic, lignes dans le plan de
 charge — fait) ; 5. import CSV dans l'app (contrathèque + portefeuille + feuille
-Commerce 2027), jamais de données dans le dépôt (public). Secteurs
+Commerce 2027), jamais de données dans le dépôt (public) — fait. Secteurs
 B1/B2/B3 = découpage de l'agence, champ des contrats pour le reporting.
 Jonzac Énergies Vertes reste hors import.
 
