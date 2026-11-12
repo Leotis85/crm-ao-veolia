@@ -141,7 +141,7 @@ Repris du Todo Notion existant, enrichi.
 | `statut` | liste | Pas commencé, En cours, Terminé. Depuis la refonte ToDo du 2026-11-11, l'interface n'utilise plus qu'une case à cocher (Terminé / Pas commencé) ; « En cours » n'est plus proposé |
 | `date_debut` | date | ajouté ultérieurement, facultatif : si renseignée, la tâche s'étale sur plusieurs jours dans le calendrier ToDo (barre continue) — `echeance` reste la date de fin |
 | `echeance` | date | date de fin / échéance (seule date utilisée pour le tri, les rappels et les autres écrans si `date_debut` est vide) |
-| `assigne_a` | multi-personnes | modifié le 2026-09-29 : tableau, pas un texte simple. Depuis le 2026-11-11, plus affiché ni modifiable : posé automatiquement à [soi-même] à la création, chacun ne voit que ses propres tâches (admin compris, filtre côté interface). Reste en base car il pilote le RLS (§9) |
+| `assigne_a` | multi-personnes | modifié le 2026-09-29 : tableau, pas un texte simple. Le 2026-11-11 (refonte ToDo) il avait été masqué ; **réintroduit le 2026-11-12** : cases « Assigné à » dans le formulaire (soi-même coché par défaut), pour assigner une tâche à quelqu'un d'autre (ex. le directeur qui assigne des tâches sur un AO). Au moins une personne obligatoire ; hors admin, se décocher demande confirmation (on perd l'accès, RLS §9) |
 | `priorite` | liste | Normale, Haute (= flag rouge / critique) |
 | `notes` | texte | |
 | `rappel` | rappel | date + déclenchement (voir §4.4) |
@@ -216,8 +216,15 @@ Refonte du 2026-11-11 : vue **Liste** par défaut (tâches groupées En retard /
 Aujourd'hui / Demain / 7 prochains jours / Plus tard / Sans échéance, puis
 Terminées), case à cocher seule, sous-tâches ajoutables directement dans la
 liste, champ d'ajout rapide (titre + échéance). Bouton pour basculer en vue
-**Calendrier** (le calendrier mensuel existant). Plus de statut ni
-d'assignés : chacun ses tâches.
+**Calendrier** (le calendrier mensuel existant). Plus de statut.
+
+Tâches assignables (réintroduit le 2026-11-12) : filtre « Mes tâches »
+(défaut, = celles où je suis dans `assigne_a`, y compris celles qu'on m'a
+assignées) / « Tâches de X » / « Toutes les tâches » (toutes pour l'admin,
+celles partagées avec moi sinon, RLS oblige). Avec « Tâches de X » choisi,
+l'ajout rapide et le formulaire assignent par défaut soi-même + X. Chaque
+tâche partagée affiche « 👥 avec X » (ou « 👥 X » si je n'y suis pas). Accueil
+et fiche AO restent sur « mes tâches ».
 
 - Tâches rattachées à leur AO (visibles sur la fiche AO).
 - Vue globale transversale, filtrable par personne, triée par échéance et priorité.

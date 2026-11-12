@@ -1104,6 +1104,7 @@
   }
 
   .todo-meta-date.overdue { color: var(--color-danger); font-weight: 600; }
+  .todo-meta-assignes { color: var(--color-primary, inherit); font-weight: 500; }
 
   .todo-sub-open {
     border: none;
@@ -1970,6 +1971,7 @@
         <button type="button" class="active" data-view="liste">Liste</button>
         <button type="button" data-view="calendrier">Calendrier</button>
       </div>
+      <select id="filter-tache-personne" title="Quelles tâches afficher"></select>
       <select id="filter-tache-ao"></select>
       <label class="checkbox-inline">
         <input type="checkbox" id="filter-tache-hide-done" checked> Masquer les tâches terminées
@@ -2197,6 +2199,11 @@
       <label class="checkbox-inline">
         <input type="checkbox" id="f-t-fait"> Tâche terminée
       </label>
+
+      <fieldset>
+        <legend>Assigné à (soi-même par défaut, cocher d'autres personnes pour leur assigner / partager)</legend>
+        <div class="checkbox-group" id="f-t-assigne_a"></div>
+      </fieldset>
 
       <fieldset>
         <legend>Sous-tâches</legend>
@@ -4152,7 +4159,9 @@
   // ToDo (étape 6, voir PROJET.md §5.3) — vue globale + tâches par AO.
   // ---------------------------------------------------------------------
 
-  const todoFilters = { ao: "", hideDone: true };
+  // personne : "" = mes tâches, "*" = toutes celles visibles (RLS : toutes
+  // pour l'admin, celles où je suis assigné sinon), ou un display_name.
+  const todoFilters = { personne: "", ao: "", hideDone: true };
   let todoView = "liste";
   // Tâche dont le champ "nouvelle sous-tâche" est ouvert : gardé hors du DOM
   // car chaque sauvegarde (et chaque notification temps réel) re-rend la
@@ -4160,9 +4169,9 @@
   let openSubAddFor = null;
   let currentEditingTache = null;
 
-  // Depuis la refonte ToDo (2026-11-11), chacun ne voit que ses propres
-  // tâches, admin compris : plus de partage ni d'assignés dans l'interface.
-  // assigne_a reste stocké (= [soi-même] à la création) car il pilote le RLS.
+  // Par défaut chacun ne voit que ses tâches (celles où il est dans
+  // assigne_a, y compris celles qu'on lui a assignées), admin compris.
+  // Le filtre "personne" de la ToDo permet d'en voir d'autres.
   // Filtre d'AFFICHAGE uniquement : appData.taches garde toutes les lignes
   // chargées, sinon SupabaseAdapter.save() prendrait les tâches masquées
   // pour des suppressions.
@@ -4173,6 +4182,18 @@
 
   function mesTaches(list) {
     return list.filter(isMyTache);
+  }
+
+  function tachesSelonPersonne(list) {
+    if (todoFilters.personne === "*") return list;
+    if (todoFilters.personne) return list.filter((t) => (t.assigne_a || []).includes(todoFilters.personne));
+    return mesTaches(list);
+  }
+
+  // Assignés à afficher sur une tâche : tous sauf soi-même (une tâche à moi
+  // seul n'affiche rien, comme avant le partage).
+  function autresAssignes(t) {
+    return (t.assigne_a || []).filter((n) => n !== currentProfile.display_name);
   }
 
   function isTacheDone(t) {
@@ -4218,6 +4239,11 @@
       meta.push(`<span class="todo-meta-date${days !== null && days < 0 ? " overdue" : ""}">📅 ${escapeHtml(tacheDateLabel(tache))}</span>`);
     }
     if (!options.hideAO && ao) meta.push(`<span>${escapeHtml(ao.nom_projet || "(sans nom)")}</span>`);
+    const autres = autresAssignes(tache);
+    if (autres.length) {
+      const avecMoi = (tache.assigne_a || []).includes(currentProfile.display_name);
+      meta.push(`<span class="todo-meta-assignes" title="Assignée à : ${escapeHtml((tache.assigne_a || []).join(", "))}">👥 ${avecMoi ? "avec " : ""}${escapeHtml(autres.join(", "))}</span>`);
+    }
     if (sousTaches.length) meta.push(`<span>☑ ${nbFaites}/${sousTaches.length}</span>`);
     if (tache.notes) meta.push(`<span title="${escapeHtml(tache.notes)}">📝</span>`);
 
@@ -4351,6 +4377,20 @@
   }
 
   function renderTodoFilters() {
+    const pSel = document.getElementById("filter-tache-personne");
+    const others = ASSIGNE_OPTIONS.filter((n) => n !== currentProfile.display_name);
+    if (todoFilters.personne && todoFilters.personne !== "*" && !others.includes(todoFilters.personne)) {
+      todoFilters.personne = "";
+    }
+    pSel.innerHTML = `<option value="">Mes tâches</option>` +
+      others.map((n) => `<option value="${escapeHtml(n)}">Tâches de ${escapeHtml(n)}</option>`).join("") +
+      `<option value="*">Toutes les tâches</option>`;
+    pSel.value = todoFilters.personne;
+    const quick = document.getElementById("todo-quick-title");
+    quick.placeholder = todoFilters.personne && todoFilters.personne !== "*"
+      ? `Ajouter une tâche pour ${todoFilters.personne}… (Entrée pour valider)`
+      : "Ajouter une tâche… (Entrée pour valider)";
+
     const aoSel = document.getElementById("filter-tache-ao");
     aoSel.innerHTML = `<option value="">Tous les AO</option>` +
       appData.aos.map((a) => `<option value="${a.id}">${escapeHtml(a.nom_projet || "(sans nom)")}</option>`).join("");
@@ -4740,7 +4780,7 @@
 
   function renderTodo() {
     renderTodoFilters();
-    const filtered = mesTaches(appData.taches).filter(tacheMatchesFilters);
+    const filtered = tachesSelonPersonne(appData.taches).filter(tacheMatchesFilters);
 
     document.querySelectorAll("#todo-view-switch button").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.view === todoView);
@@ -4772,6 +4812,18 @@
     wireTacheItemEvents(container);
   }
 
+  // Assignés par défaut d'une nouvelle tâche : soi-même, plus la personne
+  // filtrée dans la ToDo ("Tâches de X" → la tâche est pour X).
+  function defaultAssignesNouvelleTache() {
+    const list = [currentProfile.display_name];
+    if (todoFilters.personne && todoFilters.personne !== "*") list.push(todoFilters.personne);
+    return list;
+  }
+
+  document.getElementById("filter-tache-personne").addEventListener("change", (e) => {
+    todoFilters.personne = e.target.value;
+    renderTodo();
+  });
   document.getElementById("filter-tache-ao").addEventListener("change", (e) => {
     todoFilters.ao = e.target.value;
     renderTodo();
@@ -4792,7 +4844,7 @@
       await addTache({
         tache,
         echeance: dateInput.value || null,
-        assigne_a: [currentProfile.display_name],
+        assigne_a: defaultAssignesNouvelleTache(),
         ao_lie: todoFilters.ao || null,
       });
       titleInput.value = "";
@@ -4830,6 +4882,10 @@
     document.getElementById("f-t-tache").value = data.tache || "";
     aoSelect.value = data.ao_lie || presetAoId || "";
     document.getElementById("f-t-fait").checked = isTacheDone(data);
+    renderAssigneCheckboxes(
+      document.getElementById("f-t-assigne_a"),
+      tache ? (data.assigne_a || []) : defaultAssignesNouvelleTache()
+    );
     document.getElementById("f-t-priorite").value = data.priorite || PRIORITE_OPTIONS[0];
     document.getElementById("f-t-date_debut").value = data.date_debut || "";
     document.getElementById("f-t-echeance").value = data.echeance || "";
@@ -4915,13 +4971,25 @@
       date_debut: dates.date_debut,
       echeance: dates.echeance,
       notes: document.getElementById("f-t-notes").value.trim(),
+      assigne_a: checkedAssignees(document.getElementById("f-t-assigne_a")),
     };
+
+    // Une tâche sans assigné ne serait plus visible que par l'admin (RLS).
+    if (!changes.assigne_a.length) {
+      alert("Coche au moins une personne dans « Assigné à ».");
+      return;
+    }
+    // Hors admin, se retirer des assignés fait perdre l'accès à la tâche.
+    if (currentProfile.role !== "admin" && !changes.assigne_a.includes(currentProfile.display_name)
+      && !confirm("Tu n'es pas coché dans « Assigné à » : une fois enregistrée, tu ne verras plus cette tâche. Continuer ?")) {
+      return;
+    }
 
     try {
       if (currentEditingTache) {
         await updateTache(currentEditingTache.id, changes, currentEditingTache.last_modified);
       } else {
-        await addTache({ ...changes, assigne_a: [currentProfile.display_name] });
+        await addTache(changes);
       }
       closeTacheForm();
     } catch (err) {
