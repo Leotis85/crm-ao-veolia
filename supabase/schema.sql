@@ -374,6 +374,15 @@ create policy contrats_all on public.contrats
   using (true)
   with check (true);
 
+-- Contrat auquel se rattache un AO de type Avenant / Renouvellement
+-- (2026-11-12, migrate_ao_contrat.sql). Ajouté ici (et pas dans la table
+-- aos) parce que contrats référence déjà aos : contrainte différée, pour
+-- qu'un même appel à save_crm_data puisse créer les deux dans n'importe
+-- quel ordre.
+alter table public.aos
+  add column contrat_id text references public.contrats (id) on delete set null
+  deferrable initially deferred;
+
 -- ---------------------------------------------------------------------------
 -- 5. Statut global (indicatif uniquement — la concurrence réelle est gérée
 -- par enregistrement via save_crm_data, pas par cette table).
@@ -500,7 +509,7 @@ begin
 
     if expected is null then
       insert into public.aos (
-        id, nom_projet, type_client, priorite, maitre_ouvrage_id, amo_id, assigne_a, phase, type, type_marche, service,
+        id, nom_projet, type_client, priorite, maitre_ouvrage_id, amo_id, contrat_id, assigne_a, phase, type, type_marche, service,
         valeur_estimee_keur, amo, concurrence, date_remise, date_visite, date_prise_effet,
         date_entree_etude,
         lieu, notes, fichiers, resultat, motif_categorie, motif, rappel,
@@ -510,6 +519,7 @@ begin
         coalesce(row_data->>'nom_projet', ''), coalesce(row_data->>'type_client', 'Habitat'),
         coalesce(row_data->>'priorite', ''),
         nullif(row_data->>'maitre_ouvrage_id', ''), nullif(row_data->>'amo_id', ''),
+        nullif(row_data->>'contrat_id', ''),
         public.jsonb_text_array_lenient(row_data->'assigne_a'), coalesce(row_data->>'phase', 'a_venir'),
         coalesce(row_data->>'type', 'Appel d''offres'),
         coalesce((select array(select jsonb_array_elements_text(row_data->'type_marche'))), '{}'),
@@ -534,6 +544,7 @@ begin
         priorite = coalesce(row_data->>'priorite', ''),
         maitre_ouvrage_id = nullif(row_data->>'maitre_ouvrage_id', ''),
         amo_id = nullif(row_data->>'amo_id', ''),
+        contrat_id = nullif(row_data->>'contrat_id', ''),
         assigne_a = public.jsonb_text_array_lenient(row_data->'assigne_a'),
         phase = coalesce(row_data->>'phase', 'a_venir'),
         type = coalesce(row_data->>'type', 'Appel d''offres'),

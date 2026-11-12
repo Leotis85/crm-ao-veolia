@@ -221,6 +221,18 @@ dont l'échéance tombe dans les `alerte_mois` à venir. Écran Contrathèque
 renégocier) + fiche pleine page avec bouton Enregistrer ; les fiches
 entreprise listent aussi leurs contrats.
 
+**Liens pipeline ↔ contrathèque (2026-11-12, `supabase/migrate_ao_contrat.sql`)** :
+- `aos.contrat_id` : contrat auquel se rattache un AO de type Avenant
+  (obligatoire, création bloquée sans) ou Renouvellement. Choisir le
+  contrat reprend son maître d'ouvrage / AMO si l'AO n'en a pas.
+- AO passé en Gagné (barre de phases ou glisser-déposer) :
+  Avenant → proposé à l'ajout dans l'historique d'avenants du contrat ;
+  Renouvellement rattaché → ouvre le contrat pour mettre ses dates à jour ;
+  autre AO → propose de créer le contrat, pré-rempli et **nommé comme
+  l'AO** (`contratPresetFromAO`), avec `ao_origine_id`.
+- Fiche contrat : liste des AO liés + « Lancer un avenant dans le
+  pipeline » (AO Avenant créé en « A faire », rattaché au contrat).
+
 ### 4.4 Rappel (mécanisme, pas une entité) — SUPPRIMÉ de l'interface le 2026-11-11
 
 > Jamais utilisé en pratique : cloche, panneau « Rappels actifs » de l'accueil
@@ -439,7 +451,7 @@ tableau.
 d'« onglet Client ». Ordre : 1. entreprises (fait) ; 2. table + onglet
 Contrathèque (fait) (nom de l'affaire en premier, maître d'ouvrage / AMO en
 champs) ; 3. AO gagné → contrat (titre de l'AO conservé), AO Avenant
-rattaché obligatoirement à un contrat ; 4. renégociations (alerte 12 mois
+rattaché obligatoirement à un contrat (fait) ; 4. renégociations (alerte 12 mois
 avant échéance par défaut, prochaine échéance recalculée pour les tacites
 reconductions, AO de renouvellement en un clic, lignes dans le plan de
 charge) ; 5. import CSV dans l'app (contrathèque + portefeuille + feuille

@@ -1137,6 +1137,11 @@
 
   .ao-taches { flex-shrink: 0; }
   .ao-contacts-group + .ao-contacts-group { margin-top: 10px; }
+  #f-contrat_id-wrap[hidden], .ao-contrat-warning[hidden], #ao-contrat-section[hidden], #contrat-aos-section[hidden] { display: none; }
+  .ao-contrat-warning { font-size: 12px; color: var(--color-danger); font-weight: 600; margin: 0 0 6px 118px; }
+  .ao-contrat-line { font-size: 13px; margin-bottom: 6px; }
+  .ao-contrat-line a { color: var(--color-primary); font-weight: 600; }
+  .kanban-card-contrat { color: var(--color-primary); }
   .ao-contacts-group .list-item { margin-top: 6px; }
   .ao-contacts-group-title { font-size: 12px; font-weight: 700; color: var(--color-text); }
   .ao-contacts-group-title span { font-weight: 400; color: var(--color-text-muted); }
@@ -2255,6 +2260,10 @@
           <label class="ao-field">Type
             <select id="f-type" data-ao-key="type"></select>
           </label>
+          <label class="ao-field" id="f-contrat_id-wrap" hidden>Contrat
+            <select id="f-contrat_id" data-ao-key="contrat_id"></select>
+          </label>
+          <div class="ao-contrat-warning" id="f-contrat-warning" hidden>Un avenant doit être rattaché à un contrat.</div>
           <label class="ao-field">Type de client
             <select id="f-type_client" data-ao-key="type_client"></select>
           </label>
@@ -2313,6 +2322,11 @@
           <h3>Fichiers (liens)</h3>
           <div id="f-fichiers-list"></div>
           <button type="button" class="btn-secondary btn-small" id="f-fichiers-add">+ Ajouter un lien</button>
+        </section>
+
+        <section class="ao-side-section" id="ao-contrat-section" hidden>
+          <h3>Contrathèque</h3>
+          <div id="ao-contrat-info"></div>
         </section>
 
         <section class="ao-side-section" id="ao-contacts-section" hidden>
@@ -2536,6 +2550,14 @@
             <button type="button" class="btn-secondary btn-small" id="contrat-avenant-add">+ Ajouter un avenant</button>
           </div>
           <div id="f-k-avenants"></div>
+        </section>
+
+        <section class="ao-taches" id="contrat-aos-section" hidden>
+          <div class="ao-notes-head">
+            <h3>AO liés</h3>
+            <button type="button" class="btn-secondary btn-small" id="contrat-new-avenant-ao">+ Lancer un avenant dans le pipeline</button>
+          </div>
+          <div class="list-panel" id="contrat-aos-list"></div>
         </section>
       </div>
     </div>
@@ -3383,6 +3405,7 @@
       priorite: "",
       maitre_ouvrage_id: null,
       amo_id: null,
+      contrat_id: null,
       assigne_a: [],
       phase: "a_venir",
       type: "Appel d'offres",
@@ -3677,6 +3700,7 @@
     return mutateData((data) => {
       findOrThrow(data.contrats, id, "Contrat");
       data.contrats = data.contrats.filter((r) => r.id !== id);
+      data.aos.forEach((ao) => { if (ao.contrat_id === id) ao.contrat_id = null; });
     });
   }
 
@@ -3942,6 +3966,7 @@
         </div>
         <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
         <div class="list-item-sub">${escapeHtml([entrepriseNom(ao.maitre_ouvrage_id), ao.type_client, marche].filter(Boolean).join(" · "))}</div>
+        ${findContrat(ao.contrat_id) ? `<div class="list-item-sub kanban-card-contrat">↳ ${escapeHtml(findContrat(ao.contrat_id).nom || "")}</div>` : ""}
         <div class="kanban-card-footer">
           ${days !== null ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : "<span></span>"}
           ${ao.assigne_a.length ? `<span class="badge-type">${escapeHtml(ao.assigne_a.join(", "))}</span>` : ""}
@@ -4327,6 +4352,56 @@
     el.classList.toggle("error", !!isError);
   }
 
+  // Types d'AO rattachés à un contrat existant (2026-11-12) ; obligatoire
+  // pour un avenant.
+  const AO_TYPES_AVEC_CONTRAT = ["Avenant", "Renouvellement"];
+
+  function contratSelectOptions(currentId) {
+    const list = [...(appData.contrats || [])]
+      .filter((c) => c.statut === "Actif" || c.id === currentId)
+      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+    return `<option value="">— Choisir le contrat —</option>`
+      + list.map((c) => `<option value="${c.id}">${escapeHtml(c.nom || "(sans nom)")}${c.statut !== "Actif" ? ` (${escapeHtml(c.statut)})` : ""}</option>`).join("");
+  }
+
+  function findContrat(id) {
+    return id ? (appData.contrats || []).find((c) => c.id === id) || null : null;
+  }
+
+  // Champ Contrat visible pour Avenant / Renouvellement (ou s'il est déjà
+  // renseigné) ; avertissement si un avenant n'en a pas.
+  function updateAOContratField() {
+    const type = ficheEl("f-type").value;
+    const contratId = ficheEl("f-contrat_id").value;
+    ficheEl("f-contrat_id-wrap").hidden = !AO_TYPES_AVEC_CONTRAT.includes(type) && !contratId;
+    ficheEl("f-contrat-warning").hidden = !(type === "Avenant" && !contratId);
+  }
+
+  // Bloc "Contrathèque" de la fiche AO : contrat issu de cet AO (ou à créer
+  // s'il est gagné), et contrat auquel il est rattaché.
+  function renderAOContratSection(ao) {
+    const section = ficheEl("ao-contrat-section");
+    const parts = [];
+    const issu = (appData.contrats || []).find((c) => c.ao_origine_id === ao.id);
+    const rattache = findContrat(ao.contrat_id);
+    if (rattache) parts.push(`<div class="ao-contrat-line">Rattaché à <a href="#" data-open-contrat="${rattache.id}">${escapeHtml(rattache.nom || "(sans nom)")}</a></div>`);
+    if (issu) parts.push(`<div class="ao-contrat-line">Contrat issu de cet AO : <a href="#" data-open-contrat="${issu.id}">${escapeHtml(issu.nom || "(sans nom)")}</a></div>`);
+    if (!issu && ao.resultat === "Gagné" && ao.type !== "Avenant") {
+      parts.push(`<button type="button" class="btn-secondary btn-small" id="ao-create-contrat">+ Créer le contrat</button>`);
+    }
+    section.hidden = !parts.length;
+    ficheEl("ao-contrat-info").innerHTML = parts.join("");
+    ficheEl("ao-contrat-info").querySelectorAll("[data-open-contrat]").forEach((a) => {
+      a.addEventListener("click", (event) => {
+        event.preventDefault();
+        const c = findContrat(a.dataset.openContrat);
+        if (c) openContratForm(c);
+      });
+    });
+    const btn = document.getElementById("ao-create-contrat");
+    if (btn) btn.addEventListener("click", () => openContratForm(null, contratPresetFromAO(ao)));
+  }
+
   // Maître d'ouvrage d'un AO : maître d'ouvrage ou syndic / gestionnaire (les
   // autres rôles restent choisissables s'ils sont déjà affectés).
   const AO_MAITRE_OUVRAGE_ROLES = ["Maître d'ouvrage", "Syndic / Gestionnaire"];
@@ -4355,6 +4430,7 @@
       valeur_estimee_keur: valeur ? Number(valeur) : null,
       maitre_ouvrage_id: entrepriseSelectValue("f-maitre_ouvrage_id", "maitre_ouvrage_id"),
       amo_id: entrepriseSelectValue("f-amo_id", "amo_id"),
+      contrat_id: ficheEl("f-contrat_id").value || null,
       concurrence: ficheEl("f-concurrence").value.trim(),
       lieu: ficheEl("f-lieu").value.trim(),
       date_remise: ficheEl("f-date_remise").value || null,
@@ -4379,6 +4455,10 @@
     set("type_client", () => { ficheEl("f-type_client").value = data.type_client || TYPE_CLIENT_OPTIONS[0]; });
     set("type", () => { ficheEl("f-type").value = data.type || TYPE_AO_OPTIONS[0]; });
     set("priorite", () => { ficheEl("f-priorite").value = data.priorite || ""; });
+    set("contrat_id", () => {
+      ficheEl("f-contrat_id").innerHTML = contratSelectOptions(data.contrat_id);
+      ficheEl("f-contrat_id").value = data.contrat_id || "";
+    });
     set("service", () => { ficheEl("f-service").value = (data.service && data.service[0]) || ""; });
     set("assigne_a", () => renderAssigneCheckboxes(ficheEl("f-assigne_a"), data.assigne_a || []));
     set("type_marche", () => {
@@ -4408,6 +4488,7 @@
     set("motif_categorie", () => { ficheEl("f-motif-categorie").value = data.motif_categorie || ""; });
     set("motif", () => { ficheEl("f-motif").value = data.motif || ""; });
     set("notes", () => { ficheEl("f-notes").value = data.notes || ""; });
+    updateAOContratField();
     set("fichiers", () => {
       const list = ficheEl("f-fichiers-list");
       list.innerHTML = "";
@@ -4524,6 +4605,19 @@
   });
   ficheEl("ao-form").addEventListener("change", (event) => {
     if (event.target.id === "f-service") renderPhaseStepper();
+    if (event.target.id === "f-type" || event.target.id === "f-contrat_id") updateAOContratField();
+    // Contrat choisi : reprend son maître d'ouvrage / AMO si l'AO n'en a pas.
+    if (event.target.id === "f-contrat_id") {
+      const c = findContrat(event.target.value);
+      if (c && !ficheEl("f-maitre_ouvrage_id").value && c.maitre_ouvrage_id) {
+        ficheEl("f-maitre_ouvrage_id").innerHTML = entrepriseSelectOptions(AO_MAITRE_OUVRAGE_ROLES, c.maitre_ouvrage_id);
+        ficheEl("f-maitre_ouvrage_id").value = c.maitre_ouvrage_id;
+      }
+      if (c && !ficheEl("f-amo_id").value && c.amo_id) {
+        ficheEl("f-amo_id").innerHTML = entrepriseSelectOptions(["AMO / BE"], c.amo_id);
+        ficheEl("f-amo_id").value = c.amo_id;
+      }
+    }
     if (!event.target.closest("[data-ao-key]")) return;
     scheduleAOSave(200);
   });
@@ -4549,6 +4643,7 @@
     renderPhaseStepper();
     renderAOTachesSection(latest);
     renderAOContactsSection(latest);
+    renderAOContratSection(latest);
   }
 
   function aoFicheKicker(ao) {
@@ -4558,7 +4653,8 @@
   }
 
   // presetPhase : phase de départ d'un nouvel AO (bouton "+" d'une colonne).
-  function openAOForm(ao, presetPhase) {
+  // presetData : valeurs de départ (ex. avenant lancé depuis un contrat).
+  function openAOForm(ao, presetPhase, presetData = {}) {
     clearTimeout(aoSaveTimer);
     currentEditingAO = ao || null;
     ficheDraftPhase = (!ao && presetPhase) || "a_venir";
@@ -4573,6 +4669,7 @@
     const data = ao || {
       assigne_a: [currentProfile.display_name],
       service: activePipelineService ? [activePipelineService] : [],
+      ...presetData,
     };
     writeAOForm(data);
     aoSaved = readAOForm();
@@ -4586,6 +4683,9 @@
     if (ao) {
       renderAOTachesSection(ao);
       renderAOContactsSection(ao);
+      renderAOContratSection(ao);
+    } else {
+      ficheEl("ao-contrat-section").hidden = true;
     }
     setAOSaveStatus(ao ? "Enregistrement automatique" : "");
     renderPhaseStepper();
@@ -4636,6 +4736,11 @@
       ficheEl("f-nom_projet").focus();
       return;
     }
+    if (values.type === "Avenant" && !values.contrat_id) {
+      setAOSaveStatus("Choisis le contrat de l'avenant", true);
+      ficheEl("f-contrat_id").focus();
+      return;
+    }
     const id = generateId();
     try {
       await addAO({
@@ -4676,6 +4781,10 @@
       // Changement ciblé (phase + résultat) : pas de contrôle de version
       // global, comme l'enregistrement automatique de la fiche AO.
       await updateAO(ao.id, { phase: newPhase, resultat: newResultat, ...extraChanges });
+      if (newResultat === "Gagné" && ao.resultat !== "Gagné") {
+        const latest = appData.aos.find((a) => a.id === ao.id);
+        if (latest) await afterAOWon(latest);
+      }
     } catch (err) {
       if (err instanceof RecordConflictError) {
         alert("Cet AO a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
@@ -4683,6 +4792,63 @@
       } else {
         alert("Erreur : " + err.message);
       }
+    }
+  }
+
+  // Valeurs d'un nouveau contrat créé depuis un AO gagné : le contrat garde
+  // le titre de l'AO (nom de l'affaire).
+  function contratPresetFromAO(ao) {
+    return {
+      nom: ao.nom_projet || "",
+      maitre_ouvrage_id: ao.maitre_ouvrage_id || null,
+      amo_id: ao.amo_id || null,
+      prestations: (ao.type_marche || []).filter((p) => PRESTATION_OPTIONS.includes(p)),
+      date_debut: ao.date_prise_effet || null,
+      montant: ao.valeur_estimee_keur ? Number(ao.valeur_estimee_keur) * 1000 : null,
+      lien: (ao.fichiers || [])[0] || "",
+      ao_origine_id: ao.id,
+      statut: "Actif",
+    };
+  }
+
+  // Passage en Gagné (pipeline ou fiche) : un avenant s'ajoute à l'historique
+  // de son contrat, un renouvellement ouvre le contrat à mettre à jour, un
+  // autre AO propose de créer son contrat.
+  async function afterAOWon(ao) {
+    if (ao.type === "Avenant") {
+      const contrat = findContrat(ao.contrat_id);
+      if (!contrat) {
+        alert("Avenant gagné, mais il n'est rattaché à aucun contrat : choisis son contrat dans la fiche AO pour l'ajouter à la contrathèque.");
+        return;
+      }
+      if ((contrat.avenants || []).some((a) => a.ao_id === ao.id)) return;
+      if (!confirm(`Avenant gagné : l'ajouter à l'historique du contrat « ${contrat.nom} » ?`)) return;
+      const avenant = {
+        id: generateId(),
+        date: ao.date_prise_effet || localDateKey(new Date()),
+        prestations: (ao.type_marche || []).join(" "),
+        statut: "Actif",
+        lien: (ao.fichiers || [])[0] || "",
+        notes: ao.nom_projet || "",
+        ao_id: ao.id,
+      };
+      try {
+        await updateContrat(contrat.id, { avenants: [...(contrat.avenants || []), avenant] });
+      } catch (err) {
+        alert("Erreur lors de l'ajout de l'avenant : " + err.message);
+      }
+      return;
+    }
+    if ((appData.contrats || []).some((c) => c.ao_origine_id === ao.id)) return;
+    const existant = ao.type === "Renouvellement" ? findContrat(ao.contrat_id) : null;
+    if (existant) {
+      if (confirm(`Renouvellement gagné : ouvrir le contrat « ${existant.nom} » pour mettre à jour ses dates ?`)) {
+        openContratForm(existant);
+      }
+      return;
+    }
+    if (confirm(`AO gagné ! Créer le contrat « ${ao.nom_projet || "(sans nom)"} » dans la contrathèque ?`)) {
+      openContratForm(null, contratPresetFromAO(ao));
     }
   }
 
@@ -6322,6 +6488,49 @@
     renderFormAvenants();
   });
 
+  // AO du pipeline liés au contrat : son AO d'origine et les avenants /
+  // renouvellements rattachés.
+  function renderContratAOs() {
+    const c = currentEditingContrat;
+    kEl("contrat-aos-section").hidden = !c;
+    if (!c) return;
+    const aos = appData.aos.filter((a) => a.contrat_id === c.id || a.id === c.ao_origine_id)
+      .sort((a, b) => (b.date_remise || "").localeCompare(a.date_remise || ""));
+    const listEl = kEl("contrat-aos-list");
+    listEl.innerHTML = aos.length
+      ? aos.map((a) => `
+          <div class="list-item clickable-item" data-ao="${a.id}">
+            <div>
+              <div class="list-item-title">${escapeHtml(a.nom_projet || "(sans nom)")}</div>
+              <div class="list-item-sub">${escapeHtml([a.id === c.ao_origine_id ? "AO d'origine" : a.type, phaseLabel(a.phase, (a.service || [])[0]), a.resultat].filter(Boolean).join(" · "))}</div>
+            </div>
+          </div>
+        `).join("")
+      : `<div class="list-item-empty">Aucun AO lié.</div>`;
+    listEl.querySelectorAll("[data-ao]").forEach((row) => {
+      row.addEventListener("click", () => {
+        const ao = appData.aos.find((a) => a.id === row.dataset.ao);
+        if (!ao || !closeContratForm()) return;
+        if (isEntrepriseFormOpen()) closeEntrepriseForm();
+        openAOForm(ao);
+      });
+    });
+  }
+
+  kEl("contrat-new-avenant-ao").addEventListener("click", () => {
+    const c = currentEditingContrat;
+    if (!c || !closeContratForm()) return;
+    if (isEntrepriseFormOpen()) closeEntrepriseForm();
+    showScreen("pipeline");
+    openAOForm(null, "a_faire", {
+      nom_projet: `Avenant – ${c.nom || ""}`,
+      type: "Avenant",
+      contrat_id: c.id,
+      maitre_ouvrage_id: c.maitre_ouvrage_id,
+      amo_id: c.amo_id,
+    });
+  });
+
   function setContratSaveStatus(text, isError) {
     const el = kEl("contrat-save-status");
     el.textContent = text;
@@ -6343,6 +6552,7 @@
     kEl("contrat-form-delete").hidden = !contrat;
     kEl("contrat-form-submit").textContent = contrat ? "Enregistrer" : "Créer le contrat";
     setContratSaveStatus("");
+    renderContratAOs();
     kEl("contrat-modal-overlay").hidden = false;
     document.body.classList.add("fiche-open");
     if (!contrat) kEl("f-k-nom").focus();
@@ -6383,6 +6593,7 @@
         currentEditingContrat = (appData.contrats || []).find((c) => c.id === id) || null;
         kEl("contrat-form-delete").hidden = false;
         kEl("contrat-form-submit").textContent = "Enregistrer";
+        renderContratAOs();
       }
       contratFormSnapshot = JSON.stringify(readContratForm());
       setContratSaveStatus("Enregistré ✓");
