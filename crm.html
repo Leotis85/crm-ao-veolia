@@ -1022,6 +1022,11 @@
   #ao-form #f-notes:focus { outline: none; border-color: var(--color-primary); }
 
   .ao-taches { flex-shrink: 0; }
+  .ao-contacts-group + .ao-contacts-group { margin-top: 10px; }
+  .ao-contacts-group .list-item { margin-top: 6px; }
+  .ao-contacts-group-title { font-size: 12px; font-weight: 700; color: var(--color-text); }
+  .ao-contacts-group-title span { font-weight: 400; color: var(--color-text-muted); }
+  #ao-contacts-add { margin-top: 8px; }
 
   .ao-fiche-create-footer {
     display: flex;
@@ -1427,11 +1432,6 @@
     padding: 40px 16px;
     color: var(--color-text-muted);
     font-size: 13px;
-  }
-
-  #f-c-ao-search {
-    width: 100%;
-    margin-bottom: 8px;
   }
 
   .tag-chips {
@@ -2178,16 +2178,9 @@
         </section>
 
         <section class="ao-side-section" id="ao-contacts-section" hidden>
-          <h3>Contacts liés</h3>
-          <div class="tag-chips" id="ao-contacts-chips"></div>
-          <div class="tag-add-wrap">
-            <button type="button" class="btn-secondary btn-small" id="ao-contacts-link-toggle">+ Lier un contact</button>
-            <div class="tag-dropdown" id="ao-contacts-dropdown" hidden>
-              <input type="text" id="ao-contacts-dropdown-search" placeholder="Rechercher un contact…">
-              <div class="tag-dropdown-list" id="ao-contacts-dropdown-list"></div>
-            </div>
-            <button type="button" class="btn-secondary btn-small" id="ao-contacts-add">+ Nouveau contact</button>
-          </div>
+          <h3>Contacts</h3>
+          <div class="list-panel" id="ao-contacts-list"></div>
+          <button type="button" class="btn-secondary btn-small" id="ao-contacts-add">+ Nouveau contact</button>
         </section>
       </aside>
 
@@ -2361,12 +2354,6 @@
       <label class="block">Notes
         <textarea id="f-c-notes" rows="3"></textarea>
       </label>
-
-      <fieldset>
-        <legend>AO associés</legend>
-        <input type="text" id="f-c-ao-search" placeholder="Rechercher un AO…">
-        <div class="checkbox-group scrollable" id="f-c-ao_lies"></div>
-      </fieldset>
 
       <div class="modal-footer">
         <button type="button" class="btn-danger" id="contact-form-delete" hidden>Supprimer</button>
@@ -4281,7 +4268,6 @@
     ficheEl("ao-create-footer").hidden = !!ao;
     ficheEl("ao-taches-section").hidden = !ao;
     ficheEl("ao-contacts-section").hidden = !ao;
-    ficheEl("ao-contacts-dropdown").hidden = true;
     ficheEl("ao-modal-overlay").classList.toggle("is-new", !ao);
     if (ao) {
       renderAOTachesSection(ao);
@@ -4297,7 +4283,6 @@
   function hideAOFiche() {
     clearTimeout(aoSaveTimer);
     ficheEl("ao-modal-overlay").hidden = true;
-    ficheEl("ao-contacts-dropdown").hidden = true;
     document.body.classList.remove("fiche-open");
     currentEditingAO = null;
   }
@@ -5345,7 +5330,6 @@
   }
 
   function renderContactItem(contact) {
-    const aoCount = (contact.ao_lies || []).length;
     const sub = [contact.fonction, contactOrganisme(contact)].filter(Boolean).map(escapeHtml).join(" · ");
     const initials = contactInitials(contact.nom);
     const color = contactAvatarColor(contact.nom || contact.id);
@@ -5365,7 +5349,6 @@
           ${sub ? `<div class="contact-card-sub">${sub}</div>` : ""}
           ${meta.length ? `<div class="contact-card-meta">${meta.join("")}</div>` : ""}
         </div>
-        ${aoCount ? `<span class="badge-type contact-card-badge">${aoCount} AO</span>` : ""}
       </div>
     `;
   }
@@ -5413,17 +5396,13 @@
     });
   }
 
-  // Recherche unique sur tous les champs utiles (y compris le nom des AO
-  // liés) : chaque mot tapé doit apparaître quelque part, dans n'importe quel
-  // ordre ("eysines mairie" trouve le contact de la Mairie d'Eysines).
+  // Recherche unique sur tous les champs utiles : chaque mot tapé doit
+  // apparaître quelque part, dans n'importe quel ordre ("eysines mairie"
+  // trouve le contact de la Mairie d'Eysines).
   function contactSearchHaystack(c) {
-    const aoNames = (c.ao_lies || [])
-      .map((id) => appData.aos.find((a) => a.id === id))
-      .filter(Boolean)
-      .map((a) => a.nom_projet);
     return normalizeSearchText([
       c.nom, c.fonction, contactOrganisme(c), contactCategorie(c), c.email, c.adresse, c.notes,
-      c.telephone, (c.telephone || "").replace(/\D/g, ""), ...aoNames,
+      c.telephone, (c.telephone || "").replace(/\D/g, ""),
     ].join(" "));
   }
 
@@ -5557,105 +5536,40 @@
     wireContactItemEvents(listEl);
   }
 
-  async function toggleAOContactLink(contactId, aoId, shouldLink) {
-    const contact = appData.contacts.find((c) => c.id === contactId);
-    if (!contact) return;
-    const currentAoLies = contact.ao_lies || [];
-    const newAoLies = shouldLink
-      ? [...currentAoLies, aoId]
-      : currentAoLies.filter((id) => id !== aoId);
-    try {
-      await updateContact(contact.id, { ao_lies: newAoLies }, contact.last_modified);
-    } catch (err) {
-      if (err instanceof RecordConflictError) {
-        alert("Ce contact a été modifié par quelqu'un d'autre entre-temps. Les données ont été rechargées.");
-        await refreshFromStorage();
-      } else {
-        alert("Erreur : " + err.message);
-      }
-    }
-  }
-
-  function renderAOContactsDropdownList(ao, linkedIds) {
-    const query = document.getElementById("ao-contacts-dropdown-search").value.trim().toLowerCase();
-    const available = appData.contacts
-      .filter((c) => !linkedIds.has(c.id))
-      .filter((c) => !query || normalizeSearchText(`${c.nom} ${contactOrganisme(c)}`).includes(normalizeSearchText(query)))
-      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
-
-    const listEl = document.getElementById("ao-contacts-dropdown-list");
-    listEl.innerHTML = available.length
-      ? available.map((c) => `
-          <div class="tag-dropdown-item" data-id="${c.id}">
-            ${escapeHtml(c.nom || "(sans nom)")}${contactOrganisme(c) ? " · " + escapeHtml(contactOrganisme(c)) : ""}
-          </div>
-        `).join("")
-      : `<div class="list-item-empty">Aucun contact disponible.</div>`;
-
-    listEl.querySelectorAll(".tag-dropdown-item").forEach((item) => {
-      item.addEventListener("click", () => toggleAOContactLink(item.dataset.id, ao.id, true));
-    });
-  }
-
+  // Contacts d'un AO = ceux de son maître d'ouvrage et de son AMO / BE
+  // (2026-11-12 : plus de lien direct contact <-> AO, tout passe par
+  // l'entreprise).
   function renderAOContactsSection(ao) {
-    const linked = appData.contacts
-      .filter((c) => (c.ao_lies || []).includes(ao.id))
-      .sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
-
-    const chipsEl = document.getElementById("ao-contacts-chips");
-    chipsEl.innerHTML = linked.length
-      ? linked.map((c) => `
-          <span class="tag-chip">
-            <span class="tag-chip-label" data-id="${c.id}">${escapeHtml(c.nom || "(sans nom)")}${contactOrganisme(c) ? " · " + escapeHtml(contactOrganisme(c)) : ""}</span>
-            <button type="button" class="tag-chip-remove" data-id="${c.id}" title="Retirer">✕</button>
-          </span>
-        `).join("")
-      : `<div class="list-item-empty">Aucun contact lié.</div>`;
-
-    chipsEl.querySelectorAll(".tag-chip-label").forEach((label) => {
-      label.addEventListener("click", () => {
-        const contact = appData.contacts.find((c) => c.id === label.dataset.id);
-        if (contact) openContactForm(contact);
+    const groups = [
+      { id: ao.maitre_ouvrage_id, label: "Maître d'ouvrage" },
+      { id: ao.amo_id, label: "AMO / BE" },
+    ].filter((g) => g.id && findEntreprise(g.id));
+    const listEl = document.getElementById("ao-contacts-list");
+    listEl.innerHTML = groups.length
+      ? groups.map((g) => {
+          const contacts = entrepriseContacts(g.id).sort((a, b) => (a.nom || "").localeCompare(b.nom || ""));
+          return `
+            <div class="ao-contacts-group">
+              <div class="ao-contacts-group-title">${escapeHtml(entrepriseNom(g.id))} <span>· ${g.label}</span></div>
+              ${contacts.length ? contacts.map((c) => `
+                <div class="list-item clickable-item" data-contact="${c.id}">
+                  <div>
+                    <div class="list-item-title">${escapeHtml(c.nom || "(sans nom)")}</div>
+                    <div class="list-item-sub">${escapeHtml([c.fonction, c.telephone, c.email].filter(Boolean).join(" · "))}</div>
+                  </div>
+                </div>
+              `).join("") : `<div class="list-item-empty">Aucun contact.</div>`}
+            </div>
+          `;
+        }).join("")
+      : `<div class="list-item-empty">Choisis un maître d'ouvrage ou un AMO / BE pour voir leurs contacts.</div>`;
+    listEl.querySelectorAll("[data-contact]").forEach((row) => {
+      row.addEventListener("click", () => {
+        const c = appData.contacts.find((x) => x.id === row.dataset.contact);
+        if (c) openContactForm(c);
       });
     });
-    chipsEl.querySelectorAll(".tag-chip-remove").forEach((btn) => {
-      btn.addEventListener("click", (event) => {
-        event.stopPropagation();
-        toggleAOContactLink(btn.dataset.id, ao.id, false);
-      });
-    });
-
-    // Le menu déroulant peut être ouvert pendant un re-rendu (ajout d'un
-    // autre contact, sync cross-onglet...) : on le tient à jour aussi,
-    // sans changer son état ouvert/fermé.
-    renderAOContactsDropdownList(ao, new Set(linked.map((c) => c.id)));
   }
-
-  document.getElementById("ao-contacts-link-toggle").addEventListener("click", (event) => {
-    event.stopPropagation();
-    const dropdown = document.getElementById("ao-contacts-dropdown");
-    dropdown.hidden = !dropdown.hidden;
-    if (!dropdown.hidden && currentEditingAO) {
-      document.getElementById("ao-contacts-dropdown-search").value = "";
-      const linked = appData.contacts.filter((c) => (c.ao_lies || []).includes(currentEditingAO.id));
-      renderAOContactsDropdownList(currentEditingAO, new Set(linked.map((c) => c.id)));
-      document.getElementById("ao-contacts-dropdown-search").focus();
-    }
-  });
-
-  document.getElementById("ao-contacts-dropdown-search").addEventListener("input", () => {
-    if (!currentEditingAO) return;
-    const linked = appData.contacts.filter((c) => (c.ao_lies || []).includes(currentEditingAO.id));
-    renderAOContactsDropdownList(currentEditingAO, new Set(linked.map((c) => c.id)));
-  });
-
-  document.addEventListener("click", (event) => {
-    const dropdown = document.getElementById("ao-contacts-dropdown");
-    const toggle = document.getElementById("ao-contacts-link-toggle");
-    if (!dropdown.hidden && !dropdown.contains(event.target) && event.target !== toggle) {
-      dropdown.hidden = true;
-    }
-  });
 
   document.getElementById("filter-contact-search").addEventListener("input", (e) => {
     contactSearch = e.target.value;
@@ -5663,7 +5577,8 @@
   });
   document.getElementById("btn-new-contact").addEventListener("click", () => openContactForm(null));
   document.getElementById("ao-contacts-add").addEventListener("click", () => {
-    if (currentEditingAO) openContactForm(null, currentEditingAO.id);
+    if (!currentEditingAO) return;
+    openContactForm(null, null, currentEditingAO.maitre_ouvrage_id || currentEditingAO.amo_id || null);
   });
   document.querySelectorAll("#contacts-view-switch button").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -5851,8 +5766,10 @@
   wireEntrepriseSelect(document.getElementById("f-c-entreprise_id"), "");
   document.getElementById("f-c-entreprise_id").addEventListener("change", updateContactCategorieVisibility);
 
-  // presetEntrepriseId : contact créé depuis la fiche d'une entreprise.
-  function openContactForm(contact, presetAoId, presetEntrepriseId) {
+  // presetEntrepriseId : contact créé depuis la fiche d'une entreprise ou
+  // d'un AO. (Le 2e paramètre, ancien AO pré-coché, n'est plus utilisé : les
+  // contacts ne sont plus liés aux AO que via leur entreprise, 2026-11-12.)
+  function openContactForm(contact, _unused, presetEntrepriseId) {
     currentEditingContact = contact || null;
     document.getElementById("contact-modal-title").textContent = contact ? "Modifier le contact" : "Nouveau contact";
     document.getElementById("contact-form-delete").hidden = !contact;
@@ -5874,15 +5791,6 @@
     document.getElementById("f-c-adresse").value = data.adresse || "";
     document.getElementById("f-c-notes").value = data.notes || "";
 
-    const aoContainer = document.getElementById("f-c-ao_lies");
-    const selected = new Set(data.ao_lies || (presetAoId ? [presetAoId] : []));
-    aoContainer.innerHTML = appData.aos.length
-      ? appData.aos.map((a) => `
-          <label class="checkbox-inline"><input type="checkbox" class="f-c-ao-item" value="${a.id}" ${selected.has(a.id) ? "checked" : ""}> ${escapeHtml(a.nom_projet || "(sans nom)")}</label>
-        `).join("")
-      : `<div class="list-item-empty">Aucun AO créé pour l'instant.</div>`;
-    document.getElementById("f-c-ao-search").value = "";
-
     updateContactCategorieVisibility();
     document.getElementById("contact-modal-overlay").hidden = false;
   }
@@ -5891,13 +5799,6 @@
     document.getElementById("contact-modal-overlay").hidden = true;
     currentEditingContact = null;
   }
-
-  document.getElementById("f-c-ao-search").addEventListener("input", (event) => {
-    const q = event.target.value.trim().toLowerCase();
-    document.querySelectorAll("#f-c-ao_lies label").forEach((label) => {
-      label.style.display = !q || label.textContent.toLowerCase().includes(q) ? "" : "none";
-    });
-  });
 
   document.getElementById("contact-modal-close").addEventListener("click", closeContactForm);
   document.getElementById("contact-form-cancel").addEventListener("click", closeContactForm);
@@ -5912,7 +5813,6 @@
 
   document.getElementById("contact-form").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const selectedAO = Array.from(document.querySelectorAll(".f-c-ao-item:checked")).map((cb) => cb.value);
     const changes = {
       nom: document.getElementById("f-c-nom").value.trim(),
       fonction: document.getElementById("f-c-fonction").value.trim(),
@@ -5925,7 +5825,6 @@
       email: document.getElementById("f-c-email").value.trim(),
       adresse: document.getElementById("f-c-adresse").value.trim(),
       notes: document.getElementById("f-c-notes").value.trim(),
-      ao_lies: selectedAO,
     };
 
     try {

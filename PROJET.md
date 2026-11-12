@@ -183,7 +183,10 @@ comme catégorie ; sans entreprise il garde sa propre `categorie`. Les
 anciennes colonnes texte (`aos.amo`, `contacts.organisme`) sont conservées :
 la migration a créé une entreprise par valeur distincte (variantes de
 casse / accents / espaces regroupées) et rattaché AO et contacts.
-Écran : Contacts > vue **Entreprises** (tuiles par rôle, fiche avec ses
+Plus de lien direct contact <-> AO (2026-11-12) : la fiche AO affiche les
+contacts de son maître d'ouvrage et de son AMO ; les colonnes
+`contacts.ao_lies` / `aos.contacts_lies` restent en base mais ne sont plus
+modifiées. Écran : Contacts > vue **Entreprises** (tuiles par rôle, fiche avec ses
 contacts et les AO où elle intervient) ; fiche AO : listes déroulantes
 « Maître d'ouvrage » et « AMO / BE » (avec création à la volée).
 
