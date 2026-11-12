@@ -234,6 +234,16 @@ entreprise listent aussi leurs contrats.
 - Fiche contrat : liste des AO liés + « Lancer un avenant dans le
   pipeline » (AO Avenant créé en « A faire », rattaché au contrat).
 
+**Renégociations (2026-11-12)** : bloc « Renégociations à venir » à
+l'accueil (contrats dans leur fenêtre d'alerte, triés par échéance) ;
+bouton « Lancer le renouvellement » (accueil + bandeau de la fiche contrat)
+qui crée l'AO « Renouvellement » en « A venir », même nom d'affaire,
+rattaché au contrat, prise d'effet = lendemain de l'échéance ; tant que cet
+AO est en cours, le contrat est marqué « Renouvellement en cours » et le
+bouton ouvre l'AO existant. Plan de charge : section « Renégociations »
+(barre de l'ouverture de l'alerte à l'échéance ; orange à lancer, bleu en
+cours). Aucune colonne en base : tout est calculé.
+
 ### 4.4 Rappel (mécanisme, pas une entité) — SUPPRIMÉ de l'interface le 2026-11-11
 
 > Jamais utilisé en pratique : cloche, panneau « Rappels actifs » de l'accueil
@@ -455,7 +465,7 @@ champs) ; 3. AO gagné → contrat (titre de l'AO conservé), AO Avenant
 rattaché obligatoirement à un contrat (fait) ; 4. renégociations (alerte 12 mois
 avant échéance par défaut, prochaine échéance recalculée pour les tacites
 reconductions, AO de renouvellement en un clic, lignes dans le plan de
-charge) ; 5. import CSV dans l'app (contrathèque + portefeuille + feuille
+charge — fait) ; 5. import CSV dans l'app (contrathèque + portefeuille + feuille
 Commerce 2027), jamais de données dans le dépôt (public). Secteurs
 B1/B2/B3 = découpage de l'agence, champ des contrats pour le reporting.
 Jonzac Énergies Vertes reste hors import.

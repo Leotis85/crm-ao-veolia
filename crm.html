@@ -235,6 +235,11 @@
   .gantt-cell.bar-end { opacity: 1; border-radius: 0 5px 5px 0; margin-right: 1px; }
   .gantt-cell.bar-start.bar-end { border-radius: 5px; }
 
+  .gantt-row.renego .gantt-cell.filled { background-color: #f59e0b; }
+  .gantt-row.renego:hover .gantt-cell.filled { background-color: #b45309; }
+  .gantt-row.renego-encours .gantt-cell.filled { background-color: #60a5fa; }
+  .gantt-row.renego-encours:hover .gantt-cell.filled { background-color: #2563eb; }
+
   .gantt-empty, .gantt-footnote {
     font-size: 13px;
     color: var(--color-text-muted);
@@ -671,6 +676,10 @@
   }
 
   .echeance-badge.echeance-renego { background: #f59e0b; color: #fff; font-weight: 600; }
+  .echeance-badge.echeance-encours { background: #dbeafe; color: #1e40af; font-weight: 600; }
+  .contrat-echeance-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .renego-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  #accueil-renego-panel[hidden] { display: none; }
   .echeance-badge.echeance-verifier { background: var(--color-danger); color: #fff; }
   .echeance-badge.echeance-inconnue { background: transparent; color: var(--color-text-muted); padding-left: 0; }
 
@@ -2082,6 +2091,10 @@
   <section class="screen active" id="screen-accueil">
     <h1>Accueil</h1>
     <div class="stats-grid" id="accueil-stats"></div>
+    <div class="panel" id="accueil-renego-panel" hidden>
+      <h2>Renégociations à venir</h2>
+      <div class="list-panel" id="accueil-renego"></div>
+    </div>
     <div class="home-columns">
       <div class="panel">
         <h2>Échéances proches</h2>
@@ -2113,7 +2126,7 @@
 
   <section class="screen" id="screen-plan-charge">
     <h1>Plan de charge</h1>
-    <p class="placeholder-hint">Une ligne par AO en cours : cases remplies de la semaine d'entrée en étude à celle de la remise (repère foncé). Colonne rouge = semaine en cours.</p>
+    <p class="placeholder-hint">Une ligne par AO en cours : cases remplies de la semaine d'entrée en étude à celle de la remise (repère foncé). Colonne rouge = semaine en cours. Renégociations : de l'ouverture de l'alerte à l'échéance du contrat (orange = à lancer, bleu = renouvellement en cours).</p>
     <div class="gantt-scroll" id="gantt-scroll">
       <div id="gantt-container"></div>
     </div>
@@ -3313,6 +3326,37 @@
     return date >= today && date <= addMonthsKey(today, Number(c.alerte_mois) || 12);
   }
 
+  // AO de renouvellement encore en cours rattaché au contrat (pour ne pas
+  // relancer deux fois la même renégociation).
+  function contratRenouvellementEnCours(c) {
+    return appData.aos.find((a) => a.contrat_id === c.id && a.type === "Renouvellement" && a.resultat === "En cours") || null;
+  }
+
+  // Crée (dans la fiche AO, à valider) l'AO "Renouvellement" d'un contrat :
+  // même nom d'affaire, rattaché au contrat, colonne "A venir".
+  function lancerRenouvellement(c) {
+    const existing = contratRenouvellementEnCours(c);
+    if (existing) {
+      showScreen("pipeline");
+      openAOForm(existing);
+      return;
+    }
+    const { date } = contratProchaineEcheance(c);
+    showScreen("pipeline");
+    openAOForm(null, "a_venir", {
+      nom_projet: c.nom || "",
+      type: "Renouvellement",
+      contrat_id: c.id,
+      maitre_ouvrage_id: c.maitre_ouvrage_id,
+      amo_id: c.amo_id,
+      type_marche: (c.prestations || []).filter((p) => TYPE_MARCHE_OPTIONS.includes(p)),
+      date_prise_effet: date ? addDaysToKey(date, 1) : null,
+      duree_contrat_mois: c.duree_mois || null,
+      valeur_estimee_keur: c.montant ? Math.round(Number(c.montant) / 100) / 10 : null,
+      service: ["Commerce"],
+    });
+  }
+
   function entrepriseContrats(id) {
     return (appData.contrats || []).filter((c) => c.maitre_ouvrage_id === id || c.amo_id === id);
   }
@@ -3847,6 +3891,41 @@
       ? highPriority.map((t) => renderTacheItem(t)).join("")
       : `<div class="list-item-empty">Aucune tâche prioritaire en cours.</div>`;
     wireTacheItemEvents(prioritesEl);
+
+    renderAccueilRenego();
+  }
+
+  // Contrats entrés dans leur fenêtre d'alerte (contrathèque), triés par
+  // échéance, avec lancement du renouvellement en un clic.
+  function renderAccueilRenego() {
+    const items = (appData.contrats || []).filter(contratARenegocier)
+      .map((c) => ({ c, ech: contratProchaineEcheance(c), renouv: contratRenouvellementEnCours(c) }))
+      .sort((a, b) => a.ech.date.localeCompare(b.ech.date));
+    document.getElementById("accueil-renego-panel").hidden = !items.length;
+    const el = document.getElementById("accueil-renego");
+    el.innerHTML = items.map(({ c, ech, renouv }) => {
+      const months = Math.round(daysBetweenKeys(localDateKey(new Date()), ech.date) / 30.44);
+      return `
+        <div class="list-item clickable-item" data-contrat="${c.id}">
+          <div>
+            <div class="list-item-title">${escapeHtml(c.nom || "(sans nom)")}</div>
+            <div class="list-item-sub">${escapeHtml([entrepriseNom(c.maitre_ouvrage_id), (c.prestations || []).join(" "), c.montant ? formatEuros(c.montant) : ""].filter(Boolean).join(" · "))}</div>
+          </div>
+          <div class="renego-right">
+            <span class="days-badge ${months <= 3 ? "days-urgent" : months <= 6 ? "days-soon" : ""}">échéance ${formatDate(ech.date)} · ${months <= 0 ? "ce mois-ci" : `dans ${months} mois`}</span>
+            <button type="button" class="btn-small ${renouv ? "btn-secondary" : "btn-primary"}" data-renouv="${c.id}">${renouv ? "Voir l'AO" : "Lancer le renouvellement"}</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+    el.querySelectorAll("[data-contrat]").forEach((row) => {
+      row.addEventListener("click", (event) => {
+        const c = findContrat(row.dataset.contrat);
+        if (!c) return;
+        if (event.target.closest("[data-renouv]")) lancerRenouvellement(c);
+        else openContratForm(c);
+      });
+    });
   }
 
   // ---------------------------------------------------------------------
@@ -4152,10 +4231,8 @@
     `;
   }
 
-  function renderGanttRow(ao, weeks, todayKey) {
-    const start = ao.date_entree_etude;
-    const end = ao.date_remise;
-    const cells = weeks.map((w, i) => {
+  function renderGanttCells(start, end, weeks, todayKey) {
+    return weeks.map((w, i) => {
       const classes = ["gantt-cell"];
       if (i === 0 || weeks[i - 1].monthKey !== w.monthKey) classes.push("month-start");
       if (todayKey >= w.startKey && todayKey <= w.endKey) classes.push("is-today");
@@ -4167,6 +4244,12 @@
       }
       return `<div class="${classes.join(" ")}"></div>`;
     }).join("");
+  }
+
+  function renderGanttRow(ao, weeks, todayKey) {
+    const start = ao.date_entree_etude;
+    const end = ao.date_remise;
+    const cells = renderGanttCells(start, end, weeks, todayKey);
     const days = daysBetween(end);
     const sub = [`remise ${formatDate(end)}`];
     if (ao.assigne_a.length) sub.push(ao.assigne_a.join(", "));
@@ -4220,8 +4303,48 @@
       `;
     }).join("");
 
+    // Renégociations (contrathèque) : de l'ouverture de la fenêtre d'alerte
+    // jusqu'à l'échéance, pour anticiper la charge qu'elles vont créer.
+    const renegos = (appData.contrats || [])
+      .filter((c) => c.statut === "Actif")
+      .map((c) => {
+        const { date } = contratProchaineEcheance(c);
+        return date ? { c, end: date, start: addMonthsKey(date, -(Number(c.alerte_mois) || 12)) } : null;
+      })
+      .filter((x) => x && x.end >= rangeStart && x.start <= rangeEnd)
+      .sort((a, b) => a.end.localeCompare(b.end));
+    if (renegos.length) {
+      container.insertAdjacentHTML("beforeend", `
+        <div class="gantt-service-section">
+          <h2>Renégociations <span class="todo-group-count">${renegos.length}</span></h2>
+          <div class="gantt-table" style="${gridStyle}">
+            ${renderGanttHeader(weeks, todayKey)}
+            ${renegos.map(({ c, start, end }) => {
+              const renouv = contratRenouvellementEnCours(c);
+              const sub = [`échéance ${formatDate(end)}`, entrepriseNom(c.maitre_ouvrage_id), renouv ? "renouvellement en cours" : ""].filter(Boolean);
+              return `
+                <div class="gantt-row renego${renouv ? " renego-encours" : ""}" data-contrat="${c.id}" style="grid-column: 1 / -1;"
+                     title="${escapeHtml(c.nom || "")} — alerte à partir du ${formatDate(start)}, échéance ${formatDate(end)}">
+                  <div class="gantt-label">
+                    <div class="gantt-label-title">${escapeHtml(c.nom || "(sans nom)")}</div>
+                    <div class="gantt-label-sub">${escapeHtml(sub.join(" · "))}</div>
+                  </div>
+                  ${renderGanttCells(start, end, weeks, todayKey)}
+                </div>
+              `;
+            }).join("")}
+          </div>
+        </div>
+      `);
+    }
+
     container.querySelectorAll(".gantt-row").forEach((row) => {
       row.addEventListener("click", () => {
+        if (row.dataset.contrat) {
+          const c = findContrat(row.dataset.contrat);
+          if (c) openContratForm(c);
+          return;
+        }
         const ao = appData.aos.find((a) => a.id === row.dataset.id);
         if (ao) openAOForm(ao);
       });
@@ -6265,7 +6388,11 @@
     if (c.statut !== "Actif") return { label: "", cls: "", date };
     const months = Math.round(daysBetweenKeys(localDateKey(new Date()), date) / 30.44);
     const when = months <= 0 ? "ce mois-ci" : `dans ${months} mois`;
-    if (contratARenegocier(c)) return { label: `À renégocier · ${when}`, cls: "echeance-renego", date };
+    if (contratARenegocier(c)) {
+      return contratRenouvellementEnCours(c)
+        ? { label: `Renouvellement en cours · ${when}`, cls: "echeance-encours", date }
+        : { label: `À renégocier · ${when}`, cls: "echeance-renego", date };
+    }
     return { label: when, cls: "", date };
   }
 
@@ -6441,9 +6568,13 @@
     const ech = contratEcheanceBadge(draft);
     const bar = kEl("contrat-echeance-bar");
     bar.className = `contrat-echeance-bar ${ech.cls}`;
-    bar.innerHTML = ech.date
-      ? `Prochaine échéance : <strong>${formatDate(ech.date)}</strong>${ech.label ? ` · ${escapeHtml(ech.label)}` : ""}${draft.reconduction === "Tacite" && draft.duree_reconduction_mois ? ` <span class="contrat-echeance-hint">(tacite reconduction de ${draft.duree_reconduction_mois} mois)</span>` : ""}`
-      : "Prochaine échéance : renseigne la date de fin, ou le début et la durée.";
+    const renouv = currentEditingContrat ? contratRenouvellementEnCours(currentEditingContrat) : null;
+    const renouvBtn = currentEditingContrat && draft.statut === "Actif"
+      ? `<button type="button" class="btn-secondary btn-small contrat-renouv-btn" id="contrat-renouv-btn">${renouv ? "Voir l'AO de renouvellement" : "Lancer le renouvellement"}</button>`
+      : "";
+    bar.innerHTML = (ech.date
+      ? `<span>Prochaine échéance : <strong>${formatDate(ech.date)}</strong>${ech.label ? ` · ${escapeHtml(ech.label)}` : ""}${draft.reconduction === "Tacite" && draft.duree_reconduction_mois ? ` <span class="contrat-echeance-hint">(tacite reconduction de ${draft.duree_reconduction_mois} mois)</span>` : ""}</span>`
+      : "<span>Prochaine échéance : renseigne la date de fin, ou le début et la durée.</span>") + renouvBtn;
     const link = kEl("f-k-lien-open");
     link.hidden = !draft.lien;
     if (draft.lien) link.href = draft.lien;
@@ -6489,6 +6620,14 @@
       });
     });
   }
+
+  kEl("contrat-echeance-bar").addEventListener("click", (event) => {
+    if (!event.target.closest("#contrat-renouv-btn")) return;
+    const c = currentEditingContrat;
+    if (!c || !closeContratForm()) return;
+    if (isEntrepriseFormOpen()) closeEntrepriseForm();
+    lancerRenouvellement(c);
+  });
 
   kEl("contrat-avenant-add").addEventListener("click", () => {
     formAvenants.push({ id: generateId(), date: localDateKey(new Date()), prestations: "", statut: "Actif", lien: "", notes: "", ao_id: null });
