@@ -2300,6 +2300,9 @@
           <label class="ao-field">Prise d'effet
             <input type="date" id="f-date_prise_effet" data-ao-key="date_prise_effet">
           </label>
+          <label class="ao-field" title="Durée du futur contrat, reprise dans la contrathèque si l'AO est gagné">Durée contrat (mois)
+            <input type="number" id="f-duree_contrat_mois" data-ao-key="duree_contrat_mois" min="0" placeholder="—">
+          </label>
           <label class="ao-field" title="Posée automatiquement à la sortie de « A venir », modifiable">Entrée en étude
             <input type="date" id="f-date_entree_etude" data-ao-key="date_entree_etude">
           </label>
@@ -3417,6 +3420,7 @@
       date_remise: null,
       date_visite: null,
       date_prise_effet: null,
+      duree_contrat_mois: null,
       date_entree_etude: null,
       lieu: "",
       notes: "",
@@ -4436,6 +4440,7 @@
       date_remise: ficheEl("f-date_remise").value || null,
       date_visite: ficheEl("f-date_visite").value || null,
       date_prise_effet: ficheEl("f-date_prise_effet").value || null,
+      duree_contrat_mois: ficheEl("f-duree_contrat_mois").value ? Number(ficheEl("f-duree_contrat_mois").value) : null,
       date_entree_etude: ficheEl("f-date_entree_etude").value || null,
       resultat: ficheEl("f-resultat").value,
       motif_categorie: ficheEl("f-motif-categorie").value,
@@ -4483,6 +4488,7 @@
     set("date_remise", () => { ficheEl("f-date_remise").value = data.date_remise || ""; });
     set("date_visite", () => { ficheEl("f-date_visite").value = data.date_visite || ""; });
     set("date_prise_effet", () => { ficheEl("f-date_prise_effet").value = data.date_prise_effet || ""; });
+    set("duree_contrat_mois", () => { ficheEl("f-duree_contrat_mois").value = data.duree_contrat_mois ?? ""; });
     set("date_entree_etude", () => { ficheEl("f-date_entree_etude").value = data.date_entree_etude || ""; });
     set("resultat", () => { ficheEl("f-resultat").value = data.resultat || RESULTAT_OPTIONS[0]; });
     set("motif_categorie", () => { ficheEl("f-motif-categorie").value = data.motif_categorie || ""; });
@@ -4804,6 +4810,7 @@
       amo_id: ao.amo_id || null,
       prestations: (ao.type_marche || []).filter((p) => PRESTATION_OPTIONS.includes(p)),
       date_debut: ao.date_prise_effet || null,
+      duree_mois: ao.duree_contrat_mois || null,
       montant: ao.valeur_estimee_keur ? Number(ao.valeur_estimee_keur) * 1000 : null,
       lien: (ao.fichiers || [])[0] || "",
       ao_origine_id: ao.id,

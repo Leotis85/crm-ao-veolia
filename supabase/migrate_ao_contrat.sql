@@ -1,6 +1,7 @@
 -- Migration : rattachement d'un AO (Avenant / Renouvellement) à un contrat
--- de la contrathèque (2026-11-12). Ajoute aos.contrat_id et remplace
--- save_crm_data. Aucune donnée existante modifiée. Ré-exécutable.
+-- de la contrathèque + durée du futur contrat sur l'AO (2026-11-12).
+-- Ajoute aos.contrat_id et aos.duree_contrat_mois, remplace save_crm_data.
+-- Aucune donnée existante modifiée. Ré-exécutable sans danger.
 --
 -- À exécuter dans le SQL Editor Supabase AVANT de publier la nouvelle
 -- version de crm.html.
@@ -9,7 +10,10 @@ alter table public.aos
   add column if not exists contrat_id text references public.contrats (id) on delete set null
   deferrable initially deferred;
 
--- Remplace save_crm_data (ajout de aos.contrat_id).
+alter table public.aos
+  add column if not exists duree_contrat_mois integer;
+
+-- Remplace save_crm_data (aos.contrat_id et aos.duree_contrat_mois).
 -- Convertit une valeur JSON en text[] en acceptant aussi l'ancien format
 -- texte simple (ex. "Mathis" -> {Mathis}, "" ou null -> {}) : un onglet
 -- resté ouvert sur une ancienne version de crm.html peut encore envoyer
@@ -96,7 +100,7 @@ begin
     if expected is null then
       insert into public.aos (
         id, nom_projet, type_client, priorite, maitre_ouvrage_id, amo_id, contrat_id, assigne_a, phase, type, type_marche, service,
-        valeur_estimee_keur, amo, concurrence, date_remise, date_visite, date_prise_effet,
+        valeur_estimee_keur, amo, concurrence, date_remise, date_visite, date_prise_effet, duree_contrat_mois,
         date_entree_etude,
         lieu, notes, fichiers, resultat, motif_categorie, motif, rappel,
         contacts_lies, taches_liees, last_modified, modified_by
@@ -114,6 +118,7 @@ begin
         coalesce(row_data->>'amo', ''), coalesce(row_data->>'concurrence', ''),
         nullif(row_data->>'date_remise', '')::date, nullif(row_data->>'date_visite', '')::date,
         nullif(row_data->>'date_prise_effet', '')::date,
+        nullif(row_data->>'duree_contrat_mois', '')::integer,
         nullif(row_data->>'date_entree_etude', '')::date,
         coalesce(row_data->>'lieu', ''), coalesce(row_data->>'notes', ''),
         coalesce((select array(select jsonb_array_elements_text(row_data->'fichiers'))), '{}'),
@@ -142,6 +147,7 @@ begin
         date_remise = nullif(row_data->>'date_remise', '')::date,
         date_visite = nullif(row_data->>'date_visite', '')::date,
         date_prise_effet = nullif(row_data->>'date_prise_effet', '')::date,
+        duree_contrat_mois = nullif(row_data->>'duree_contrat_mois', '')::integer,
         date_entree_etude = nullif(row_data->>'date_entree_etude', '')::date,
         lieu = coalesce(row_data->>'lieu', ''),
         notes = coalesce(row_data->>'notes', ''),

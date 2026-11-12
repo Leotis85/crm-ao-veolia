@@ -179,6 +179,9 @@ create table public.aos (
   date_remise date,
   date_visite date,
   date_prise_effet date,
+  -- Durée du futur contrat, en mois (2026-11-12) : reprise dans le contrat
+  -- créé quand l'AO est gagné.
+  duree_contrat_mois integer,
   -- Posée automatiquement (côté client) à la première sortie de "a_venir",
   -- mais reste un champ normal modifiable à la main (plan de charge, §9/§10
   -- PROJET.md) : pas d'historique fiable pour les AO déjà avancés avant
@@ -510,7 +513,7 @@ begin
     if expected is null then
       insert into public.aos (
         id, nom_projet, type_client, priorite, maitre_ouvrage_id, amo_id, contrat_id, assigne_a, phase, type, type_marche, service,
-        valeur_estimee_keur, amo, concurrence, date_remise, date_visite, date_prise_effet,
+        valeur_estimee_keur, amo, concurrence, date_remise, date_visite, date_prise_effet, duree_contrat_mois,
         date_entree_etude,
         lieu, notes, fichiers, resultat, motif_categorie, motif, rappel,
         contacts_lies, taches_liees, last_modified, modified_by
@@ -528,6 +531,7 @@ begin
         coalesce(row_data->>'amo', ''), coalesce(row_data->>'concurrence', ''),
         nullif(row_data->>'date_remise', '')::date, nullif(row_data->>'date_visite', '')::date,
         nullif(row_data->>'date_prise_effet', '')::date,
+        nullif(row_data->>'duree_contrat_mois', '')::integer,
         nullif(row_data->>'date_entree_etude', '')::date,
         coalesce(row_data->>'lieu', ''), coalesce(row_data->>'notes', ''),
         coalesce((select array(select jsonb_array_elements_text(row_data->'fichiers'))), '{}'),
@@ -556,6 +560,7 @@ begin
         date_remise = nullif(row_data->>'date_remise', '')::date,
         date_visite = nullif(row_data->>'date_visite', '')::date,
         date_prise_effet = nullif(row_data->>'date_prise_effet', '')::date,
+        duree_contrat_mois = nullif(row_data->>'duree_contrat_mois', '')::integer,
         date_entree_etude = nullif(row_data->>'date_entree_etude', '')::date,
         lieu = coalesce(row_data->>'lieu', ''),
         notes = coalesce(row_data->>'notes', ''),

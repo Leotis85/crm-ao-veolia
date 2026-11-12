@@ -100,6 +100,7 @@ Repris du Pipeline Notion existant, enrichi.
 | `date_remise` | date | date limite de remise de l'offre |
 | `date_visite` | date | visite éventuelle |
 | `date_prise_effet` | date | prise d'effet du contrat |
+| `duree_contrat_mois` | nombre | ajouté le 2026-11-12 (`supabase/migrate_ao_contrat.sql`) : durée du futur contrat, reprise comme durée du contrat créé quand l'AO est gagné |
 | `date_entree_etude` | date | ajouté le 2026-10-07 : posée automatiquement à la première sortie de la phase "A venir", reste modifiable à la main. Alimente le plan de charge (§10) |
 | `lieu` | texte | localisation |
 | `notes` | texte long | |
