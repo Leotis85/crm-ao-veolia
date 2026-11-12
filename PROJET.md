@@ -200,8 +200,8 @@ changer).
 |---|---|---|
 | `nom` | texte | nom de l'affaire |
 | `maitre_ouvrage_id`, `amo_id` | relation | vers entreprises |
-| `secteur` | texte | découpage de l'agence (B1, B2, B3…), pour le reporting |
-| `prestations` | multi-liste | P0, P1, P2, P3, P3R, P5, PFI, R1, R2, MTI, CPE, GTR, Gaz, Gestion |
+| `secteur` | liste | découpage de l'agence : B1, B2, B3 (reporting) |
+| `prestations` | multi-liste | P1, P2, P3, P5, PFI, R1, R2, CPE |
 | `statut` | liste | Actif, Terminé, Résilié |
 | `date_debut`, `duree_mois`, `date_fin` | date / nombre | fin = y compris reconductions déjà prévues |
 | `reconduction`, `duree_reconduction_mois` | liste / nombre | Tacite, Expresse, Non |

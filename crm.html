@@ -2476,7 +2476,7 @@
             <select id="f-k-amo_id"></select>
           </label>
           <label class="ao-field">Secteur
-            <input type="text" id="f-k-secteur" list="contrat-secteurs" placeholder="—">
+            <select id="f-k-secteur"></select>
           </label>
           <label class="ao-field">Montant (€)
             <input type="number" id="f-k-montant" step="0.01" placeholder="—">
@@ -2544,7 +2544,6 @@
       <button type="button" class="btn-secondary" id="contrat-form-cancel">Annuler</button>
       <button type="submit" class="btn-primary" id="contrat-form-submit">Enregistrer</button>
     </div>
-    <datalist id="contrat-secteurs"></datalist>
   </form>
 </div>
 
@@ -3247,10 +3246,11 @@
   // Contrathèque (2026-11-12).
   const CONTRAT_STATUTS = ["Actif", "Terminé", "Résilié"];
   const CONTRAT_RECONDUCTIONS = ["Tacite", "Expresse", "Non"];
-  // Plus large que TYPE_MARCHE_OPTIONS des AO : codes rencontrés dans la
-  // contrathèque de l'agence.
-  const PRESTATION_OPTIONS = ["P0", "P1", "P2", "P3", "P3R", "P5", "PFI", "R1", "R2", "MTI", "CPE", "GTR", "Gaz", "Gestion"];
-  const SECTEUR_SUGGESTIONS = ["B1", "B2", "B3", "B4", "B6", "K0", "MULTI"];
+  // Prestations d'un contrat. Une valeur hors liste déjà enregistrée reste
+  // affichée (cochée) dans la fiche pour ne pas être perdue.
+  const PRESTATION_OPTIONS = ["P1", "P2", "P3", "P5", "PFI", "R1", "R2", "CPE"];
+  // Découpage de l'agence en 3 secteurs (reporting).
+  const SECTEUR_OPTIONS = ["B1", "B2", "B3"];
 
   // Ajoute n mois à une date "AAAA-MM-JJ" (jour ramené au dernier du mois
   // si besoin : 31 janv. + 1 mois = 28/29 févr.).
@@ -6123,7 +6123,7 @@
         + CONTRAT_STATUTS.map((st) => `<option value="${st}">${st === "Actif" ? "Actifs" : st === "Terminé" ? "Terminés" : "Résiliés"}</option>`).join("");
     }
     statutSel.value = contratFilters.statut;
-    const secteurs = [...new Set((appData.contrats || []).map((c) => c.secteur).filter(Boolean))].sort();
+    const secteurs = SECTEUR_OPTIONS;
     const secteurSel = document.getElementById("filter-contrat-secteur");
     secteurSel.innerHTML = `<option value="">Tous secteurs</option>` + secteurs.map((x) => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
     secteurSel.value = secteurs.includes(contratFilters.secteur) ? contratFilters.secteur : "";
@@ -6208,7 +6208,7 @@
       statut: kEl("f-k-statut").value,
       maitre_ouvrage_id: mo && mo !== "__new__" ? mo : null,
       amo_id: amo && amo !== "__new__" ? amo : null,
-      secteur: kEl("f-k-secteur").value.trim(),
+      secteur: kEl("f-k-secteur").value,
       montant: numOrNull(kEl("f-k-montant").value),
       prestations: Array.from(document.querySelectorAll(".f-k-prestation:checked")).map((cb) => cb.value),
       lien: normalizeLinkUrl(kEl("f-k-lien").value),
@@ -6234,9 +6234,9 @@
     kEl("f-k-maitre_ouvrage_id").value = data.maitre_ouvrage_id || "";
     kEl("f-k-amo_id").innerHTML = entrepriseSelectOptions(["AMO / BE"], data.amo_id);
     kEl("f-k-amo_id").value = data.amo_id || "";
+    const secteurs = data.secteur && !SECTEUR_OPTIONS.includes(data.secteur) ? [...SECTEUR_OPTIONS, data.secteur] : SECTEUR_OPTIONS;
+    populateSelect(kEl("f-k-secteur"), secteurs, "—");
     kEl("f-k-secteur").value = data.secteur || "";
-    kEl("contrat-secteurs").innerHTML = [...new Set([...SECTEUR_SUGGESTIONS, ...(appData.contrats || []).map((c) => c.secteur).filter(Boolean)])]
-      .map((x) => `<option value="${escapeHtml(x)}">`).join("");
     kEl("f-k-montant").value = data.montant ?? "";
     const selected = new Set(data.prestations || []);
     const extra = (data.prestations || []).filter((p) => !PRESTATION_OPTIONS.includes(p));
