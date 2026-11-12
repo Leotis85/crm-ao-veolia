@@ -22,6 +22,7 @@ drop trigger if exists on_auth_user_created on auth.users;
 drop table if exists public.taches cascade;
 drop table if exists public.aos cascade;
 drop table if exists public.contacts cascade;
+drop table if exists public.contrats cascade;
 drop table if exists public.entreprises cascade;
 drop table if exists public.profiles cascade;
 drop table if exists public.app_meta cascade;
@@ -335,6 +336,45 @@ create policy contacts_all on public.contacts
   with check (true);
 
 -- ---------------------------------------------------------------------------
+-- 4 bis. Contrathèque (2026-11-12, migrate_contrats.sql) — un contrat par
+-- affaire, nommé comme l'affaire (ex. la résidence), pas comme le pouvoir
+-- adjudicateur (qui peut changer : simple lien vers entreprises).
+-- Avenants portés par le contrat (jsonb [{id, date, prestations, statut,
+-- lien, notes, ao_id}]). La prochaine échéance est calculée côté client
+-- (date_fin + reconductions tacites successives). Aucun filtrage.
+-- ---------------------------------------------------------------------------
+
+create table public.contrats (
+  id text primary key default gen_random_uuid()::text,
+  nom text not null default '',
+  maitre_ouvrage_id text references public.entreprises (id) on delete set null,
+  amo_id text references public.entreprises (id) on delete set null,
+  secteur text not null default '',
+  prestations text[] not null default '{}',
+  statut text not null default 'Actif',
+  date_debut date,
+  duree_mois integer,
+  date_fin date,
+  reconduction text not null default '',
+  duree_reconduction_mois integer,
+  alerte_mois integer not null default 12,
+  montant numeric,
+  lien text not null default '',
+  ao_origine_id text references public.aos (id) on delete set null,
+  avenants jsonb not null default '[]'::jsonb,
+  notes text not null default '',
+  last_modified timestamptz not null default now(),
+  modified_by text not null default ''
+);
+
+alter table public.contrats enable row level security;
+
+create policy contrats_all on public.contrats
+  for all to authenticated
+  using (true)
+  with check (true);
+
+-- ---------------------------------------------------------------------------
 -- 5. Statut global (indicatif uniquement — la concurrence réelle est gérée
 -- par enregistrement via save_crm_data, pas par cette table).
 -- ---------------------------------------------------------------------------
@@ -543,6 +583,77 @@ begin
     end if;
   end loop;
 
+  -- ---- contrats (après les aos : ao_origine_id peut viser un AO créé
+  -- dans le même appel) ----
+  for row_data in select * from jsonb_array_elements(coalesce(payload->'contrats'->'upsert', '[]'::jsonb))
+  loop
+    row_id := row_data->>'id';
+    expected := nullif(row_data->>'expected_last_modified', '')::timestamptz;
+
+    if expected is null then
+      insert into public.contrats (
+        id, nom, maitre_ouvrage_id, amo_id, secteur, prestations, statut,
+        date_debut, duree_mois, date_fin, reconduction, duree_reconduction_mois,
+        alerte_mois, montant, lien, ao_origine_id, avenants, notes,
+        last_modified, modified_by
+      ) values (
+        coalesce(row_id, gen_random_uuid()::text),
+        coalesce(row_data->>'nom', ''),
+        nullif(row_data->>'maitre_ouvrage_id', ''), nullif(row_data->>'amo_id', ''),
+        coalesce(row_data->>'secteur', ''),
+        public.jsonb_text_array_lenient(row_data->'prestations'),
+        coalesce(nullif(row_data->>'statut', ''), 'Actif'),
+        nullif(row_data->>'date_debut', '')::date, nullif(row_data->>'duree_mois', '')::integer,
+        nullif(row_data->>'date_fin', '')::date, coalesce(row_data->>'reconduction', ''),
+        nullif(row_data->>'duree_reconduction_mois', '')::integer,
+        coalesce(nullif(row_data->>'alerte_mois', '')::integer, 12),
+        nullif(row_data->>'montant', '')::numeric, coalesce(row_data->>'lien', ''),
+        nullif(row_data->>'ao_origine_id', ''),
+        case when jsonb_typeof(row_data->'avenants') = 'array' then row_data->'avenants' else '[]'::jsonb end,
+        coalesce(row_data->>'notes', ''),
+        now(), caller_name
+      );
+    else
+      update public.contrats set
+        nom = coalesce(row_data->>'nom', ''),
+        maitre_ouvrage_id = nullif(row_data->>'maitre_ouvrage_id', ''),
+        amo_id = nullif(row_data->>'amo_id', ''),
+        secteur = coalesce(row_data->>'secteur', ''),
+        prestations = public.jsonb_text_array_lenient(row_data->'prestations'),
+        statut = coalesce(nullif(row_data->>'statut', ''), 'Actif'),
+        date_debut = nullif(row_data->>'date_debut', '')::date,
+        duree_mois = nullif(row_data->>'duree_mois', '')::integer,
+        date_fin = nullif(row_data->>'date_fin', '')::date,
+        reconduction = coalesce(row_data->>'reconduction', ''),
+        duree_reconduction_mois = nullif(row_data->>'duree_reconduction_mois', '')::integer,
+        alerte_mois = coalesce(nullif(row_data->>'alerte_mois', '')::integer, 12),
+        montant = nullif(row_data->>'montant', '')::numeric,
+        lien = coalesce(row_data->>'lien', ''),
+        ao_origine_id = nullif(row_data->>'ao_origine_id', ''),
+        avenants = case when jsonb_typeof(row_data->'avenants') = 'array' then row_data->'avenants' else '[]'::jsonb end,
+        notes = coalesce(row_data->>'notes', ''),
+        last_modified = now(),
+        modified_by = caller_name
+      where id = row_id and last_modified = expected;
+
+      get diagnostics affected = row_count;
+      if affected = 0 then
+        conflicts := conflicts || jsonb_build_object('table', 'contrats', 'id', row_id);
+      end if;
+    end if;
+  end loop;
+
+  for row_data in select * from jsonb_array_elements(coalesce(payload->'contrats'->'delete', '[]'::jsonb))
+  loop
+    row_id := row_data->>'id';
+    expected := nullif(row_data->>'expected_last_modified', '')::timestamptz;
+    delete from public.contrats where id = row_id and last_modified = expected;
+    get diagnostics affected = row_count;
+    if affected = 0 then
+      conflicts := conflicts || jsonb_build_object('table', 'contrats', 'id', row_id);
+    end if;
+  end loop;
+
   -- ---- taches ----
   for row_data in select * from jsonb_array_elements(coalesce(payload->'taches'->'upsert', '[]'::jsonb))
   loop
@@ -697,6 +808,7 @@ alter publication supabase_realtime add table public.aos;
 alter publication supabase_realtime add table public.taches;
 alter publication supabase_realtime add table public.contacts;
 alter publication supabase_realtime add table public.entreprises;
+alter publication supabase_realtime add table public.contrats;
 
 -- ---------------------------------------------------------------------------
 -- 8. Rattrapage des comptes Auth déjà créés avant ce (re)passage du script

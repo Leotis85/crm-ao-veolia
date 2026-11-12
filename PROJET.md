@@ -190,6 +190,37 @@ modifiées. Écran : Contacts > vue **Entreprises** (tuiles par rôle, fiche ave
 contacts et les AO où elle intervient) ; fiche AO : listes déroulantes
 « Maître d'ouvrage » et « AMO / BE » (avec création à la volée).
 
+### 4.3 ter Contrats — contrathèque (ajouté le 2026-11-12, `supabase/migrate_contrats.sql`)
+
+Un contrat par affaire, **nommé comme l'affaire** (ex. « Résidence Les
+Arènes »), pas comme le pouvoir adjudicateur, qui n'est qu'un lien (peut
+changer).
+
+| Champ | Type | Notes |
+|---|---|---|
+| `nom` | texte | nom de l'affaire |
+| `maitre_ouvrage_id`, `amo_id` | relation | vers entreprises |
+| `secteur` | texte | découpage de l'agence (B1, B2, B3…), pour le reporting |
+| `prestations` | multi-liste | P0, P1, P2, P3, P3R, P5, PFI, R1, R2, MTI, CPE, GTR, Gaz, Gestion |
+| `statut` | liste | Actif, Terminé, Résilié |
+| `date_debut`, `duree_mois`, `date_fin` | date / nombre | fin = y compris reconductions déjà prévues |
+| `reconduction`, `duree_reconduction_mois` | liste / nombre | Tacite, Expresse, Non |
+| `alerte_mois` | nombre | défaut 12 : la renégociation apparaît N mois avant l'échéance |
+| `montant` | nombre | € |
+| `lien` | texte | dossier Drive |
+| `ao_origine_id` | relation | AO dont il est issu |
+| `avenants` | liste | `[{id, date, prestations, statut, lien, notes, ao_id}]` |
+| `notes` | texte | bloc-notes |
+
+**Prochaine échéance** (calculée, `contratProchaineEcheance`) : date de fin
+(ou début + durée) ; si tacite reconduction et date passée, on ajoute la
+durée de reconduction jusqu'à tomber dans le futur ; échéance passée sans
+moyen de la recalculer = « À vérifier ». **À renégocier** = contrat actif
+dont l'échéance tombe dans les `alerte_mois` à venir. Écran Contrathèque
+(liste triée par échéance, filtres statut / secteur / prestation / à
+renégocier) + fiche pleine page avec bouton Enregistrer ; les fiches
+entreprise listent aussi leurs contrats.
+
 ### 4.4 Rappel (mécanisme, pas une entité) — SUPPRIMÉ de l'interface le 2026-11-11
 
 > Jamais utilisé en pratique : cloche, panneau « Rappels actifs » de l'accueil
@@ -406,7 +437,7 @@ tableau.
 
 **Contrathèque (en cours, validé le 2026-11-12)** — remplace l'idée
 d'« onglet Client ». Ordre : 1. entreprises (fait) ; 2. table + onglet
-Contrathèque (nom de l'affaire en premier, maître d'ouvrage / AMO en
+Contrathèque (fait) (nom de l'affaire en premier, maître d'ouvrage / AMO en
 champs) ; 3. AO gagné → contrat (titre de l'AO conservé), AO Avenant
 rattaché obligatoirement à un contrat ; 4. renégociations (alerte 12 mois
 avant échéance par défaut, prochaine échéance recalculée pour les tacites

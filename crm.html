@@ -600,6 +600,120 @@
     border-bottom: 1px solid var(--color-border);
   }
 
+  /* --- Contrathèque --- */
+  #screen-contrats .toolbar .contacts-search { flex: 1; min-width: 220px; }
+
+  .contrats-summary {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    font-size: 13px;
+    color: var(--color-text-muted);
+    margin-bottom: 10px;
+  }
+
+  .contrats-summary strong { color: var(--color-text); }
+
+  .contrats-renego-link {
+    border: 1px solid #f59e0b;
+    background: #fffbeb;
+    color: #92400e;
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .contrats-panel { padding: 0; overflow: hidden; }
+  .contrats-table-wrap { overflow-x: auto; }
+
+  .contrats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .contrats-table th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
+    background: var(--color-bg);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-border);
+    white-space: nowrap;
+  }
+
+  .contrats-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+
+  .contrats-table .num { text-align: right; white-space: nowrap; }
+  .contrat-row { cursor: pointer; }
+  .contrat-row:hover td { background: #f0fdfa; }
+  .contrat-row.is-inactive td { color: var(--color-text-muted); }
+  .contrat-nom { font-weight: 600; }
+  .contrat-sub { font-size: 12px; color: var(--color-text-muted); }
+
+  .echeance-badge {
+    display: inline-block;
+    margin-top: 2px;
+    font-size: 11px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--color-border);
+    color: var(--color-text);
+    white-space: nowrap;
+  }
+
+  .echeance-badge.echeance-renego { background: #f59e0b; color: #fff; font-weight: 600; }
+  .echeance-badge.echeance-verifier { background: var(--color-danger); color: #fff; }
+  .echeance-badge.echeance-inconnue { background: transparent; color: var(--color-text-muted); padding-left: 0; }
+
+  .contrat-echeance-bar {
+    padding: 8px 20px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+  }
+
+  .contrat-echeance-bar.echeance-renego { background: #fffbeb; color: #92400e; }
+  .contrat-echeance-bar.echeance-verifier { background: #fef2f2; color: #991b1b; }
+  .contrat-echeance-hint { color: var(--color-text-muted); }
+  .contrat-lien-open { display: inline-block; margin: 2px 0 4px 118px; }
+  .contrat-lien-open[hidden] { display: none; }
+  #contrat-open-ao[hidden] { display: none; }
+
+  .avenant-row {
+    display: grid;
+    grid-template-columns: 140px 120px 100px 1fr 1.2fr 28px;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .avenant-row input, .avenant-row select {
+    width: 100%;
+    min-width: 0;
+    font-size: 13px;
+    padding: 5px 6px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+  }
+
+  .avenant-head { font-size: 11px; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 4px; }
+  .avenant-lien { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .avenant-lien a { text-decoration: none; }
+
+  @media (max-width: 900px) {
+    .avenant-row { grid-template-columns: 1fr 1fr; }
+    .avenant-head { display: none; }
+  }
+
   .kanban-column-header-right { display: flex; align-items: center; gap: 6px; }
 
   .kanban-add {
@@ -765,7 +879,7 @@
     margin-bottom: 12px;
   }
 
-  #ao-form label, #ao-form .block,
+  .fiche-form label, .fiche-form .block,
   #contact-form .block, #contact-form .form-grid > label {
     display: flex;
     flex-direction: column;
@@ -774,7 +888,7 @@
     color: var(--color-text-muted);
   }
 
-  #ao-form .block, #contact-form .block { margin-bottom: 12px; }
+  .fiche-form .block, #contact-form .block { margin-bottom: 12px; }
 
   .contact-form-name input {
     font-size: 15px;
@@ -867,7 +981,7 @@
     color: var(--color-text-muted);
   }
 
-  #ao-form .ao-fiche-title {
+  .fiche-form .ao-fiche-title {
     font-size: 20px;
     font-weight: 700;
     border: 1px solid transparent;
@@ -879,8 +993,8 @@
     width: 100%;
   }
 
-  #ao-form .ao-fiche-title:hover { border-color: var(--color-border); }
-  #ao-form .ao-fiche-title:focus { border-color: var(--color-primary); outline: none; background: var(--color-surface); }
+  .fiche-form .ao-fiche-title:hover { border-color: var(--color-border); }
+  .fiche-form .ao-fiche-title:focus { border-color: var(--color-primary); outline: none; background: var(--color-surface); }
 
   .ao-save-status { font-size: 12px; color: var(--color-text-muted); white-space: nowrap; }
   .ao-save-status.error { color: var(--color-danger); font-weight: 600; }
@@ -959,7 +1073,7 @@
     margin: 0 0 8px;
   }
 
-  #ao-form label.ao-field, #ao-form .ao-field {
+  .fiche-form label.ao-field, .fiche-form .ao-field {
     display: grid;
     grid-template-columns: 110px 1fr;
     align-items: center;
@@ -970,9 +1084,9 @@
     flex-direction: initial;
   }
 
-  #ao-form .ao-field-stack { grid-template-columns: 1fr; gap: 4px; margin-top: 6px; }
+  .fiche-form .ao-field-stack { grid-template-columns: 1fr; gap: 4px; margin-top: 6px; }
 
-  #ao-form .ao-field input, #ao-form .ao-field select {
+  .fiche-form .ao-field input, .fiche-form .ao-field select {
     font-size: 13px;
     color: var(--color-text);
     border: 1px solid transparent;
@@ -983,12 +1097,12 @@
     min-width: 0;
   }
 
-  #ao-form .ao-field input:hover, #ao-form .ao-field select:hover { border-color: var(--color-border); background: var(--color-surface); }
-  #ao-form .ao-field input:focus, #ao-form .ao-field select:focus { border-color: var(--color-primary); outline: none; background: var(--color-surface); }
+  .fiche-form .ao-field input:hover, .fiche-form .ao-field select:hover { border-color: var(--color-border); background: var(--color-surface); }
+  .fiche-form .ao-field input:focus, .fiche-form .ao-field select:focus { border-color: var(--color-primary); outline: none; background: var(--color-surface); }
 
-  #ao-form .ao-field .checkbox-group { gap: 4px 10px; color: var(--color-text); }
-  #ao-form .ao-field input[type="checkbox"] { width: auto; padding: 0; }
-  #ao-form .ao-field .checkbox-group label.checkbox-inline { display: inline-flex; flex-direction: row; gap: 5px; font-size: 13px; color: var(--color-text); }
+  .fiche-form .ao-field .checkbox-group { gap: 4px 10px; color: var(--color-text); }
+  .fiche-form .ao-field input[type="checkbox"] { width: auto; padding: 0; }
+  .fiche-form .ao-field .checkbox-group label.checkbox-inline { display: inline-flex; flex-direction: row; gap: 5px; font-size: 13px; color: var(--color-text); }
 
   .ao-fiche-main {
     display: flex;
@@ -1005,7 +1119,7 @@
   .ao-notes-head h3 { margin-bottom: 8px; }
   .ao-notes-hint { font-size: 12px; color: var(--color-text-muted); }
 
-  #ao-form #f-notes {
+  .fiche-form .fiche-notes {
     flex: 1;
     width: 100%;
     resize: none;
@@ -1019,7 +1133,7 @@
     background: #fffef7;
   }
 
-  #ao-form #f-notes:focus { outline: none; border-color: var(--color-primary); }
+  .fiche-form .fiche-notes:focus { outline: none; border-color: var(--color-primary); }
 
   .ao-taches { flex-shrink: 0; }
   .ao-contacts-group + .ao-contacts-group { margin-top: 10px; }
@@ -1940,6 +2054,7 @@
   <nav id="main-nav">
     <button data-screen="accueil" class="active">Accueil</button>
     <button data-screen="pipeline">Pipeline</button>
+    <button data-screen="contrats">Contrathèque</button>
     <button data-screen="plan-charge">Plan de charge</button>
     <button data-screen="todo">ToDo</button>
     <button data-screen="contacts">Contacts</button>
@@ -2038,6 +2153,32 @@
     </div>
   </section>
 
+  <section class="screen" id="screen-contrats">
+    <h1>Contrathèque</h1>
+    <div class="toolbar">
+      <input type="search" id="filter-contrat-search" class="contacts-search" placeholder="🔍 Rechercher une affaire, un maître d'ouvrage, un AMO…" autocomplete="off">
+      <select id="filter-contrat-statut"></select>
+      <select id="filter-contrat-secteur"></select>
+      <select id="filter-contrat-prestation"></select>
+      <label class="checkbox-inline"><input type="checkbox" id="filter-contrat-renego"> À renégocier</label>
+      <button type="button" class="btn-primary" id="btn-new-contrat">+ Nouveau contrat</button>
+    </div>
+    <div class="contrats-summary" id="contrats-summary"></div>
+    <div class="panel contrats-panel">
+      <div class="contrats-table-wrap">
+        <table class="contrats-table">
+          <thead>
+            <tr>
+              <th>Affaire</th><th>AMO / BE</th><th>Prestations</th><th>Secteur</th>
+              <th>Début</th><th>Prochaine échéance</th><th class="num">Montant</th><th class="num">Avenants</th>
+            </tr>
+          </thead>
+          <tbody id="contrats-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <section class="screen" id="screen-contacts">
     <h1>Contacts</h1>
     <div class="toolbar">
@@ -2086,7 +2227,7 @@
 <div class="chart-tooltip" id="chart-tooltip" hidden></div>
 
 <div class="modal-overlay ao-fiche-overlay" id="ao-modal-overlay" hidden>
-  <form class="ao-fiche" id="ao-form" novalidate>
+  <form class="ao-fiche fiche-form" id="ao-form" novalidate>
     <div class="ao-fiche-header">
       <div class="ao-fiche-title-wrap">
         <span class="ao-fiche-kicker" id="ao-modal-title">Nouvel AO</span>
@@ -2187,7 +2328,7 @@
             <h3>Bloc-notes</h3>
             <span class="ao-notes-hint">Prise de notes libre, enregistrée automatiquement</span>
           </div>
-          <textarea id="f-notes" data-ao-key="notes" placeholder="Comptes rendus, échanges, points d'attention, infos en vrac…"></textarea>
+          <textarea id="f-notes" class="fiche-notes" data-ao-key="notes" placeholder="Comptes rendus, échanges, points d'attention, infos en vrac…"></textarea>
         </div>
 
         <section class="ao-taches" id="ao-taches-section" hidden>
@@ -2288,6 +2429,10 @@
           <button type="button" class="btn-secondary btn-small" id="entreprise-contact-add">+ Nouveau contact</button>
         </fieldset>
         <fieldset>
+          <legend>Contrats</legend>
+          <div class="list-panel" id="entreprise-contrats-list"></div>
+        </fieldset>
+        <fieldset>
           <legend>AO où elle intervient</legend>
           <div class="list-panel" id="entreprise-aos-list"></div>
         </fieldset>
@@ -2302,6 +2447,105 @@
       </div>
     </form>
   </div>
+</div>
+
+<div class="modal-overlay ao-fiche-overlay" id="contrat-modal-overlay" hidden>
+  <form class="ao-fiche fiche-form" id="contrat-form" novalidate>
+    <div class="ao-fiche-header">
+      <div class="ao-fiche-title-wrap">
+        <span class="ao-fiche-kicker" id="contrat-modal-title">Nouveau contrat</span>
+        <input type="text" id="f-k-nom" class="ao-fiche-title" placeholder="Nom de l'affaire (ex. Résidence Les Arènes)" autocomplete="off">
+      </div>
+      <span class="ao-save-status" id="contrat-save-status"></span>
+      <button type="button" class="btn-danger btn-small" id="contrat-form-delete" hidden>Supprimer</button>
+      <button type="button" class="modal-close" id="contrat-modal-close" title="Fermer (Échap)">✕</button>
+    </div>
+    <div class="contrat-echeance-bar" id="contrat-echeance-bar"></div>
+
+    <div class="ao-fiche-body">
+      <aside class="ao-fiche-side">
+        <section class="ao-side-section">
+          <h3>Informations</h3>
+          <label class="ao-field">Statut
+            <select id="f-k-statut"></select>
+          </label>
+          <label class="ao-field">Maître d'ouvrage
+            <select id="f-k-maitre_ouvrage_id"></select>
+          </label>
+          <label class="ao-field">AMO / BE
+            <select id="f-k-amo_id"></select>
+          </label>
+          <label class="ao-field">Secteur
+            <input type="text" id="f-k-secteur" list="contrat-secteurs" placeholder="—">
+          </label>
+          <label class="ao-field">Montant (€)
+            <input type="number" id="f-k-montant" step="0.01" placeholder="—">
+          </label>
+          <div class="ao-field ao-field-stack">
+            <span>Prestations</span>
+            <div class="checkbox-group" id="f-k-prestations"></div>
+          </div>
+          <label class="ao-field">Lien Drive
+            <input type="url" id="f-k-lien" placeholder="https://…">
+          </label>
+          <a class="fichier-link contrat-lien-open" id="f-k-lien-open" target="_blank" rel="noopener noreferrer" hidden>Ouvrir le dossier</a>
+        </section>
+
+        <section class="ao-side-section">
+          <h3>Durée</h3>
+          <label class="ao-field">Début
+            <input type="date" id="f-k-date_debut">
+          </label>
+          <label class="ao-field">Durée (mois)
+            <input type="number" id="f-k-duree_mois" min="0" placeholder="—">
+          </label>
+          <label class="ao-field" title="Date de fin y compris reconductions déjà prévues">Fin
+            <input type="date" id="f-k-date_fin">
+          </label>
+          <label class="ao-field">Reconduction
+            <select id="f-k-reconduction"></select>
+          </label>
+          <label class="ao-field">Durée reconduction (mois)
+            <input type="number" id="f-k-duree_reconduction_mois" min="0" placeholder="—">
+          </label>
+          <label class="ao-field" title="Combien de mois avant l'échéance la renégociation doit apparaître">Alerte (mois avant)
+            <input type="number" id="f-k-alerte_mois" min="0" placeholder="12">
+          </label>
+        </section>
+
+        <section class="ao-side-section">
+          <h3>Origine</h3>
+          <label class="ao-field">AO d'origine
+            <select id="f-k-ao_origine_id"></select>
+          </label>
+          <button type="button" class="btn-secondary btn-small" id="contrat-open-ao" hidden>Ouvrir l'AO</button>
+        </section>
+      </aside>
+
+      <div class="ao-fiche-main">
+        <div class="ao-notes">
+          <div class="ao-notes-head">
+            <h3>Bloc-notes</h3>
+          </div>
+          <textarea id="f-k-notes" class="fiche-notes" placeholder="Historique, points d'attention, interlocuteurs, infos en vrac…"></textarea>
+        </div>
+
+        <section class="ao-taches">
+          <div class="ao-notes-head">
+            <h3>Avenants</h3>
+            <button type="button" class="btn-secondary btn-small" id="contrat-avenant-add">+ Ajouter un avenant</button>
+          </div>
+          <div id="f-k-avenants"></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="ao-fiche-create-footer">
+      <button type="button" class="btn-secondary" id="contrat-form-cancel">Annuler</button>
+      <button type="submit" class="btn-primary" id="contrat-form-submit">Enregistrer</button>
+    </div>
+    <datalist id="contrat-secteurs"></datalist>
+  </form>
 </div>
 
 <div class="modal-overlay" id="contact-modal-overlay" hidden>
@@ -2459,6 +2703,7 @@
       taches: [],
       contacts: [],
       entreprises: [],
+      contrats: [],
       _meta: { lastModified: null, modifiedBy: null },
     };
   }
@@ -2487,6 +2732,7 @@
       const data = raw ? JSON.parse(raw) : emptyData();
       if (!data._meta) data._meta = { lastModified: null, modifiedBy: null };
       if (!Array.isArray(data.entreprises)) data.entreprises = [];
+      if (!Array.isArray(data.contrats)) data.contrats = [];
       return data;
     }
 
@@ -2547,7 +2793,7 @@
 
   // Tables synchronisées. "entreprises" en premier : save_crm_data crée les
   // entreprises avant les AO / contacts qui peuvent y faire référence.
-  const CRM_TABLES = ["entreprises", "aos", "taches", "contacts"];
+  const CRM_TABLES = ["entreprises", "aos", "contrats", "taches", "contacts"];
 
   class SupabaseAdapter {
     constructor(client) {
@@ -2998,6 +3244,54 @@
     "Autre": "#6b7280",
   };
 
+  // Contrathèque (2026-11-12).
+  const CONTRAT_STATUTS = ["Actif", "Terminé", "Résilié"];
+  const CONTRAT_RECONDUCTIONS = ["Tacite", "Expresse", "Non"];
+  // Plus large que TYPE_MARCHE_OPTIONS des AO : codes rencontrés dans la
+  // contrathèque de l'agence.
+  const PRESTATION_OPTIONS = ["P0", "P1", "P2", "P3", "P3R", "P5", "PFI", "R1", "R2", "MTI", "CPE", "GTR", "Gaz", "Gestion"];
+  const SECTEUR_SUGGESTIONS = ["B1", "B2", "B3", "B4", "B6", "K0", "MULTI"];
+
+  // Ajoute n mois à une date "AAAA-MM-JJ" (jour ramené au dernier du mois
+  // si besoin : 31 janv. + 1 mois = 28/29 févr.).
+  function addMonthsKey(key, n) {
+    const [y, m, d] = key.split("-").map(Number);
+    const target = new Date(y, m - 1 + n, 1);
+    const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+    target.setDate(Math.min(d, lastDay));
+    return localDateKey(target);
+  }
+
+  // Prochaine échéance d'un contrat : date de fin (ou début + durée), puis
+  // pour une tacite reconduction, on ajoute la durée de reconduction tant
+  // que la date est passée. { date, aVerifier } — aVerifier = échéance
+  // passée sans moyen de la recalculer (reconduction sans durée connue).
+  function contratProchaineEcheance(c) {
+    let fin = c.date_fin;
+    if (!fin && c.date_debut && c.duree_mois) fin = addDaysToKey(addMonthsKey(c.date_debut, Number(c.duree_mois)), -1);
+    if (!fin) return { date: null, aVerifier: false };
+    const today = localDateKey(new Date());
+    const step = Number(c.duree_reconduction_mois) || 0;
+    if (fin < today && c.reconduction === "Tacite" && step > 0) {
+      let guard = 0;
+      while (fin < today && guard++ < 500) fin = addMonthsKey(fin, step);
+    }
+    return { date: fin, aVerifier: fin < today && c.statut === "Actif" };
+  }
+
+  // Contrat actif dont l'échéance tombe dans sa fenêtre d'alerte.
+  function contratARenegocier(c) {
+    if (c.statut !== "Actif") return false;
+    const { date } = contratProchaineEcheance(c);
+    if (!date) return false;
+    const today = localDateKey(new Date());
+    return date >= today && date <= addMonthsKey(today, Number(c.alerte_mois) || 12);
+  }
+
+  function entrepriseContrats(id) {
+    return (appData.contrats || []).filter((c) => c.maitre_ouvrage_id === id || c.amo_id === id);
+  }
+
   function findEntreprise(id) {
     return id ? (appData.entreprises || []).find((e) => e.id === id) || null : null;
   }
@@ -3163,6 +3457,30 @@
     });
   }
 
+  function createContrat(partial = {}) {
+    return stamp({
+      id: generateId(),
+      nom: "",
+      maitre_ouvrage_id: null,
+      amo_id: null,
+      secteur: "",
+      prestations: [],
+      statut: "Actif",
+      date_debut: null,
+      duree_mois: null,
+      date_fin: null,
+      reconduction: "",
+      duree_reconduction_mois: null,
+      alerte_mois: 12,
+      montant: null,
+      lien: "",
+      ao_origine_id: null,
+      avenants: [],
+      notes: "",
+      ...partial,
+    });
+  }
+
   // Comble les champs manquants d'un enregistrement (ex. AO importé d'un
   // ancien export qui ne connaissait pas encore taches_liees/motif_categorie)
   // avec les valeurs par défaut du schéma actuel, sans jamais toucher aux
@@ -3195,6 +3513,12 @@
     });
     data.contacts = data.contacts.map((c) => normalizeRecord(c, createContact));
     data.entreprises = (data.entreprises || []).map((e) => normalizeRecord(e, createEntreprise));
+    data.contrats = (data.contrats || []).map((c) => {
+      const normalized = normalizeRecord(c, createContrat);
+      if (!Array.isArray(normalized.avenants)) normalized.avenants = [];
+      if (!Array.isArray(normalized.prestations)) normalized.prestations = [];
+      return normalized;
+    });
     return data;
   }
 
@@ -3242,6 +3566,7 @@
       data.aos = data.aos.filter((r) => r.id !== id);
       data.taches.forEach((t) => { if (t.ao_lie === id) t.ao_lie = null; });
       data.contacts.forEach((c) => { c.ao_lies = (c.ao_lies || []).filter((aid) => aid !== id); });
+      data.contrats.forEach((c) => { if (c.ao_origine_id === id) c.ao_origine_id = null; });
     });
   }
 
@@ -3323,6 +3648,35 @@
         if (ao.amo_id === id) ao.amo_id = null;
       });
       data.contacts.forEach((c) => { if (c.entreprise_id === id) c.entreprise_id = null; });
+      data.contrats.forEach((c) => {
+        if (c.maitre_ouvrage_id === id) c.maitre_ouvrage_id = null;
+        if (c.amo_id === id) c.amo_id = null;
+      });
+    });
+  }
+
+  // --- Contrats (contrathèque, 2026-11-12) ---
+
+  async function addContrat(partial) {
+    const contrat = createContrat(partial);
+    await mutateData((data) => { data.contrats.push({ ...contrat }); });
+    return contrat.id;
+  }
+
+  // Comme la fiche AO : pas de contrôle de version global, seuls les champs
+  // modifiés sont passés (voir saveContratForm).
+  async function updateContrat(id, changes) {
+    return mutateData((data) => {
+      const record = findOrThrow(data.contrats, id, "Contrat");
+      Object.assign(record, changes);
+      stamp(record);
+    });
+  }
+
+  async function deleteContrat(id) {
+    return mutateData((data) => {
+      findOrThrow(data.contrats, id, "Contrat");
+      data.contrats = data.contrats.filter((r) => r.id !== id);
     });
   }
 
@@ -4243,7 +4597,7 @@
   function hideAOFiche() {
     clearTimeout(aoSaveTimer);
     ficheEl("ao-modal-overlay").hidden = true;
-    document.body.classList.remove("fiche-open");
+    if (!isContratFormOpen()) document.body.classList.remove("fiche-open");
     currentEditingAO = null;
   }
 
@@ -4260,7 +4614,7 @@
   });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || !isFicheOpen()) return;
-    const otherModalOpen = ["tache-modal-overlay", "contact-modal-overlay", "motif-modal-overlay", "entreprise-modal-overlay"]
+    const otherModalOpen = ["tache-modal-overlay", "contact-modal-overlay", "motif-modal-overlay", "entreprise-modal-overlay", "contrat-modal-overlay"]
       .some((id) => !ficheEl(id).hidden);
     if (!otherModalOpen) closeAOForm();
   });
@@ -5325,8 +5679,10 @@
   function renderEntrepriseItem(e) {
     const nbContacts = entrepriseContacts(e.id).length;
     const nbAO = entrepriseAOs(e.id).length;
+    const nbContrats = entrepriseContrats(e.id).length;
     const counts = [
       nbContacts ? `${nbContacts} contact${nbContacts > 1 ? "s" : ""}` : "",
+      nbContrats ? `${nbContrats} contrat${nbContrats > 1 ? "s" : ""}` : "",
       nbAO ? `${nbAO} AO` : "",
     ].filter(Boolean).join(" · ");
     return `
@@ -5583,6 +5939,29 @@
       });
     });
 
+    const contrats = entrepriseContrats(e.id).sort((a, b) => (a.statut === "Actif" ? 0 : 1) - (b.statut === "Actif" ? 0 : 1) || (a.nom || "").localeCompare(b.nom || ""));
+    const contratsEl = document.getElementById("entreprise-contrats-list");
+    contratsEl.innerHTML = contrats.length
+      ? contrats.map((c) => {
+          const ech = contratEcheanceBadge(c);
+          return `
+            <div class="list-item clickable-item" data-contrat="${c.id}">
+              <div>
+                <div class="list-item-title">${escapeHtml(c.nom || "(sans nom)")}</div>
+                <div class="list-item-sub">${escapeHtml([c.amo_id === e.id ? "AMO / BE" : "Maître d'ouvrage", (c.prestations || []).join(" "), c.statut, ech.date ? "échéance " + formatDate(ech.date) : ""].filter(Boolean).join(" · "))}</div>
+              </div>
+              ${ech.cls === "echeance-renego" ? `<span class="echeance-badge echeance-renego">À renégocier</span>` : ""}
+            </div>
+          `;
+        }).join("")
+      : `<div class="list-item-empty">Aucun contrat.</div>`;
+    contratsEl.querySelectorAll("[data-contrat]").forEach((row) => {
+      row.addEventListener("click", () => {
+        const c = (appData.contrats || []).find((x) => x.id === row.dataset.contrat);
+        if (c) openContratForm(c);
+      });
+    });
+
     const aos = entrepriseAOs(e.id).sort((a, b) => (b.date_remise || "").localeCompare(a.date_remise || ""));
     const aosEl = document.getElementById("entreprise-aos-list");
     aosEl.innerHTML = aos.length
@@ -5683,6 +6062,376 @@
     try {
       await deleteEntreprise(e.id);
       closeEntrepriseForm();
+    } catch (err) {
+      alert("Erreur lors de la suppression : " + err.message);
+    }
+  });
+
+  // ---------------------------------------------------------------------
+  // Contrathèque (2026-11-12) — un contrat par affaire, nommé comme
+  // l'affaire. Liste filtrable + fiche pleine page (même mise en page que la
+  // fiche AO, mais avec un bouton Enregistrer : beaucoup de champs liés entre
+  // eux, on valide d'un coup).
+  // ---------------------------------------------------------------------
+
+  const contratFilters = { search: "", statut: "Actif", secteur: "", prestation: "", renego: false };
+  let currentEditingContrat = null;
+  let contratFormSnapshot = null;
+  let formAvenants = [];
+
+  function formatEuros(v) {
+    if (v === null || v === undefined || v === "") return "";
+    return `${Math.round(Number(v)).toLocaleString("fr-FR")} €`;
+  }
+
+  // Libellé + classe de la prochaine échéance (liste et fiche).
+  function contratEcheanceBadge(c) {
+    const { date, aVerifier } = contratProchaineEcheance(c);
+    if (!date) return { label: "Échéance inconnue", cls: "echeance-inconnue", date: null };
+    if (aVerifier) return { label: "À vérifier (échéance passée)", cls: "echeance-verifier", date };
+    if (c.statut !== "Actif") return { label: "", cls: "", date };
+    const months = Math.round(daysBetweenKeys(localDateKey(new Date()), date) / 30.44);
+    const when = months <= 0 ? "ce mois-ci" : `dans ${months} mois`;
+    if (contratARenegocier(c)) return { label: `À renégocier · ${when}`, cls: "echeance-renego", date };
+    return { label: when, cls: "", date };
+  }
+
+  function contratSearchHaystack(c) {
+    return normalizeSearchText([
+      c.nom, entrepriseNom(c.maitre_ouvrage_id), entrepriseNom(c.amo_id), c.secteur,
+      (c.prestations || []).join(" "), c.notes,
+    ].join(" "));
+  }
+
+  function contratMatchesFilters(c) {
+    if (contratFilters.statut && c.statut !== contratFilters.statut) return false;
+    if (contratFilters.secteur && c.secteur !== contratFilters.secteur) return false;
+    if (contratFilters.prestation && !(c.prestations || []).includes(contratFilters.prestation)) return false;
+    if (contratFilters.renego && !contratARenegocier(c)) return false;
+    const words = normalizeSearchText(contratFilters.search).split(/\s+/).filter(Boolean);
+    if (words.length) {
+      const hay = contratSearchHaystack(c);
+      if (!words.every((w) => hay.includes(w))) return false;
+    }
+    return true;
+  }
+
+  function renderContratFilters() {
+    const statutSel = document.getElementById("filter-contrat-statut");
+    if (!statutSel.options.length) {
+      statutSel.innerHTML = `<option value="">Tous les statuts</option>`
+        + CONTRAT_STATUTS.map((st) => `<option value="${st}">${st === "Actif" ? "Actifs" : st === "Terminé" ? "Terminés" : "Résiliés"}</option>`).join("");
+    }
+    statutSel.value = contratFilters.statut;
+    const secteurs = [...new Set((appData.contrats || []).map((c) => c.secteur).filter(Boolean))].sort();
+    const secteurSel = document.getElementById("filter-contrat-secteur");
+    secteurSel.innerHTML = `<option value="">Tous secteurs</option>` + secteurs.map((x) => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join("");
+    secteurSel.value = secteurs.includes(contratFilters.secteur) ? contratFilters.secteur : "";
+    const prestaSel = document.getElementById("filter-contrat-prestation");
+    if (!prestaSel.options.length) populateSelect(prestaSel, PRESTATION_OPTIONS, "Toutes prestations");
+    prestaSel.value = contratFilters.prestation;
+  }
+
+  function renderContrats() {
+    renderContratFilters();
+    const list = (appData.contrats || []).filter(contratMatchesFilters)
+      .map((c) => ({ c, ech: contratEcheanceBadge(c) }))
+      .sort((a, b) => (a.ech.date || "9999").localeCompare(b.ech.date || "9999") || (a.c.nom || "").localeCompare(b.c.nom || ""));
+    const total = list.reduce((sum, x) => sum + (Number(x.c.montant) || 0), 0);
+    const nbRenego = (appData.contrats || []).filter(contratARenegocier).length;
+    document.getElementById("contrats-summary").innerHTML = `
+      <span><strong>${list.length}</strong> contrat${list.length > 1 ? "s" : ""}</span>
+      ${total ? `<span>Montant total <strong>${formatEuros(total)}</strong></span>` : ""}
+      ${nbRenego ? `<button type="button" class="contrats-renego-link" id="contrats-renego-link">🔔 ${nbRenego} à renégocier</button>` : ""}
+    `;
+    const link = document.getElementById("contrats-renego-link");
+    if (link) link.addEventListener("click", () => {
+      contratFilters.renego = true;
+      contratFilters.statut = "Actif";
+      document.getElementById("filter-contrat-renego").checked = true;
+      renderContrats();
+    });
+
+    const tbody = document.getElementById("contrats-tbody");
+    tbody.innerHTML = list.length
+      ? list.map(({ c, ech }) => `
+          <tr class="contrat-row${c.statut !== "Actif" ? " is-inactive" : ""}" data-id="${c.id}">
+            <td>
+              <div class="contrat-nom">${escapeHtml(c.nom || "(sans nom)")}</div>
+              <div class="contrat-sub">${escapeHtml(entrepriseNom(c.maitre_ouvrage_id))}${c.statut !== "Actif" ? ` · ${escapeHtml(c.statut)}` : ""}</div>
+            </td>
+            <td>${escapeHtml(entrepriseNom(c.amo_id))}</td>
+            <td>${(c.prestations || []).map((p) => `<span class="badge-type">${escapeHtml(p)}</span>`).join(" ")}</td>
+            <td>${escapeHtml(c.secteur || "")}</td>
+            <td>${c.date_debut ? formatDate(c.date_debut) : ""}</td>
+            <td>
+              ${ech.date ? `<div>${formatDate(ech.date)}</div>` : ""}
+              ${ech.label ? `<span class="echeance-badge ${ech.cls}">${escapeHtml(ech.label)}</span>` : ""}
+            </td>
+            <td class="num">${formatEuros(c.montant)}</td>
+            <td class="num">${(c.avenants || []).length || ""}</td>
+          </tr>
+        `).join("")
+      : `<tr><td colspan="8" class="list-item-empty">${(appData.contrats || []).length ? "Aucun contrat ne correspond." : "Aucun contrat pour l'instant."}</td></tr>`;
+    tbody.querySelectorAll(".contrat-row").forEach((row) => {
+      row.addEventListener("click", () => {
+        const c = (appData.contrats || []).find((x) => x.id === row.dataset.id);
+        if (c) openContratForm(c);
+      });
+    });
+  }
+
+  document.getElementById("filter-contrat-search").addEventListener("input", (e) => { contratFilters.search = e.target.value; renderContrats(); });
+  document.getElementById("filter-contrat-statut").addEventListener("change", (e) => { contratFilters.statut = e.target.value; renderContrats(); });
+  document.getElementById("filter-contrat-secteur").addEventListener("change", (e) => { contratFilters.secteur = e.target.value; renderContrats(); });
+  document.getElementById("filter-contrat-prestation").addEventListener("change", (e) => { contratFilters.prestation = e.target.value; renderContrats(); });
+  document.getElementById("filter-contrat-renego").addEventListener("change", (e) => { contratFilters.renego = e.target.checked; renderContrats(); });
+  document.getElementById("btn-new-contrat").addEventListener("click", () => openContratForm(null));
+
+  // --- Fiche contrat ---
+
+  function kEl(id) { return document.getElementById(id); }
+
+  function isContratFormOpen() {
+    return !kEl("contrat-modal-overlay").hidden;
+  }
+
+  function numOrNull(v) {
+    return v === "" || v === null || v === undefined ? null : Number(v);
+  }
+
+  function readContratForm() {
+    const mo = kEl("f-k-maitre_ouvrage_id").value;
+    const amo = kEl("f-k-amo_id").value;
+    return {
+      nom: kEl("f-k-nom").value.trim(),
+      statut: kEl("f-k-statut").value,
+      maitre_ouvrage_id: mo && mo !== "__new__" ? mo : null,
+      amo_id: amo && amo !== "__new__" ? amo : null,
+      secteur: kEl("f-k-secteur").value.trim(),
+      montant: numOrNull(kEl("f-k-montant").value),
+      prestations: Array.from(document.querySelectorAll(".f-k-prestation:checked")).map((cb) => cb.value),
+      lien: normalizeLinkUrl(kEl("f-k-lien").value),
+      date_debut: kEl("f-k-date_debut").value || null,
+      duree_mois: numOrNull(kEl("f-k-duree_mois").value),
+      date_fin: kEl("f-k-date_fin").value || null,
+      reconduction: kEl("f-k-reconduction").value,
+      duree_reconduction_mois: numOrNull(kEl("f-k-duree_reconduction_mois").value),
+      alerte_mois: numOrNull(kEl("f-k-alerte_mois").value) ?? 12,
+      ao_origine_id: kEl("f-k-ao_origine_id").value || null,
+      notes: kEl("f-k-notes").value,
+      avenants: formAvenants
+        .map((a) => ({ ...a, prestations: (a.prestations || "").trim(), lien: normalizeLinkUrl(a.lien), notes: (a.notes || "").trim() }))
+        .filter((a) => a.date || a.prestations || a.lien || a.notes),
+    };
+  }
+
+  function writeContratForm(data) {
+    kEl("f-k-nom").value = data.nom || "";
+    populateSelect(kEl("f-k-statut"), CONTRAT_STATUTS);
+    kEl("f-k-statut").value = data.statut || "Actif";
+    kEl("f-k-maitre_ouvrage_id").innerHTML = entrepriseSelectOptions(AO_MAITRE_OUVRAGE_ROLES, data.maitre_ouvrage_id);
+    kEl("f-k-maitre_ouvrage_id").value = data.maitre_ouvrage_id || "";
+    kEl("f-k-amo_id").innerHTML = entrepriseSelectOptions(["AMO / BE"], data.amo_id);
+    kEl("f-k-amo_id").value = data.amo_id || "";
+    kEl("f-k-secteur").value = data.secteur || "";
+    kEl("contrat-secteurs").innerHTML = [...new Set([...SECTEUR_SUGGESTIONS, ...(appData.contrats || []).map((c) => c.secteur).filter(Boolean)])]
+      .map((x) => `<option value="${escapeHtml(x)}">`).join("");
+    kEl("f-k-montant").value = data.montant ?? "";
+    const selected = new Set(data.prestations || []);
+    const extra = (data.prestations || []).filter((p) => !PRESTATION_OPTIONS.includes(p));
+    kEl("f-k-prestations").innerHTML = [...PRESTATION_OPTIONS, ...extra].map((p) => `
+      <label class="checkbox-inline"><input type="checkbox" class="f-k-prestation" value="${escapeHtml(p)}"${selected.has(p) ? " checked" : ""}> ${escapeHtml(p)}</label>
+    `).join("");
+    kEl("f-k-lien").value = data.lien || "";
+    kEl("f-k-date_debut").value = data.date_debut || "";
+    kEl("f-k-duree_mois").value = data.duree_mois ?? "";
+    kEl("f-k-date_fin").value = data.date_fin || "";
+    populateSelect(kEl("f-k-reconduction"), CONTRAT_RECONDUCTIONS, "— Non renseignée —");
+    kEl("f-k-reconduction").value = data.reconduction || "";
+    kEl("f-k-duree_reconduction_mois").value = data.duree_reconduction_mois ?? "";
+    kEl("f-k-alerte_mois").value = data.alerte_mois ?? 12;
+    const aos = [...appData.aos].sort((a, b) => (a.nom_projet || "").localeCompare(b.nom_projet || ""));
+    kEl("f-k-ao_origine_id").innerHTML = `<option value="">— Aucun —</option>`
+      + aos.map((a) => `<option value="${a.id}">${escapeHtml(a.nom_projet || "(sans nom)")}</option>`).join("");
+    kEl("f-k-ao_origine_id").value = data.ao_origine_id || "";
+    kEl("f-k-notes").value = data.notes || "";
+    formAvenants = (data.avenants || []).map((a) => ({ ...a }));
+    renderFormAvenants();
+    updateContratLiveBits();
+  }
+
+  // Parties recalculées pendant la saisie : bandeau d'échéance, lien Drive,
+  // bouton vers l'AO d'origine.
+  function updateContratLiveBits() {
+    const draft = readContratForm();
+    const ech = contratEcheanceBadge(draft);
+    const bar = kEl("contrat-echeance-bar");
+    bar.className = `contrat-echeance-bar ${ech.cls}`;
+    bar.innerHTML = ech.date
+      ? `Prochaine échéance : <strong>${formatDate(ech.date)}</strong>${ech.label ? ` · ${escapeHtml(ech.label)}` : ""}${draft.reconduction === "Tacite" && draft.duree_reconduction_mois ? ` <span class="contrat-echeance-hint">(tacite reconduction de ${draft.duree_reconduction_mois} mois)</span>` : ""}`
+      : "Prochaine échéance : renseigne la date de fin, ou le début et la durée.";
+    const link = kEl("f-k-lien-open");
+    link.hidden = !draft.lien;
+    if (draft.lien) link.href = draft.lien;
+    kEl("contrat-open-ao").hidden = !draft.ao_origine_id;
+  }
+
+  function renderFormAvenants() {
+    const container = kEl("f-k-avenants");
+    if (!formAvenants.length) {
+      container.innerHTML = `<div class="list-item-empty">Aucun avenant.</div>`;
+      return;
+    }
+    container.innerHTML = `
+      <div class="avenant-row avenant-head">
+        <span>Date d'effet</span><span>Prestations</span><span>Statut</span><span>Lien</span><span>Notes</span><span></span>
+      </div>
+    ` + formAvenants.map((a, idx) => `
+      <div class="avenant-row" data-idx="${idx}">
+        <input type="date" data-field="date" value="${escapeHtml(a.date || "")}">
+        <input type="text" data-field="prestations" value="${escapeHtml(a.prestations || "")}" placeholder="P2 P3…">
+        <select data-field="statut">
+          ${CONTRAT_STATUTS.map((st) => `<option value="${st}"${(a.statut || "Actif") === st ? " selected" : ""}>${st}</option>`).join("")}
+        </select>
+        <span class="avenant-lien">
+          <input type="url" data-field="lien" value="${escapeHtml(a.lien || "")}" placeholder="https://…">
+          ${a.lien ? `<a href="${escapeHtml(normalizeLinkUrl(a.lien))}" target="_blank" rel="noopener noreferrer" title="Ouvrir">🔗</a>` : ""}
+        </span>
+        <input type="text" data-field="notes" value="${escapeHtml(a.notes || "")}" placeholder="Objet de l'avenant…">
+        <button type="button" class="btn-icon" data-remove="${idx}" title="Retirer">✕</button>
+      </div>
+    `).join("");
+    container.querySelectorAll(".avenant-row[data-idx]").forEach((row) => {
+      const idx = Number(row.dataset.idx);
+      row.querySelectorAll("[data-field]").forEach((input) => {
+        input.addEventListener("input", () => { formAvenants[idx][input.dataset.field] = input.value; });
+        input.addEventListener("change", () => { formAvenants[idx][input.dataset.field] = input.value; });
+      });
+    });
+    container.querySelectorAll("[data-remove]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        formAvenants.splice(Number(btn.dataset.remove), 1);
+        renderFormAvenants();
+      });
+    });
+  }
+
+  kEl("contrat-avenant-add").addEventListener("click", () => {
+    formAvenants.push({ id: generateId(), date: localDateKey(new Date()), prestations: "", statut: "Actif", lien: "", notes: "", ao_id: null });
+    renderFormAvenants();
+  });
+
+  function setContratSaveStatus(text, isError) {
+    const el = kEl("contrat-save-status");
+    el.textContent = text;
+    el.classList.toggle("error", !!isError);
+  }
+
+  function contratFormDirty() {
+    return contratFormSnapshot !== null && JSON.stringify(readContratForm()) !== contratFormSnapshot;
+  }
+
+  // preset : valeurs de départ d'un nouveau contrat (ex. depuis un AO gagné).
+  function openContratForm(contrat, preset = {}) {
+    currentEditingContrat = contrat || null;
+    writeContratForm(contrat || { ...createContrat(), ...preset });
+    contratFormSnapshot = contrat ? JSON.stringify(readContratForm()) : JSON.stringify(readContratForm());
+    kEl("contrat-modal-title").textContent = contrat
+      ? ["Contrat", contrat.modified_by ? `modifié par ${contrat.modified_by}` : ""].filter(Boolean).join(" · ")
+      : "Nouveau contrat";
+    kEl("contrat-form-delete").hidden = !contrat;
+    kEl("contrat-form-submit").textContent = contrat ? "Enregistrer" : "Créer le contrat";
+    setContratSaveStatus("");
+    kEl("contrat-modal-overlay").hidden = false;
+    document.body.classList.add("fiche-open");
+    if (!contrat) kEl("f-k-nom").focus();
+  }
+
+  function hideContratForm() {
+    kEl("contrat-modal-overlay").hidden = true;
+    currentEditingContrat = null;
+    contratFormSnapshot = null;
+    if (!isFicheOpen()) document.body.classList.remove("fiche-open");
+  }
+
+  function closeContratForm() {
+    if (contratFormDirty() && !confirm("Des modifications ne sont pas enregistrées. Fermer quand même ?")) return false;
+    hideContratForm();
+    return true;
+  }
+
+  async function saveContratForm() {
+    const values = readContratForm();
+    if (!values.nom) {
+      setContratSaveStatus("Le nom de l'affaire est obligatoire", true);
+      kEl("f-k-nom").focus();
+      return false;
+    }
+    try {
+      setContratSaveStatus("Enregistrement…");
+      if (currentEditingContrat) {
+        const before = JSON.parse(contratFormSnapshot);
+        const changes = {};
+        Object.keys(values).forEach((k) => {
+          if (JSON.stringify(values[k]) !== JSON.stringify(before[k])) changes[k] = values[k];
+        });
+        if (Object.keys(changes).length) await updateContrat(currentEditingContrat.id, changes);
+        currentEditingContrat = (appData.contrats || []).find((c) => c.id === currentEditingContrat.id) || currentEditingContrat;
+      } else {
+        const id = await addContrat(values);
+        currentEditingContrat = (appData.contrats || []).find((c) => c.id === id) || null;
+        kEl("contrat-form-delete").hidden = false;
+        kEl("contrat-form-submit").textContent = "Enregistrer";
+      }
+      contratFormSnapshot = JSON.stringify(readContratForm());
+      setContratSaveStatus("Enregistré ✓");
+      return true;
+    } catch (err) {
+      setContratSaveStatus("Erreur d'enregistrement", true);
+      alert("Erreur lors de l'enregistrement : " + err.message);
+      return false;
+    }
+  }
+
+  kEl("contrat-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    await saveContratForm();
+  });
+  kEl("contrat-form").addEventListener("input", () => {
+    updateContratLiveBits();
+    if (contratFormDirty()) setContratSaveStatus("Modifications non enregistrées");
+  });
+  kEl("contrat-form").addEventListener("change", () => {
+    updateContratLiveBits();
+    if (contratFormDirty()) setContratSaveStatus("Modifications non enregistrées");
+  });
+  wireEntrepriseSelect(kEl("f-k-maitre_ouvrage_id"), "Maître d'ouvrage");
+  wireEntrepriseSelect(kEl("f-k-amo_id"), "AMO / BE");
+
+  kEl("contrat-modal-close").addEventListener("click", closeContratForm);
+  kEl("contrat-form-cancel").addEventListener("click", closeContratForm);
+  kEl("contrat-modal-overlay").addEventListener("mousedown", (event) => {
+    if (event.target.id === "contrat-modal-overlay") closeContratForm();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !isContratFormOpen()) return;
+    const otherModalOpen = ["tache-modal-overlay", "contact-modal-overlay", "motif-modal-overlay"]
+      .some((id) => !kEl(id).hidden);
+    if (!otherModalOpen) closeContratForm();
+  });
+  kEl("contrat-open-ao").addEventListener("click", () => {
+    const ao = appData.aos.find((a) => a.id === kEl("f-k-ao_origine_id").value);
+    if (!ao || !closeContratForm()) return;
+    if (isEntrepriseFormOpen()) closeEntrepriseForm();
+    openAOForm(ao);
+  });
+  kEl("contrat-form-delete").addEventListener("click", async () => {
+    const c = currentEditingContrat;
+    if (!c || !confirm(`Supprimer le contrat « ${c.nom || "(sans nom)"} » ? Cette action est irréversible.`)) return;
+    try {
+      await deleteContrat(c.id);
+      hideContratForm();
     } catch (err) {
       alert("Erreur lors de la suppression : " + err.message);
     }
@@ -6101,6 +6850,7 @@
     renderTodo();
     renderContacts();
     renderReporting();
+    renderContrats();
     if (isFicheOpen()) refreshAOFiche();
     refreshEntrepriseForm();
   }
