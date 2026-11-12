@@ -578,10 +578,11 @@
   }
 
   /* Colonnes souples : elles se partagent toute la largeur disponible, sans
-     descendre sous 240px (en dessous, le tableau défile horizontalement). */
+     descendre sous 200px (en dessous, le tableau défile horizontalement).
+     200px : les 5 colonnes actives + 3 repliées tiennent sur un écran 1440. */
   .kanban-column {
-    flex: 1 1 240px;
-    min-width: 240px;
+    flex: 1 1 200px;
+    min-width: 200px;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
@@ -597,6 +598,27 @@
     margin-bottom: 10px;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--color-border);
+  }
+
+  .kanban-column-header-right { display: flex; align-items: center; gap: 6px; }
+
+  .kanban-add {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: 15px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  .kanban-add:hover {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
   }
 
   .kanban-cards {
@@ -667,7 +689,7 @@
     padding-bottom: 0;
   }
 
-  .kanban-column.collapsed .kanban-column-header span:first-child {
+  .kanban-column.collapsed .kanban-column-header > span:first-child {
     writing-mode: vertical-rl;
     white-space: nowrap;
   }
@@ -3435,7 +3457,10 @@
         <div class="kanban-column${collapsible ? " collapsible end-" + id : ""}${collapsed ? " collapsed" : ""}">
           <div class="kanban-column-header" ${collapsible ? `data-toggle="${id}" title="${collapsed ? "Déplier" : "Replier"} la colonne"` : ""}>
             <span>${collapsible ? (collapsed ? "▸ " : "▾ ") : ""}${escapeHtml(label)}</span>
-            <span class="badge-type">${cards.length}</span>
+            <span class="kanban-column-header-right">
+              ${collapsible ? "" : `<button type="button" class="kanban-add" data-add-phase="${escapeHtml(id)}" title="Nouvel AO dans « ${escapeHtml(label)} »">+</button>`}
+              <span class="badge-type">${cards.length}</span>
+            </span>
           </div>
           <div class="kanban-cards" data-phase="${escapeHtml(id)}">
             ${cards.map(renderAOCard).join("")}
@@ -3443,6 +3468,12 @@
         </div>
       `;
     }).join("");
+
+    // "+" d'en-tête : nouvel AO créé directement dans cette colonne (pas sur
+    // les colonnes finales, où Perdu exige un motif).
+    board.querySelectorAll("[data-add-phase]").forEach((btn) => {
+      btn.addEventListener("click", () => openAOForm(null, btn.dataset.addPhase));
+    });
 
     board.querySelectorAll("[data-toggle]").forEach((header) => {
       header.addEventListener("click", () => {
@@ -3994,10 +4025,11 @@
     return parts.join(" · ");
   }
 
-  function openAOForm(ao) {
+  // presetPhase : phase de départ d'un nouvel AO (bouton "+" d'une colonne).
+  function openAOForm(ao, presetPhase) {
     clearTimeout(aoSaveTimer);
     currentEditingAO = ao || null;
-    ficheDraftPhase = "a_venir";
+    ficheDraftPhase = (!ao && presetPhase) || "a_venir";
 
     populateSelect(ficheEl("f-type_client"), TYPE_CLIENT_OPTIONS);
     populateSelect(ficheEl("f-priorite"), AO_PRIORITE_OPTIONS, "— Non définie —");
