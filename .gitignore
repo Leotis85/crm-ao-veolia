@@ -5,3 +5,6 @@ Thumbs.db
 
 # Exports de données AO (concurrents, montants, motifs...) : jamais dans l'historique git.
 crm-ao-export-*.json
+
+# Fichiers de travail pour l import (données internes, ne jamais publier : dépôt public)
+import/

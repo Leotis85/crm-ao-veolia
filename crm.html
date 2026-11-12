@@ -2614,9 +2614,9 @@
 
     <div id="import-step-files">
       <p class="import-intro">Les fichiers sont lus dans ton navigateur, rien n'est envoyé avant que tu valides l'aperçu. Exporte chaque feuille en CSV.</p>
-      <label class="import-file">Export de la <strong>Contrathèque</strong> (obligatoire)
+      <label class="import-file">Export de la <strong>Contrathèque</strong>, ou <strong>feuille de reprise</strong> déjà préparée (obligatoire)
         <input type="file" id="import-file-contratheque" accept=".csv,text/csv">
-        <small>Seuls les contrats de base « Actif » sont repris, avec leurs avenants.</small>
+        <small>Seuls les contrats de base « Actif » sont repris, avec leurs avenants. Une feuille de reprise (bouton « Télécharger la feuille de reprise » de l'aperçu) se suffit à elle-même : les deux autres fichiers sont alors ignorés.</small>
       </label>
       <label class="import-file">Feuille <strong>Portefeuille</strong> (recommandé)
         <input type="file" id="import-file-portefeuille" accept=".csv,text/csv">
@@ -2661,6 +2661,7 @@
       <div class="modal-footer">
         <button type="button" class="btn-secondary" id="import-back">← Changer de fichiers</button>
         <div class="modal-footer-right">
+          <button type="button" class="btn-secondary" id="import-download-sheet" title="Une seule feuille qui regroupe tout : à relire / corriger dans Sheets ou Excel puis à réimporter seule">⬇ Télécharger la feuille de reprise</button>
           <button type="button" class="btn-primary" id="import-submit">Importer</button>
         </div>
       </div>
@@ -7203,6 +7204,119 @@
     return { contrats, aos };
   }
 
+  // --- Feuille de reprise : tout l'import sur une seule feuille ---
+  // Une ligne par contrat, ses avenants juste en dessous, puis les AO.
+  // Relue / corrigée dans un tableur, elle se réimporte seule.
+  const SHEET_HEADER = [
+    "Type de ligne", "Importer", "Affaire", "Maître d'ouvrage", "Statut", "Secteur", "Prestations",
+    "Date de début / d'effet", "Durée (mois)", "Date de fin", "Reconduction", "Durée reconduction (mois)",
+    "Montant (€)", "Lien Drive", "Nom de l'AO", "Notes", "À vérifier",
+  ];
+
+  function sheetDate(key) {
+    if (!key) return "";
+    const [y, m, d] = key.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  function sheetNumber(v) {
+    return v === null || v === undefined || v === "" ? "" : String(v).replace(".", ",");
+  }
+
+  function importPlanToSheet(plan) {
+    const rows = [SHEET_HEADER];
+    plan.contrats.forEach((c) => {
+      rows.push(["CONTRAT", c.selected ? "OUI" : "NON", c.nom, c.maitre_ouvrage, c.statut, c.secteur || c.secteurSource || "",
+        c.prestations.join(" "), sheetDate(c.date_debut), sheetNumber(c.duree_mois), sheetDate(c.date_fin),
+        c.reconduction, sheetNumber(c.duree_reconduction_mois), sheetNumber(c.montant), c.lien, "", "", c.warnings.join(" | ")]);
+      c.avenants.forEach((a) => {
+        rows.push(["AVENANT", c.selected ? "OUI" : "NON", c.nom, "", a.statut, "", a.prestations, sheetDate(a.date),
+          "", "", "", "", "", a.lien, "", a.notes || "", ""]);
+      });
+    });
+    plan.aos.forEach((a) => {
+      const contrat = plan.contrats.find((c) => c.id === a.contratId);
+      rows.push([a.kind === "renouvellement" ? "AO RENOUVELLEMENT" : "AO DEVELOPPEMENT", a.selected ? "OUI" : "NON",
+        contrat ? contrat.nom : "", "", "", "", "", sheetDate(a.date), "", "", "", "", sheetNumber(a.montant), "",
+        a.nom, a.notes, a.warnings.join(" | ")]);
+    });
+    return rows;
+  }
+
+  function isRepriseSheet(rows) {
+    return rows.length && rows[0].some((c) => normalizeSearchText(c).trim() === "type de ligne");
+  }
+
+  // Feuille de reprise -> même plan que buildImportPlan (avenants rattachés
+  // au contrat de même nom d'affaire, AO de renouvellement aussi).
+  function parseRepriseSheet(rows) {
+    const header = rows[0].map((c) => normalizeSearchText(c).replace(/\s+/g, " ").trim());
+    const at = (r, label) => {
+      const i = header.indexOf(normalizeSearchText(label));
+      return i === -1 ? "" : (r[i] || "").trim();
+    };
+    const oui = (v) => !/^(non|n|0|false)$/i.test(normalizeSearchText(v).trim());
+    const existing = new Set((appData.contrats || []).map((c) => importKey(c.nom)));
+    const contrats = [];
+    const aos = [];
+    const byAffaire = new Map();
+    rows.slice(1).forEach((r) => {
+      const type = normalizeSearchText(at(r, "Type de ligne")).toUpperCase();
+      const affaire = at(r, "Affaire");
+      if (type === "CONTRAT") {
+        const warnings = at(r, "À vérifier") ? at(r, "À vérifier").split(" | ") : [];
+        const already = existing.has(importKey(affaire));
+        if (already && !warnings.includes("déjà dans la contrathèque")) warnings.push("déjà dans la contrathèque");
+        const secteur = at(r, "Secteur");
+        const c = {
+          id: generateId(),
+          key: importKey(affaire),
+          selected: oui(at(r, "Importer")) && !already,
+          nom: affaire,
+          maitre_ouvrage: at(r, "Maître d'ouvrage"),
+          statut: CONTRAT_STATUTS.includes(at(r, "Statut")) ? at(r, "Statut") : "Actif",
+          secteur: SECTEUR_OPTIONS.includes(secteur) ? secteur : "",
+          secteurSource: secteur,
+          prestations: at(r, "Prestations").split(/\s+/).filter(Boolean),
+          date_debut: parseFrDate(at(r, "Date de début / d'effet")),
+          duree_mois: at(r, "Durée (mois)") ? Number(at(r, "Durée (mois)").replace(",", ".")) : null,
+          date_fin: parseFrDate(at(r, "Date de fin")),
+          reconduction: CONTRAT_RECONDUCTIONS.includes(at(r, "Reconduction")) ? at(r, "Reconduction") : "",
+          duree_reconduction_mois: at(r, "Durée reconduction (mois)") ? Number(at(r, "Durée reconduction (mois)").replace(",", ".")) : null,
+          montant: parseEuros(at(r, "Montant (€)")),
+          lien: at(r, "Lien Drive"),
+          avenants: [],
+          warnings,
+        };
+        contrats.push(c);
+        byAffaire.set(importKey(affaire), c);
+      } else if (type === "AVENANT") {
+        const c = byAffaire.get(importKey(affaire));
+        if (!c) return;
+        c.avenants.push({
+          id: generateId(), date: parseFrDate(at(r, "Date de début / d'effet")), prestations: at(r, "Prestations"),
+          statut: at(r, "Statut") || "Actif", lien: at(r, "Lien Drive"), notes: at(r, "Notes"), ao_id: null,
+        });
+      } else if (type.startsWith("AO")) {
+        const renouv = type.includes("RENOUVELLEMENT");
+        const c = renouv ? byAffaire.get(importKey(affaire)) : null;
+        aos.push({
+          id: generateId(),
+          selected: oui(at(r, "Importer")),
+          kind: renouv ? "renouvellement" : "developpement",
+          nom: at(r, "Nom de l'AO") || affaire,
+          contratId: c ? c.id : null,
+          contratNom: c ? c.nom : "",
+          montant: parseEuros(at(r, "Montant (€)")),
+          date: parseFrDate(at(r, "Date de début / d'effet")),
+          notes: at(r, "Notes"),
+          warnings: renouv && !c ? ["contrat introuvable : à rattacher à la main"] : [],
+        });
+      }
+    });
+    return { contrats, aos };
+  }
+
   let importPlan = null;
 
   function importEl(id) { return document.getElementById(id); }
@@ -7305,18 +7419,25 @@
         readFileText(importEl("import-file-portefeuille")),
         readFileText(importEl("import-file-commerce")),
       ]);
-      if (!ct) throw new Error("Choisis au moins l'export de la contrathèque.");
-      importPlan = buildImportPlan(
-        parseContratheque(parseCSV(ct)),
-        pf ? parsePortefeuille(parseCSV(pf)) : null,
-        cm ? parseCommerce(parseCSV(cm)) : [],
-      );
+      if (!ct) throw new Error("Choisis au moins l'export de la contrathèque (ou une feuille de reprise).");
+      const ctRows = parseCSV(ct);
+      importPlan = isRepriseSheet(ctRows)
+        ? parseRepriseSheet(ctRows)
+        : buildImportPlan(
+          parseContratheque(ctRows),
+          pf ? parsePortefeuille(parseCSV(pf)) : null,
+          cm ? parseCommerce(parseCSV(cm)) : [],
+        );
       importEl("import-step-files").hidden = true;
       importEl("import-step-preview").hidden = false;
       renderImportPreview();
     } catch (err) {
       importEl("import-error").textContent = err.message;
     }
+  });
+
+  importEl("import-download-sheet").addEventListener("click", () => {
+    if (importPlan) downloadCSV(`reprise-contratheque-${localDateKey(new Date())}.csv`, importPlanToSheet(importPlan));
   });
 
   importEl("import-back").addEventListener("click", () => {
