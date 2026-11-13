@@ -217,7 +217,7 @@ changer).
 | `statut` | liste | Actif, Terminé, Résilié |
 | `date_debut`, `duree_mois`, `date_fin` | date / nombre | fin = y compris reconductions déjà prévues |
 | `reconduction`, `duree_reconduction_mois` | liste / nombre | Tacite, Expresse, Non |
-| `alerte_mois` | nombre | défaut 6 (12 avant le 2026-11-13) : la renégociation apparaît N mois avant l'échéance |
+| `alerte_mois` | nombre | défaut 6 (12 avant le 2026-11-13, contrats existants à 12 passés à 6 par `supabase/migrate_alerte_6_mois.sql`) : la renégociation apparaît N mois avant l'échéance |
 | `montant` | nombre | € |
 | `lien` | texte | dossier Drive |
 | `ao_origine_id` | relation | AO dont il est issu |
@@ -496,7 +496,7 @@ n'est pas tracée. Lignes triées par fin de la première période.
 d'« onglet Client ». Ordre : 1. entreprises (fait) ; 2. table + onglet
 Contrathèque (fait) (nom de l'affaire en premier, syndic / AMO en
 champs) ; 3. AO gagné → contrat (titre de l'AO conservé), AO Avenant
-rattaché obligatoirement à un contrat (fait) ; 4. renégociations (alerte 12 mois
+rattaché obligatoirement à un contrat (fait) ; 4. renégociations (alerte 6 mois (12 jusqu'au 2026-11-13)
 avant échéance par défaut, prochaine échéance recalculée pour les tacites
 reconductions, AO de renouvellement en un clic, lignes dans le plan de
 charge — fait) ; 5. import CSV dans l'app (contrathèque + portefeuille + feuille
