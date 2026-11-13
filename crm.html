@@ -2292,9 +2292,6 @@
           <label class="ao-field">Priorité
             <select id="f-priorite" data-ao-key="priorite"></select>
           </label>
-          <label class="ao-field">Service
-            <select id="f-service" data-ao-key="service"></select>
-          </label>
           <label class="ao-field">Type
             <select id="f-type" data-ao-key="type"></select>
           </label>
@@ -4647,7 +4644,7 @@
   function updateAOContratField() {
     const type = ficheEl("f-type").value;
     const contratId = ficheEl("f-contrat_id").value;
-    const travaux = ficheEl("f-service").value === "Travaux";
+    const travaux = ficheService === "Travaux";
     ficheEl("f-contrat_id-wrap").hidden = (travaux || !AO_TYPES_AVEC_CONTRAT.includes(type)) && !contratId;
     ficheEl("f-contrat-warning").hidden = !(type === "Avenant" && !contratId && !travaux);
   }
@@ -4689,10 +4686,15 @@
     return (ao.service || []).includes("Travaux");
   }
 
+  // Service de l'AO ouvert dans la fiche (2026-11-13 : plus de champ, un
+  // nouvel AO prend le service de l'onglet du pipeline, un AO existant
+  // garde le sien).
+  let ficheService = "";
+
   // Champs propres au service de la fiche : dates d'exécution pour Travaux
   // (ou déjà renseignées), champs "contrat" pour les autres.
   function updateAOServiceFields() {
-    const travaux = ficheEl("f-service").value === "Travaux";
+    const travaux = ficheService === "Travaux";
     ficheEl("f-exe-wrap").hidden = !travaux
       && !ficheEl("f-date_debut_exe").value && !ficheEl("f-date_fin_exe").value;
     document.querySelectorAll("#ao-form .ao-commerce-only").forEach((el) => { el.hidden = travaux; });
@@ -4714,14 +4716,13 @@
   wireEntrepriseSelect(document.getElementById("f-amo_id"), "AMO / BE");
 
   function readAOForm() {
-    const serviceValue = ficheEl("f-service").value;
     const valeur = ficheEl("f-valeur_estimee").value;
     return {
       nom_projet: ficheEl("f-nom_projet").value.trim(),
       type_client: ficheEl("f-type_client").value,
       priorite: ficheEl("f-priorite").value,
       type: ficheEl("f-type").value,
-      service: serviceValue ? [serviceValue] : [],
+      service: ficheService ? [ficheService] : [],
       assigne_a: checkedAssignees(ficheEl("f-assigne_a")),
       type_marche: Array.from(document.querySelectorAll(".f-type_marche-item:checked")).map((cb) => cb.value),
       valeur_estimee: valeur ? Number(valeur) : null,
@@ -4759,7 +4760,7 @@
       ficheEl("f-contrat_id").innerHTML = contratSelectOptions(data.contrat_id);
       ficheEl("f-contrat_id").value = data.contrat_id || "";
     });
-    set("service", () => { ficheEl("f-service").value = (data.service && data.service[0]) || ""; });
+    set("service", () => { ficheService = (data.service && data.service[0]) || ""; });
     set("assigne_a", () => renderAssigneCheckboxes(ficheEl("f-assigne_a"), data.assigne_a || []));
     set("type_marche", () => {
       const selected = new Set(data.type_marche || []);
@@ -4818,7 +4819,7 @@
   }
 
   function renderPhaseStepper() {
-    const service = ficheEl("f-service").value;
+    const service = ficheService;
     const current = pipelineColumnFor(currentFichePhase(), service);
     const phases = pipelinePhasesFor(service);
     const steps = phases.filter((p) => !AO_TERMINAL_PHASES.includes(p));
@@ -4910,7 +4911,6 @@
     scheduleAOSave(event.target.id === "f-notes" ? 1200 : 800);
   });
   ficheEl("ao-form").addEventListener("change", (event) => {
-    if (event.target.id === "f-service") { renderPhaseStepper(); updateAOServiceFields(); }
     if (event.target.id === "f-type" || event.target.id === "f-contrat_id") updateAOContratField();
     if (event.target.id === "f-type_client") updateAOSyndicField();
     // Contrat choisi : reprend son syndic / AMO si l'AO n'en a pas.
@@ -4957,6 +4957,7 @@
 
   function aoFicheKicker(ao) {
     const parts = [ao.type || "AO"];
+    if ((ao.service || [])[0]) parts.push(ao.service[0]);
     if (ao.modified_by) parts.push(`modifié par ${ao.modified_by}`);
     return parts.join(" · ");
   }
@@ -4973,7 +4974,6 @@
     populateSelect(ficheEl("f-type"), TYPE_AO_OPTIONS);
     populateSelect(ficheEl("f-resultat"), RESULTAT_OPTIONS);
     populateSelect(ficheEl("f-motif-categorie"), MOTIF_OPTIONS, "— Aucun —");
-    populateSelect(ficheEl("f-service"), SERVICE_OPTIONS, "— Aucun —");
 
     const data = ao || {
       assigne_a: [currentProfile.display_name],
@@ -4983,7 +4983,7 @@
     writeAOForm(data);
     aoSaved = readAOForm();
 
-    ficheEl("ao-modal-title").textContent = ao ? aoFicheKicker(ao) : "Nouvel AO";
+    ficheEl("ao-modal-title").textContent = ao ? aoFicheKicker(ao) : ["Nouvel AO", ficheService].filter(Boolean).join(" · ");
     ficheEl("ao-form-delete").hidden = !ao;
     ficheEl("ao-create-footer").hidden = !!ao;
     ficheEl("ao-taches-section").hidden = !ao;
@@ -6859,6 +6859,7 @@
     openAOForm(null, "a_faire", {
       nom_projet: `Avenant – ${c.nom || ""}`,
       type: "Avenant",
+      service: ["Commerce"], // contrathèque = Commerce
       contrat_id: c.id,
       type_client: c.type_client || TYPE_CLIENT_OPTIONS[0],
       syndic_id: c.syndic_id,
