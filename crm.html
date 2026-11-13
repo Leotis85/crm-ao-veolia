@@ -2313,7 +2313,7 @@
             <input type="text" id="f-concurrence" placeholder="—" data-ao-key="concurrence">
           </label>
           <div class="ao-field ao-field-stack" data-ao-key="type_marche">
-            <span>Type de marché</span>
+            <span>Prestations</span>
             <div class="checkbox-group" id="f-type_marche"></div>
           </div>
           <div class="ao-field ao-field-stack" data-ao-key="assigne_a">
@@ -3344,7 +3344,12 @@
     "Non renseigné": "#898781",
   };
   const TYPE_AO_OPTIONS = ["Appel d'offres", "Renouvellement", "Avenant", "Sollicitation directe", "Proposition travaux"];
-  const TYPE_MARCHE_OPTIONS = ["P1", "P2", "P3", "CPE", "R1", "R2"];
+  // Prestations d'un contrat ET types de marché d'un AO : une seule liste,
+  // pour qu'un AO gagné se retrouve tel quel dans le contrat (et l'inverse
+  // pour un renouvellement / avenant). Une valeur hors liste déjà
+  // enregistrée reste affichée (cochée) dans les fiches pour ne pas être perdue.
+  const PRESTATION_OPTIONS = ["P1", "P2", "P3", "P5", "PFI", "R1", "R2", "CPE"];
+  const TYPE_MARCHE_OPTIONS = PRESTATION_OPTIONS;
   const SERVICE_OPTIONS = ["Commerce", "Travaux"];
   const RESULTAT_OPTIONS = ["En cours", "Gagné", "Perdu", "Abandonné"];
   const STATUT_TACHE_OPTIONS = ["Pas commencé", "En cours", "Terminé"];
@@ -3368,9 +3373,6 @@
   // Contrathèque (2026-11-12).
   const CONTRAT_STATUTS = ["Actif", "Terminé", "Résilié"];
   const CONTRAT_RECONDUCTIONS = ["Tacite", "Expresse", "Non"];
-  // Prestations d'un contrat. Une valeur hors liste déjà enregistrée reste
-  // affichée (cochée) dans la fiche pour ne pas être perdue.
-  const PRESTATION_OPTIONS = ["P1", "P2", "P3", "P5", "PFI", "R1", "R2", "CPE"];
   // Découpage de l'agence en 3 secteurs (reporting).
   const SECTEUR_OPTIONS = ["B1", "B2", "B3"];
 
@@ -4089,7 +4091,7 @@
     const tmSel = document.getElementById("filter-type_marche");
     const asSel = document.getElementById("filter-assigne_a");
     if (!tcSel.options.length) populateSelect(tcSel, TYPE_CLIENT_OPTIONS, "Tous types de client");
-    if (!tmSel.options.length) populateSelect(tmSel, TYPE_MARCHE_OPTIONS, "Tous types de marché");
+    if (!tmSel.options.length) populateSelect(tmSel, TYPE_MARCHE_OPTIONS, "Toutes prestations");
     if (!asSel.options.length) populateSelect(asSel, ASSIGNE_OPTIONS, "Tous les assignés");
     const prSel = document.getElementById("filter-priorite");
     if (!prSel.options.length) populateSelect(prSel, AO_PRIORITE_OPTIONS, "Toutes priorités");
@@ -4675,7 +4677,8 @@
     set("assigne_a", () => renderAssigneCheckboxes(ficheEl("f-assigne_a"), data.assigne_a || []));
     set("type_marche", () => {
       const selected = new Set(data.type_marche || []);
-      ficheEl("f-type_marche").innerHTML = TYPE_MARCHE_OPTIONS.map((m) => `
+      const extra = (data.type_marche || []).filter((m) => !TYPE_MARCHE_OPTIONS.includes(m));
+      ficheEl("f-type_marche").innerHTML = [...TYPE_MARCHE_OPTIONS, ...extra].map((m) => `
         <label class="checkbox-inline"><input type="checkbox" class="f-type_marche-item" value="${escapeHtml(m)}"${selected.has(m) ? " checked" : ""}> ${escapeHtml(m)}</label>
       `).join("");
     });
@@ -7942,7 +7945,7 @@
   // l'écran, pas systématiquement tous les AO.
   document.getElementById("btn-export-ao-csv").addEventListener("click", () => {
     const rows = [
-      ["Nom du projet", "Client", "Phase", "Type", "Type de marché", "Valeur (k€)", "AMO", "Concurrence", "Date de remise", "Date de visite", "Date de prise d'effet", "Lieu", "Résultat", "Motif", "Assigné à", "Priorité", "Maître d'ouvrage"],
+      ["Nom du projet", "Client", "Phase", "Type", "Prestations", "Valeur (k€)", "AMO", "Concurrence", "Date de remise", "Date de visite", "Date de prise d'effet", "Lieu", "Résultat", "Motif", "Assigné à", "Priorité", "Maître d'ouvrage"],
       ...appData.aos.filter(aoMatchesFilters).map((ao) => [
         ao.nom_projet || "",
         ao.type_client || "",

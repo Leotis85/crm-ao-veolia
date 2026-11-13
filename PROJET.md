@@ -92,7 +92,7 @@ Repris du Pipeline Notion existant, enrichi.
 | `phase` | liste | voir valeurs ci-dessous |
 | `type` | liste | Appel d'offres, Renouvellement, Avenant, Sollicitation directe, Proposition travaux |
 | `priorite` | liste | ajouté le 2026-11-11 (`supabase/migrate_ao_priorite.sql`) : Haute, Moyenne, Basse ou vide. Colore les cartes du pipeline (liseré + pastille), et sert de filtre (volontairement aucun tri par priorité) |
-| `type_marche` | multi-liste | P1, P2, P3, CPE, R1, R2, GTR, Gaz |
+| `type_marche` | multi-liste | Depuis le 2026-11-13, même liste que les prestations des contrats (§11, `PRESTATION_OPTIONS` dans crm.html) : P1, P2, P3, P5, PFI, R1, R2, CPE. Une ancienne valeur hors liste reste affichée cochée dans la fiche |
 | `service` | multi-liste | ajouté le 2026-09-09 : Commerce, Travaux — pilote la visibilité par service (§9). Vide = visible par tout le monde (migration douce des AO existants) |
 | `valeur_estimee_keur` | nombre | en k€ |
 | `amo` | texte | assistance à maîtrise d'ouvrage |
