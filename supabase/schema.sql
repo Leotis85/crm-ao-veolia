@@ -166,6 +166,10 @@ create table public.aos (
   -- pour l'historique (plus écrite par l'app).
   maitre_ouvrage_id text references public.entreprises (id) on delete set null,
   amo_id text references public.entreprises (id) on delete set null,
+  -- Syndic (2026-11-13, migrate_syndic.sql) : remplace le maître d'ouvrage
+  -- dans l'app, n'a de sens que pour un client Habitat (vidé sinon).
+  -- maitre_ouvrage_id reste en base pour l'historique, plus lu ni écrit.
+  syndic_id text references public.entreprises (id) on delete set null,
   -- Tableau (comme taches.assigne_a) depuis migrate_ao_assignes.sql : un AO
   -- peut être suivi par plusieurs personnes.
   assigne_a text[] not null default '{}',
@@ -352,6 +356,10 @@ create table public.contrats (
   nom text not null default '',
   maitre_ouvrage_id text references public.entreprises (id) on delete set null,
   amo_id text references public.entreprises (id) on delete set null,
+  -- 2026-11-13 (migrate_syndic.sql) : type de client (comme les AO) et
+  -- syndic, renseigné seulement pour un client Habitat.
+  type_client text not null default '',
+  syndic_id text references public.entreprises (id) on delete set null,
   secteur text not null default '',
   prestations text[] not null default '{}',
   statut text not null default 'Actif',
@@ -512,7 +520,7 @@ begin
 
     if expected is null then
       insert into public.aos (
-        id, nom_projet, type_client, priorite, maitre_ouvrage_id, amo_id, contrat_id, assigne_a, phase, type, type_marche, service,
+        id, nom_projet, type_client, priorite, syndic_id, amo_id, contrat_id, assigne_a, phase, type, type_marche, service,
         valeur_estimee_keur, amo, concurrence, date_remise, date_visite, date_prise_effet, duree_contrat_mois,
         date_entree_etude,
         lieu, notes, fichiers, resultat, motif_categorie, motif, rappel,
@@ -521,7 +529,7 @@ begin
         coalesce(row_id, gen_random_uuid()::text),
         coalesce(row_data->>'nom_projet', ''), coalesce(row_data->>'type_client', 'Habitat'),
         coalesce(row_data->>'priorite', ''),
-        nullif(row_data->>'maitre_ouvrage_id', ''), nullif(row_data->>'amo_id', ''),
+        nullif(row_data->>'syndic_id', ''), nullif(row_data->>'amo_id', ''),
         nullif(row_data->>'contrat_id', ''),
         public.jsonb_text_array_lenient(row_data->'assigne_a'), coalesce(row_data->>'phase', 'a_venir'),
         coalesce(row_data->>'type', 'Appel d''offres'),
@@ -546,7 +554,7 @@ begin
         nom_projet = coalesce(row_data->>'nom_projet', ''),
         type_client = coalesce(row_data->>'type_client', 'Habitat'),
         priorite = coalesce(row_data->>'priorite', ''),
-        maitre_ouvrage_id = nullif(row_data->>'maitre_ouvrage_id', ''),
+        syndic_id = nullif(row_data->>'syndic_id', ''),
         amo_id = nullif(row_data->>'amo_id', ''),
         contrat_id = nullif(row_data->>'contrat_id', ''),
         assigne_a = public.jsonb_text_array_lenient(row_data->'assigne_a'),
@@ -608,14 +616,14 @@ begin
 
     if expected is null then
       insert into public.contrats (
-        id, nom, maitre_ouvrage_id, amo_id, secteur, prestations, statut,
+        id, nom, type_client, syndic_id, amo_id, secteur, prestations, statut,
         date_debut, duree_mois, date_fin, reconduction, duree_reconduction_mois,
         alerte_mois, montant, lien, ao_origine_id, avenants, notes,
         last_modified, modified_by
       ) values (
         coalesce(row_id, gen_random_uuid()::text),
-        coalesce(row_data->>'nom', ''),
-        nullif(row_data->>'maitre_ouvrage_id', ''), nullif(row_data->>'amo_id', ''),
+        coalesce(row_data->>'nom', ''), coalesce(row_data->>'type_client', ''),
+        nullif(row_data->>'syndic_id', ''), nullif(row_data->>'amo_id', ''),
         coalesce(row_data->>'secteur', ''),
         public.jsonb_text_array_lenient(row_data->'prestations'),
         coalesce(nullif(row_data->>'statut', ''), 'Actif'),
@@ -632,7 +640,8 @@ begin
     else
       update public.contrats set
         nom = coalesce(row_data->>'nom', ''),
-        maitre_ouvrage_id = nullif(row_data->>'maitre_ouvrage_id', ''),
+        type_client = coalesce(row_data->>'type_client', ''),
+        syndic_id = nullif(row_data->>'syndic_id', ''),
         amo_id = nullif(row_data->>'amo_id', ''),
         secteur = coalesce(row_data->>'secteur', ''),
         prestations = public.jsonb_text_array_lenient(row_data->'prestations'),

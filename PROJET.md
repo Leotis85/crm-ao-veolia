@@ -94,6 +94,7 @@ Repris du Pipeline Notion existant, enrichi.
 | `priorite` | liste | ajouté le 2026-11-11 (`supabase/migrate_ao_priorite.sql`) : Haute, Moyenne, Basse ou vide. Colore les cartes du pipeline (liseré + pastille), et sert de filtre (volontairement aucun tri par priorité) |
 | `type_marche` | multi-liste | Depuis le 2026-11-13, même liste que les prestations des contrats (§11, `PRESTATION_OPTIONS` dans crm.html) : P1, P2, P3, P5, PFI, R1, R2, CPE. Une ancienne valeur hors liste reste affichée cochée dans la fiche |
 | `service` | multi-liste | ajouté le 2026-09-09 : Commerce, Travaux — pilote la visibilité par service (§9). Vide = visible par tout le monde (migration douce des AO existants) |
+| `syndic_id` | relation | ajouté le 2026-11-13 (`supabase/migrate_syndic.sql`), remplace le maître d'ouvrage : vers une entreprise « Syndic / Gestionnaire ». Champ affiché seulement si `type_client` = Habitat, vidé à l'enregistrement sinon. `maitre_ouvrage_id` reste en base (historique), plus lu ni écrit |
 | `valeur_estimee_keur` | nombre | en k€ |
 | `amo` | texte | assistance à maîtrise d'ouvrage |
 | `concurrence` | texte | concurrents identifiés |
@@ -175,21 +176,21 @@ syndic, Soconer = toujours AMO / BE).
 |---|---|---|
 | `id` | identifiant unique | |
 | `nom` | texte | |
-| `role` | liste | Maître d'ouvrage, Syndic / Gestionnaire, AMO / BE, Partenaire / Sous-traitant, Fournisseur, Interne Veolia, Autre (`ENTREPRISE_ROLES` dans crm.html) |
+| `role` | liste | Syndic / Gestionnaire, AMO / BE, Partenaire / Sous-traitant, Fournisseur, Interne Veolia, Autre (`ENTREPRISE_ROLES` dans crm.html). « Maître d'ouvrage » supprimé le 2026-11-13 : les entreprises et contacts qui l'avaient sont passés sans rôle / sans catégorie |
 | `notes` | texte | |
 
-Liens : `contacts.entreprise_id`, `aos.maitre_ouvrage_id`, `aos.amo_id` (et
+Liens : `contacts.entreprise_id`, `aos.syndic_id` (ex `maitre_ouvrage_id`), `aos.amo_id` (et
 plus tard les contrats). Un contact rattaché prend le rôle de son entreprise
 comme catégorie ; sans entreprise il garde sa propre `categorie`. Les
 anciennes colonnes texte (`aos.amo`, `contacts.organisme`) sont conservées :
 la migration a créé une entreprise par valeur distincte (variantes de
 casse / accents / espaces regroupées) et rattaché AO et contacts.
 Plus de lien direct contact <-> AO (2026-11-12) : la fiche AO affiche les
-contacts de son maître d'ouvrage et de son AMO ; les colonnes
+contacts de son syndic et de son AMO ; les colonnes
 `contacts.ao_lies` / `aos.contacts_lies` restent en base mais ne sont plus
 modifiées. Écran : Contacts > vue **Entreprises** (tuiles par rôle, fiche avec ses
 contacts et les AO où elle intervient) ; fiche AO : listes déroulantes
-« Maître d'ouvrage » et « AMO / BE » (avec création à la volée).
+« Syndic » (client Habitat uniquement) et « AMO / BE » (avec création à la volée).
 
 ### 4.3 ter Contrats — contrathèque (ajouté le 2026-11-12, `supabase/migrate_contrats.sql`)
 
@@ -200,7 +201,8 @@ changer).
 | Champ | Type | Notes |
 |---|---|---|
 | `nom` | texte | nom de l'affaire |
-| `maitre_ouvrage_id`, `amo_id` | relation | vers entreprises |
+| `type_client` | liste | ajouté le 2026-11-13 : comme pour les AO (repris de l'AO d'origine), vide possible |
+| `syndic_id`, `amo_id` | relation | vers entreprises ; syndic affiché seulement si `type_client` = Habitat (remplace `maitre_ouvrage_id` le 2026-11-13) |
 | `secteur` | liste | découpage de l'agence : B1, B2, B3 (reporting) |
 | `prestations` | multi-liste | P1, P2, P3, P5, PFI, R1, R2, CPE |
 | `statut` | liste | Actif, Terminé, Résilié |
@@ -225,7 +227,7 @@ entreprise listent aussi leurs contrats.
 **Liens pipeline ↔ contrathèque (2026-11-12, `supabase/migrate_ao_contrat.sql`)** :
 - `aos.contrat_id` : contrat auquel se rattache un AO de type Avenant
   (obligatoire, création bloquée sans) ou Renouvellement. Choisir le
-  contrat reprend son maître d'ouvrage / AMO si l'AO n'en a pas.
+  contrat reprend son syndic / AMO si l'AO n'en a pas.
 - AO passé en Gagné (barre de phases ou glisser-déposer) :
   Avenant → proposé à l'ajout dans l'historique d'avenants du contrat ;
   Renouvellement rattaché → ouvre le contrat pour mettre ses dates à jour ;
@@ -251,11 +253,14 @@ validation, trois CSV : export Contrathèque (obligatoire : contrats de base
 date de fin, montant ; rapprochement par nom, préfixe toléré) et feuille
 Commerce 2027 (renouvellements → AO « Renouvellement » rattachés au contrat,
 développement → AO, colonne « A venir », % / CA projeté / commentaire en
-notes). Aperçu éditable (cocher / décocher, nom de l'affaire, maître
-d'ouvrage, statut) avec alertes : contrat remplacé par un plus récent
+notes). Aperçu éditable (cocher / décocher, nom de l'affaire, syndic,
+statut) avec alertes : contrat remplacé par un plus récent
 (importé en Terminé), doublon probable (décoché), noté résilié dans le
-portefeuille, absent du portefeuille, déjà présent (décoché). Maîtres
-d'ouvrage manquants créés comme entreprises. Jonzac Énergies Vertes exclu.
+portefeuille, absent du portefeuille, déjà présent (décoché). Type de client proposé Habitat
+pour les résidences / copropriétés (RES, SDC, ASL, RC) ; syndic à saisir
+(inconnu des fichiers), créé comme entreprise « Syndic / Gestionnaire »
+s'il manque. Colonnes « Type de client » et « Syndic » dans la feuille de
+reprise. Jonzac Énergies Vertes exclu.
 Les fichiers ne sont jamais dans le dépôt (public).
 
 ### 4.4 Rappel (mécanisme, pas une entité) — SUPPRIMÉ de l'interface le 2026-11-11
@@ -474,7 +479,7 @@ tableau.
 
 **Contrathèque (en cours, validé le 2026-11-12)** — remplace l'idée
 d'« onglet Client ». Ordre : 1. entreprises (fait) ; 2. table + onglet
-Contrathèque (fait) (nom de l'affaire en premier, maître d'ouvrage / AMO en
+Contrathèque (fait) (nom de l'affaire en premier, syndic / AMO en
 champs) ; 3. AO gagné → contrat (titre de l'AO conservé), AO Avenant
 rattaché obligatoirement à un contrat (fait) ; 4. renégociations (alerte 12 mois
 avant échéance par défaut, prochaine échéance recalculée pour les tacites

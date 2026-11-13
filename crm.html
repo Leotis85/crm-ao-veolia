@@ -1165,7 +1165,7 @@
 
   .ao-taches { flex-shrink: 0; }
   .ao-contacts-group + .ao-contacts-group { margin-top: 10px; }
-  #f-contrat_id-wrap[hidden], .ao-contrat-warning[hidden], #ao-contrat-section[hidden], #contrat-aos-section[hidden] { display: none; }
+  #f-syndic_id-wrap[hidden], #f-k-syndic_id-wrap[hidden], #f-contrat_id-wrap[hidden], .ao-contrat-warning[hidden], #ao-contrat-section[hidden], #contrat-aos-section[hidden] { display: none; }
   .ao-contrat-warning { font-size: 12px; color: var(--color-danger); font-weight: 600; margin: 0 0 6px 118px; }
   .ao-contrat-line { font-size: 13px; margin-bottom: 6px; }
   .ao-contrat-line a { color: var(--color-primary); font-weight: 600; }
@@ -2193,7 +2193,7 @@
   <section class="screen" id="screen-contrats">
     <h1>Contrathèque</h1>
     <div class="toolbar">
-      <input type="search" id="filter-contrat-search" class="contacts-search" placeholder="🔍 Rechercher une affaire, un maître d'ouvrage, un AMO…" autocomplete="off">
+      <input type="search" id="filter-contrat-search" class="contacts-search" placeholder="🔍 Rechercher une affaire, un syndic, un AMO…" autocomplete="off">
       <select id="filter-contrat-statut"></select>
       <select id="filter-contrat-secteur"></select>
       <select id="filter-contrat-prestation"></select>
@@ -2284,9 +2284,6 @@
           <label class="ao-field">Priorité
             <select id="f-priorite" data-ao-key="priorite"></select>
           </label>
-          <label class="ao-field">Maître d'ouvrage
-            <select id="f-maitre_ouvrage_id" data-ao-key="maitre_ouvrage_id"></select>
-          </label>
           <label class="ao-field">Service
             <select id="f-service" data-ao-key="service"></select>
           </label>
@@ -2299,6 +2296,9 @@
           <div class="ao-contrat-warning" id="f-contrat-warning" hidden>Un avenant doit être rattaché à un contrat.</div>
           <label class="ao-field">Type de client
             <select id="f-type_client" data-ao-key="type_client"></select>
+          </label>
+          <label class="ao-field" id="f-syndic_id-wrap">Syndic
+            <select id="f-syndic_id" data-ao-key="syndic_id"></select>
           </label>
           <label class="ao-field">Valeur (k€)
             <input type="number" id="f-valeur_estimee_keur" placeholder="—" data-ao-key="valeur_estimee_keur" step="0.1">
@@ -2519,8 +2519,11 @@
           <label class="ao-field">Statut
             <select id="f-k-statut"></select>
           </label>
-          <label class="ao-field">Maître d'ouvrage
-            <select id="f-k-maitre_ouvrage_id"></select>
+          <label class="ao-field">Type de client
+            <select id="f-k-type_client"></select>
+          </label>
+          <label class="ao-field" id="f-k-syndic_id-wrap">Syndic
+            <select id="f-k-syndic_id"></select>
           </label>
           <label class="ao-field">AMO / BE
             <select id="f-k-amo_id"></select>
@@ -2642,7 +2645,7 @@
       <div class="import-table-wrap">
         <table class="contrats-table import-table">
           <thead><tr>
-            <th></th><th>Affaire</th><th>Maître d'ouvrage</th><th>Statut</th><th>Secteur</th><th>Prestations</th>
+            <th></th><th>Affaire</th><th>Syndic</th><th>Statut</th><th>Secteur</th><th>Prestations</th>
             <th>Début</th><th>Fin</th><th>Reconduction</th><th class="num">Montant</th><th class="num">Av.</th><th>À vérifier</th>
           </tr></thead>
           <tbody id="import-contrats-body"></tbody>
@@ -3357,11 +3360,10 @@
   // Rôles d'entreprise (2026-11-12) : un seul par entreprise. Pour en
   // ajouter/renommer un, changer cette liste (la valeur est stockée en clair).
   const ENTREPRISE_ROLES = [
-    "Maître d'ouvrage", "Syndic / Gestionnaire", "AMO / BE", "Partenaire / Sous-traitant",
+    "Syndic / Gestionnaire", "AMO / BE", "Partenaire / Sous-traitant",
     "Fournisseur", "Interne Veolia", "Autre",
   ];
   const ENTREPRISE_ROLE_COLORS = {
-    "Maître d'ouvrage": "#0f766e",
     "Syndic / Gestionnaire": "#2563eb",
     "AMO / BE": "#7c3aed",
     "Partenaire / Sous-traitant": "#c2410c",
@@ -3433,7 +3435,8 @@
       nom_projet: c.nom || "",
       type: "Renouvellement",
       contrat_id: c.id,
-      maitre_ouvrage_id: c.maitre_ouvrage_id,
+      type_client: c.type_client || TYPE_CLIENT_OPTIONS[0],
+      syndic_id: c.syndic_id,
       amo_id: c.amo_id,
       type_marche: (c.prestations || []).filter((p) => TYPE_MARCHE_OPTIONS.includes(p)),
       date_prise_effet: date ? addDaysToKey(date, 1) : null,
@@ -3444,7 +3447,7 @@
   }
 
   function entrepriseContrats(id) {
-    return (appData.contrats || []).filter((c) => c.maitre_ouvrage_id === id || c.amo_id === id);
+    return (appData.contrats || []).filter((c) => c.syndic_id === id || c.amo_id === id);
   }
 
   function findEntreprise(id) {
@@ -3536,7 +3539,7 @@
       nom_projet: "",
       type_client: "Habitat",
       priorite: "",
-      maitre_ouvrage_id: null,
+      syndic_id: null,
       amo_id: null,
       contrat_id: null,
       assigne_a: [],
@@ -3618,7 +3621,8 @@
     return stamp({
       id: generateId(),
       nom: "",
-      maitre_ouvrage_id: null,
+      type_client: "",
+      syndic_id: null,
       amo_id: null,
       secteur: "",
       prestations: [],
@@ -3801,12 +3805,12 @@
       findOrThrow(data.entreprises, id, "Entreprise");
       data.entreprises = data.entreprises.filter((r) => r.id !== id);
       data.aos.forEach((ao) => {
-        if (ao.maitre_ouvrage_id === id) ao.maitre_ouvrage_id = null;
+        if (ao.syndic_id === id) ao.syndic_id = null;
         if (ao.amo_id === id) ao.amo_id = null;
       });
       data.contacts.forEach((c) => { if (c.entreprise_id === id) c.entreprise_id = null; });
       data.contrats.forEach((c) => {
-        if (c.maitre_ouvrage_id === id) c.maitre_ouvrage_id = null;
+        if (c.syndic_id === id) c.syndic_id = null;
         if (c.amo_id === id) c.amo_id = null;
       });
     });
@@ -3995,7 +3999,7 @@
         <div class="list-item clickable-item" data-contrat="${c.id}">
           <div>
             <div class="list-item-title">${escapeHtml(c.nom || "(sans nom)")}</div>
-            <div class="list-item-sub">${escapeHtml([entrepriseNom(c.maitre_ouvrage_id), (c.prestations || []).join(" "), c.montant ? formatEuros(c.montant) : ""].filter(Boolean).join(" · "))}</div>
+            <div class="list-item-sub">${escapeHtml([entrepriseNom(c.syndic_id), (c.prestations || []).join(" "), c.montant ? formatEuros(c.montant) : ""].filter(Boolean).join(" · "))}</div>
           </div>
           <div class="renego-right">
             <span class="days-badge ${months <= 3 ? "days-urgent" : months <= 6 ? "days-soon" : ""}">échéance ${formatDate(ech.date)} · ${months <= 0 ? "ce mois-ci" : `dans ${months} mois`}</span>
@@ -4134,7 +4138,7 @@
           ${AO_PRIORITE_CLASS[ao.priorite] ? `<span class="badge-prio ${AO_PRIORITE_CLASS[ao.priorite]}">${escapeHtml(ao.priorite)}</span>` : ""}
         </div>
         <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
-        <div class="list-item-sub">${escapeHtml([entrepriseNom(ao.maitre_ouvrage_id), ao.type_client, marche].filter(Boolean).join(" · "))}</div>
+        <div class="list-item-sub">${escapeHtml([entrepriseNom(ao.syndic_id), ao.type_client, marche].filter(Boolean).join(" · "))}</div>
         ${findContrat(ao.contrat_id) ? `<div class="list-item-sub kanban-card-contrat">↳ ${escapeHtml(findContrat(ao.contrat_id).nom || "")}</div>` : ""}
         <div class="kanban-card-footer">
           ${days !== null ? `<span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>` : "<span></span>"}
@@ -4407,7 +4411,7 @@
             ${renderGanttHeader(weeks, todayKey)}
             ${renegos.map(({ c, start, end }) => {
               const renouv = contratRenouvellementEnCours(c);
-              const sub = [`échéance ${formatDate(end)}`, entrepriseNom(c.maitre_ouvrage_id), renouv ? "renouvellement en cours" : ""].filter(Boolean);
+              const sub = [`échéance ${formatDate(end)}`, entrepriseNom(c.syndic_id), renouv ? "renouvellement en cours" : ""].filter(Boolean);
               return `
                 <div class="gantt-row renego${renouv ? " renego-encours" : ""}" data-contrat="${c.id}" style="grid-column: 1 / -1;"
                      title="${escapeHtml(c.nom || "")} — alerte à partir du ${formatDate(start)}, échéance ${formatDate(end)}">
@@ -4615,9 +4619,14 @@
     if (btn) btn.addEventListener("click", () => openContratForm(null, contratPresetFromAO(ao)));
   }
 
-  // Maître d'ouvrage d'un AO : maître d'ouvrage ou syndic / gestionnaire (les
-  // autres rôles restent choisissables s'ils sont déjà affectés).
-  const AO_MAITRE_OUVRAGE_ROLES = ["Maître d'ouvrage", "Syndic / Gestionnaire"];
+  // Syndic d'un AO / contrat (2026-11-13, remplace le maître d'ouvrage) :
+  // seulement pour un client Habitat, vidé à l'enregistrement sinon.
+  const SYNDIC_ROLES = ["Syndic / Gestionnaire"];
+  const SYNDIC_TYPE_CLIENT = "Habitat";
+
+  function updateAOSyndicField() {
+    ficheEl("f-syndic_id-wrap").hidden = ficheEl("f-type_client").value !== SYNDIC_TYPE_CLIENT;
+  }
 
   // "__new__" = l'option de création en cours : on garde la valeur connue.
   function entrepriseSelectValue(elId, key) {
@@ -4626,7 +4635,7 @@
     return v || null;
   }
 
-  wireEntrepriseSelect(document.getElementById("f-maitre_ouvrage_id"), "Maître d'ouvrage");
+  wireEntrepriseSelect(document.getElementById("f-syndic_id"), "Syndic / Gestionnaire");
   wireEntrepriseSelect(document.getElementById("f-amo_id"), "AMO / BE");
 
   function readAOForm() {
@@ -4641,7 +4650,7 @@
       assigne_a: checkedAssignees(ficheEl("f-assigne_a")),
       type_marche: Array.from(document.querySelectorAll(".f-type_marche-item:checked")).map((cb) => cb.value),
       valeur_estimee_keur: valeur ? Number(valeur) : null,
-      maitre_ouvrage_id: entrepriseSelectValue("f-maitre_ouvrage_id", "maitre_ouvrage_id"),
+      syndic_id: ficheEl("f-type_client").value === SYNDIC_TYPE_CLIENT ? entrepriseSelectValue("f-syndic_id", "syndic_id") : null,
       amo_id: entrepriseSelectValue("f-amo_id", "amo_id"),
       contrat_id: ficheEl("f-contrat_id").value || null,
       concurrence: ficheEl("f-concurrence").value.trim(),
@@ -4683,11 +4692,12 @@
       `).join("");
     });
     set("valeur_estimee_keur", () => { ficheEl("f-valeur_estimee_keur").value = data.valeur_estimee_keur ?? ""; });
-    set("maitre_ouvrage_id", () => {
-      const el = ficheEl("f-maitre_ouvrage_id");
-      el.innerHTML = entrepriseSelectOptions(AO_MAITRE_OUVRAGE_ROLES, data.maitre_ouvrage_id);
-      el.value = data.maitre_ouvrage_id || "";
+    set("syndic_id", () => {
+      const el = ficheEl("f-syndic_id");
+      el.innerHTML = entrepriseSelectOptions(SYNDIC_ROLES, data.syndic_id);
+      el.value = data.syndic_id || "";
     });
+    updateAOSyndicField();
     set("amo_id", () => {
       const el = ficheEl("f-amo_id");
       el.innerHTML = entrepriseSelectOptions(["AMO / BE"], data.amo_id);
@@ -4822,12 +4832,15 @@
   ficheEl("ao-form").addEventListener("change", (event) => {
     if (event.target.id === "f-service") renderPhaseStepper();
     if (event.target.id === "f-type" || event.target.id === "f-contrat_id") updateAOContratField();
-    // Contrat choisi : reprend son maître d'ouvrage / AMO si l'AO n'en a pas.
+    if (event.target.id === "f-type_client") updateAOSyndicField();
+    // Contrat choisi : reprend son syndic / AMO si l'AO n'en a pas.
     if (event.target.id === "f-contrat_id") {
       const c = findContrat(event.target.value);
-      if (c && !ficheEl("f-maitre_ouvrage_id").value && c.maitre_ouvrage_id) {
-        ficheEl("f-maitre_ouvrage_id").innerHTML = entrepriseSelectOptions(AO_MAITRE_OUVRAGE_ROLES, c.maitre_ouvrage_id);
-        ficheEl("f-maitre_ouvrage_id").value = c.maitre_ouvrage_id;
+      if (c && !ficheEl("f-syndic_id").value && c.syndic_id) {
+        ficheEl("f-syndic_id").innerHTML = entrepriseSelectOptions(SYNDIC_ROLES, c.syndic_id);
+        ficheEl("f-syndic_id").value = c.syndic_id;
+        ficheEl("f-type_client").value = SYNDIC_TYPE_CLIENT;
+        updateAOSyndicField();
       }
       if (c && !ficheEl("f-amo_id").value && c.amo_id) {
         ficheEl("f-amo_id").innerHTML = entrepriseSelectOptions(["AMO / BE"], c.amo_id);
@@ -5016,7 +5029,8 @@
   function contratPresetFromAO(ao) {
     return {
       nom: ao.nom_projet || "",
-      maitre_ouvrage_id: ao.maitre_ouvrage_id || null,
+      type_client: ao.type_client || "",
+      syndic_id: ao.syndic_id || null,
       amo_id: ao.amo_id || null,
       prestations: (ao.type_marche || []).filter((p) => PRESTATION_OPTIONS.includes(p)),
       date_debut: ao.date_prise_effet || null,
@@ -6050,9 +6064,9 @@
     `;
   }
 
-  // AO où l'entreprise intervient (maître d'ouvrage ou AMO / BE).
+  // AO où l'entreprise intervient (syndic ou AMO / BE).
   function entrepriseAOs(id) {
-    return appData.aos.filter((a) => a.maitre_ouvrage_id === id || a.amo_id === id);
+    return appData.aos.filter((a) => a.syndic_id === id || a.amo_id === id);
   }
 
   function entrepriseContacts(id) {
@@ -6235,12 +6249,12 @@
     wireContactItemEvents(listEl);
   }
 
-  // Contacts d'un AO = ceux de son maître d'ouvrage et de son AMO / BE
+  // Contacts d'un AO = ceux de son syndic et de son AMO / BE
   // (2026-11-12 : plus de lien direct contact <-> AO, tout passe par
   // l'entreprise).
   function renderAOContactsSection(ao) {
     const groups = [
-      { id: ao.maitre_ouvrage_id, label: "Maître d'ouvrage" },
+      { id: ao.syndic_id, label: "Syndic" },
       { id: ao.amo_id, label: "AMO / BE" },
     ].filter((g) => g.id && findEntreprise(g.id));
     const listEl = document.getElementById("ao-contacts-list");
@@ -6261,7 +6275,7 @@
             </div>
           `;
         }).join("")
-      : `<div class="list-item-empty">Choisis un maître d'ouvrage ou un AMO / BE pour voir leurs contacts.</div>`;
+      : `<div class="list-item-empty">Choisis un syndic ou un AMO / BE pour voir leurs contacts.</div>`;
     listEl.querySelectorAll("[data-contact]").forEach((row) => {
       row.addEventListener("click", () => {
         const c = appData.contacts.find((x) => x.id === row.dataset.contact);
@@ -6277,7 +6291,7 @@
   document.getElementById("btn-new-contact").addEventListener("click", () => openContactForm(null));
   document.getElementById("ao-contacts-add").addEventListener("click", () => {
     if (!currentEditingAO) return;
-    openContactForm(null, null, currentEditingAO.maitre_ouvrage_id || currentEditingAO.amo_id || null);
+    openContactForm(null, null, currentEditingAO.syndic_id || currentEditingAO.amo_id || null);
   });
   document.querySelectorAll("#contacts-view-switch button").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -6331,7 +6345,7 @@
             <div class="list-item clickable-item" data-contrat="${c.id}">
               <div>
                 <div class="list-item-title">${escapeHtml(c.nom || "(sans nom)")}</div>
-                <div class="list-item-sub">${escapeHtml([c.amo_id === e.id ? "AMO / BE" : "Maître d'ouvrage", (c.prestations || []).join(" "), c.statut, ech.date ? "échéance " + formatDate(ech.date) : ""].filter(Boolean).join(" · "))}</div>
+                <div class="list-item-sub">${escapeHtml([c.amo_id === e.id ? "AMO / BE" : "Syndic", (c.prestations || []).join(" "), c.statut, ech.date ? "échéance " + formatDate(ech.date) : ""].filter(Boolean).join(" · "))}</div>
               </div>
               ${ech.cls === "echeance-renego" ? `<span class="echeance-badge echeance-renego">À renégocier</span>` : ""}
             </div>
@@ -6352,7 +6366,7 @@
           <div class="list-item clickable-item" data-ao="${a.id}">
             <div>
               <div class="list-item-title">${escapeHtml(a.nom_projet || "(sans nom)")}</div>
-              <div class="list-item-sub">${escapeHtml([a.amo_id === e.id ? "AMO / BE" : "Maître d'ouvrage", phaseLabel(a.phase, (a.service || [])[0]), a.resultat].filter(Boolean).join(" · "))}</div>
+              <div class="list-item-sub">${escapeHtml([a.amo_id === e.id ? "AMO / BE" : "Syndic", phaseLabel(a.phase, (a.service || [])[0]), a.resultat].filter(Boolean).join(" · "))}</div>
             </div>
           </div>
         `).join("")
@@ -6485,7 +6499,7 @@
 
   function contratSearchHaystack(c) {
     return normalizeSearchText([
-      c.nom, entrepriseNom(c.maitre_ouvrage_id), entrepriseNom(c.amo_id), c.secteur,
+      c.nom, entrepriseNom(c.syndic_id), entrepriseNom(c.amo_id), c.secteur, c.type_client,
       (c.prestations || []).join(" "), c.notes,
     ].join(" "));
   }
@@ -6545,7 +6559,7 @@
           <tr class="contrat-row${c.statut !== "Actif" ? " is-inactive" : ""}" data-id="${c.id}">
             <td>
               <div class="contrat-nom">${escapeHtml(c.nom || "(sans nom)")}</div>
-              <div class="contrat-sub">${escapeHtml(entrepriseNom(c.maitre_ouvrage_id))}${c.statut !== "Actif" ? ` · ${escapeHtml(c.statut)}` : ""}</div>
+              <div class="contrat-sub">${escapeHtml(entrepriseNom(c.syndic_id))}${c.statut !== "Actif" ? ` · ${escapeHtml(c.statut)}` : ""}</div>
             </td>
             <td>${escapeHtml(entrepriseNom(c.amo_id))}</td>
             <td>${(c.prestations || []).map((p) => `<span class="badge-type">${escapeHtml(p)}</span>`).join(" ")}</td>
@@ -6588,12 +6602,14 @@
   }
 
   function readContratForm() {
-    const mo = kEl("f-k-maitre_ouvrage_id").value;
+    const syndic = kEl("f-k-syndic_id").value;
     const amo = kEl("f-k-amo_id").value;
+    const typeClient = kEl("f-k-type_client").value;
     return {
       nom: kEl("f-k-nom").value.trim(),
       statut: kEl("f-k-statut").value,
-      maitre_ouvrage_id: mo && mo !== "__new__" ? mo : null,
+      type_client: typeClient,
+      syndic_id: typeClient === SYNDIC_TYPE_CLIENT && syndic && syndic !== "__new__" ? syndic : null,
       amo_id: amo && amo !== "__new__" ? amo : null,
       secteur: kEl("f-k-secteur").value,
       montant: numOrNull(kEl("f-k-montant").value),
@@ -6617,8 +6633,12 @@
     kEl("f-k-nom").value = data.nom || "";
     populateSelect(kEl("f-k-statut"), CONTRAT_STATUTS);
     kEl("f-k-statut").value = data.statut || "Actif";
-    kEl("f-k-maitre_ouvrage_id").innerHTML = entrepriseSelectOptions(AO_MAITRE_OUVRAGE_ROLES, data.maitre_ouvrage_id);
-    kEl("f-k-maitre_ouvrage_id").value = data.maitre_ouvrage_id || "";
+    const typesClient = data.type_client && !TYPE_CLIENT_OPTIONS.includes(data.type_client) ? [...TYPE_CLIENT_OPTIONS, data.type_client] : TYPE_CLIENT_OPTIONS;
+    populateSelect(kEl("f-k-type_client"), typesClient, "—");
+    kEl("f-k-type_client").value = data.type_client || "";
+    kEl("f-k-syndic_id").innerHTML = entrepriseSelectOptions(SYNDIC_ROLES, data.syndic_id);
+    kEl("f-k-syndic_id").value = data.syndic_id || "";
+    updateContratSyndicField();
     kEl("f-k-amo_id").innerHTML = entrepriseSelectOptions(["AMO / BE"], data.amo_id);
     kEl("f-k-amo_id").value = data.amo_id || "";
     const secteurs = data.secteur && !SECTEUR_OPTIONS.includes(data.secteur) ? [...SECTEUR_OPTIONS, data.secteur] : SECTEUR_OPTIONS;
@@ -6759,7 +6779,8 @@
       nom_projet: `Avenant – ${c.nom || ""}`,
       type: "Avenant",
       contrat_id: c.id,
-      maitre_ouvrage_id: c.maitre_ouvrage_id,
+      type_client: c.type_client || TYPE_CLIENT_OPTIONS[0],
+      syndic_id: c.syndic_id,
       amo_id: c.amo_id,
     });
   });
@@ -6846,11 +6867,16 @@
     updateContratLiveBits();
     if (contratFormDirty()) setContratSaveStatus("Modifications non enregistrées");
   });
-  kEl("contrat-form").addEventListener("change", () => {
+  function updateContratSyndicField() {
+    kEl("f-k-syndic_id-wrap").hidden = kEl("f-k-type_client").value !== SYNDIC_TYPE_CLIENT;
+  }
+
+  kEl("contrat-form").addEventListener("change", (event) => {
+    if (event.target.id === "f-k-type_client") updateContratSyndicField();
     updateContratLiveBits();
     if (contratFormDirty()) setContratSaveStatus("Modifications non enregistrées");
   });
-  wireEntrepriseSelect(kEl("f-k-maitre_ouvrage_id"), "Maître d'ouvrage");
+  wireEntrepriseSelect(kEl("f-k-syndic_id"), "Syndic / Gestionnaire");
   wireEntrepriseSelect(kEl("f-k-amo_id"), "AMO / BE");
 
   kEl("contrat-modal-close").addEventListener("click", closeContratForm);
@@ -7091,11 +7117,11 @@
     return client.split("_").map((p) => p.trim().replace(/\s+/g, " ")).filter(Boolean).join(" – ");
   }
 
-  // Maître d'ouvrage proposé : la partie avant "_", sauf pour une résidence /
-  // copropriété (son nom EST l'affaire, le syndic est inconnu).
-  function importMaitreOuvrage(client) {
+  // Type de client proposé : Habitat pour une résidence / copropriété
+  // (le syndic, inconnu des fichiers, est à saisir), vide sinon.
+  function importTypeClient(client) {
     const org = client.split("_")[0].trim().replace(/\s+/g, " ");
-    return /^(RES|SDC|ASL|RC)\b/i.test(org) ? "" : org;
+    return /^(RES|SDC|ASL|RC)\b/i.test(org) ? "Habitat" : "";
   }
 
   // Deux noms désignent la même affaire : identiques, ou l'un prolonge
@@ -7139,7 +7165,8 @@
           key,
           selected,
           nom,
-          maitre_ouvrage: importMaitreOuvrage(g.client),
+          type_client: importTypeClient(g.client),
+          syndic: "",
           statut,
           secteur: SECTEUR_OPTIONS.includes(g.base.secteur) ? g.base.secteur : "",
           secteurSource: g.base.secteur,
@@ -7211,7 +7238,7 @@
   // Une ligne par contrat, ses avenants juste en dessous, puis les AO.
   // Relue / corrigée dans un tableur, elle se réimporte seule.
   const SHEET_HEADER = [
-    "Type de ligne", "Importer", "Affaire", "Maître d'ouvrage", "Statut", "Secteur", "Prestations",
+    "Type de ligne", "Importer", "Affaire", "Type de client", "Syndic", "Statut", "Secteur", "Prestations",
     "Date de début / d'effet", "Durée (mois)", "Date de fin", "Reconduction", "Durée reconduction (mois)",
     "Montant (€)", "Lien Drive", "Nom de l'AO", "Notes", "À vérifier",
   ];
@@ -7229,11 +7256,11 @@
   function importPlanToSheet(plan) {
     const rows = [SHEET_HEADER];
     plan.contrats.forEach((c) => {
-      rows.push(["CONTRAT", c.selected ? "OUI" : "NON", c.nom, c.maitre_ouvrage, c.statut, c.secteur || c.secteurSource || "",
+      rows.push(["CONTRAT", c.selected ? "OUI" : "NON", c.nom, c.type_client, c.syndic, c.statut, c.secteur || c.secteurSource || "",
         c.prestations.join(" "), sheetDate(c.date_debut), sheetNumber(c.duree_mois), sheetDate(c.date_fin),
         c.reconduction, sheetNumber(c.duree_reconduction_mois), sheetNumber(c.montant), c.lien, "", "", c.warnings.join(" | ")]);
       c.avenants.forEach((a) => {
-        rows.push(["AVENANT", c.selected ? "OUI" : "NON", c.nom, "", a.statut, "", a.prestations, sheetDate(a.date),
+        rows.push(["AVENANT", c.selected ? "OUI" : "NON", c.nom, "", "", a.statut, "", a.prestations, sheetDate(a.date),
           "", "", "", "", "", a.lien, "", a.notes || "", ""]);
       });
     });
@@ -7276,7 +7303,8 @@
           key: importKey(affaire),
           selected: oui(at(r, "Importer")) && !already,
           nom: affaire,
-          maitre_ouvrage: at(r, "Maître d'ouvrage"),
+          type_client: TYPE_CLIENT_OPTIONS.includes(at(r, "Type de client")) ? at(r, "Type de client") : "",
+          syndic: at(r, "Syndic"),
           statut: CONTRAT_STATUTS.includes(at(r, "Statut")) ? at(r, "Statut") : "Actif",
           secteur: SECTEUR_OPTIONS.includes(secteur) ? secteur : "",
           secteurSource: secteur,
@@ -7366,8 +7394,8 @@
         <td><input type="checkbox" data-c="${i}" data-f="selected"${c.selected ? " checked" : ""}></td>
         <td><input type="text" data-c="${i}" data-f="nom" value="${escapeHtml(c.nom)}"></td>
         <td>
-          <input type="text" list="import-entreprises" data-c="${i}" data-f="maitre_ouvrage" value="${escapeHtml(c.maitre_ouvrage)}" placeholder="—">
-          ${c.maitre_ouvrage && !known.has(importKey(c.maitre_ouvrage)) ? `<span class="import-new">nouvelle</span>` : ""}
+          <input type="text" list="import-entreprises" data-c="${i}" data-f="syndic" value="${escapeHtml(c.syndic)}" placeholder="—">
+          ${c.syndic && !known.has(importKey(c.syndic)) ? `<span class="import-new">nouvelle</span>` : ""}
         </td>
         <td>
           <select data-c="${i}" data-f="statut">${CONTRAT_STATUTS.map((st) => `<option${st === c.statut ? " selected" : ""}>${st}</option>`).join("")}</select>
@@ -7448,8 +7476,8 @@
     importEl("import-step-preview").hidden = true;
   });
 
-  // Tout en un seul enregistrement : entreprises manquantes (maîtres
-  // d'ouvrage), contrats avec leurs avenants, AO du pipeline.
+  // Tout en un seul enregistrement : entreprises manquantes (syndics),
+  // contrats avec leurs avenants, AO du pipeline.
   importEl("import-submit").addEventListener("click", async () => {
     const contrats = importPlan.contrats.filter((c) => c.selected && c.nom.trim());
     const contratIds = new Set(contrats.map((c) => c.id));
@@ -7465,7 +7493,7 @@
           if (!n) return null;
           const k = importKey(n);
           if (!entreprisesByKey.has(k)) {
-            const e = createEntreprise({ nom: n, role: "Maître d'ouvrage" });
+            const e = createEntreprise({ nom: n, role: "Syndic / Gestionnaire" });
             data.entreprises.push(e);
             entreprisesByKey.set(k, e);
           }
@@ -7475,7 +7503,9 @@
           data.contrats.push(createContrat({
             id: c.id,
             nom: c.nom.trim(),
-            maitre_ouvrage_id: entrepriseFor(c.maitre_ouvrage),
+            // Un syndic saisi implique un client Habitat.
+            type_client: c.syndic.trim() ? "Habitat" : c.type_client,
+            syndic_id: entrepriseFor(c.syndic),
             secteur: c.secteur,
             prestations: c.prestations,
             statut: c.statut,
@@ -7498,7 +7528,8 @@
             service: ["Commerce"],
             assigne_a: [currentProfile.display_name],
             contrat_id: contrat ? contrat.id : null,
-            maitre_ouvrage_id: contrat ? entrepriseFor(contrat.maitre_ouvrage) : null,
+            ...(contrat && (contrat.syndic.trim() || contrat.type_client) ? { type_client: contrat.syndic.trim() ? "Habitat" : contrat.type_client } : {}),
+            syndic_id: contrat ? entrepriseFor(contrat.syndic) : null,
             type_marche: contrat ? contrat.prestations.filter((p) => TYPE_MARCHE_OPTIONS.includes(p)) : [],
             valeur_estimee_keur: a.montant ? Math.round(a.montant / 100) / 10 : null,
             date_prise_effet: a.date || null,
@@ -7945,7 +7976,7 @@
   // l'écran, pas systématiquement tous les AO.
   document.getElementById("btn-export-ao-csv").addEventListener("click", () => {
     const rows = [
-      ["Nom du projet", "Client", "Phase", "Type", "Prestations", "Valeur (k€)", "AMO", "Concurrence", "Date de remise", "Date de visite", "Date de prise d'effet", "Lieu", "Résultat", "Motif", "Assigné à", "Priorité", "Maître d'ouvrage"],
+      ["Nom du projet", "Client", "Phase", "Type", "Prestations", "Valeur (k€)", "AMO", "Concurrence", "Date de remise", "Date de visite", "Date de prise d'effet", "Lieu", "Résultat", "Motif", "Assigné à", "Priorité", "Syndic"],
       ...appData.aos.filter(aoMatchesFilters).map((ao) => [
         ao.nom_projet || "",
         ao.type_client || "",
@@ -7963,7 +7994,7 @@
         ao.motif_categorie || "",
         ao.assigne_a.join(", "),
         ao.priorite || "",
-        entrepriseNom(ao.maitre_ouvrage_id),
+        entrepriseNom(ao.syndic_id),
       ]),
     ];
     downloadCSV(`crm-ao-pipeline-${new Date().toISOString().slice(0, 10)}.csv`, rows);
