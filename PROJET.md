@@ -95,7 +95,7 @@ Repris du Pipeline Notion existant, enrichi.
 | `type_marche` | multi-liste | Depuis le 2026-11-13, même liste que les prestations des contrats (§11, `PRESTATION_OPTIONS` dans crm.html) : P1, P2, P3, P5, PFI, R1, R2, CPE. Une ancienne valeur hors liste reste affichée cochée dans la fiche |
 | `service` | multi-liste | ajouté le 2026-09-09 : Commerce, Travaux — pilote la visibilité par service (§9). Vide = visible par tout le monde (migration douce des AO existants) |
 | `syndic_id` | relation | ajouté le 2026-11-13 (`supabase/migrate_syndic.sql`), remplace le maître d'ouvrage : vers une entreprise « Syndic / Gestionnaire ». Champ affiché seulement si `type_client` = Habitat, vidé à l'enregistrement sinon. `maitre_ouvrage_id` reste en base (historique), plus lu ni écrit |
-| `valeur_estimee_keur` | nombre | en k€ |
+| `valeur_estimee` | nombre | en € depuis le 2026-11-13 (`supabase/migrate_valeur_euros.sql`, existant × 1000) ; avant : `valeur_estimee_keur` en k€, conservé en base mais plus lu ni écrit |
 | `amo` | texte | assistance à maîtrise d'ouvrage |
 | `concurrence` | texte | concurrents identifiés |
 | `date_remise` | date | date limite de remise de l'offre |

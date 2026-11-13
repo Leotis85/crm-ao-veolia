@@ -177,7 +177,10 @@ create table public.aos (
   type text not null default 'Appel d''offres',
   type_marche text[] not null default '{}',
   service text[] not null default '{}',
+  -- Ancienne valeur en k€, conservée pour l'historique (plus écrite depuis
+  -- migrate_valeur_euros.sql, 2026-11-13) : remplacée par valeur_estimee (€).
   valeur_estimee_keur numeric,
+  valeur_estimee numeric,
   amo text not null default '',
   concurrence text not null default '',
   date_remise date,
@@ -525,7 +528,7 @@ begin
     if expected is null then
       insert into public.aos (
         id, nom_projet, type_client, priorite, syndic_id, amo_id, contrat_id, assigne_a, phase, type, type_marche, service,
-        valeur_estimee_keur, amo, concurrence, date_remise, date_visite, date_prise_effet, duree_contrat_mois,
+        valeur_estimee, amo, concurrence, date_remise, date_visite, date_prise_effet, duree_contrat_mois,
         date_entree_etude, date_debut_exe, date_fin_exe,
         lieu, notes, fichiers, resultat, motif_categorie, motif, rappel,
         contacts_lies, taches_liees, last_modified, modified_by
@@ -539,7 +542,7 @@ begin
         coalesce(row_data->>'type', 'Appel d''offres'),
         coalesce((select array(select jsonb_array_elements_text(row_data->'type_marche'))), '{}'),
         coalesce((select array(select jsonb_array_elements_text(row_data->'service'))), '{}'),
-        nullif(row_data->>'valeur_estimee_keur', '')::numeric,
+        nullif(row_data->>'valeur_estimee', '')::numeric,
         coalesce(row_data->>'amo', ''), coalesce(row_data->>'concurrence', ''),
         nullif(row_data->>'date_remise', '')::date, nullif(row_data->>'date_visite', '')::date,
         nullif(row_data->>'date_prise_effet', '')::date,
@@ -567,7 +570,7 @@ begin
         type = coalesce(row_data->>'type', 'Appel d''offres'),
         type_marche = coalesce((select array(select jsonb_array_elements_text(row_data->'type_marche'))), '{}'),
         service = coalesce((select array(select jsonb_array_elements_text(row_data->'service'))), '{}'),
-        valeur_estimee_keur = nullif(row_data->>'valeur_estimee_keur', '')::numeric,
+        valeur_estimee = nullif(row_data->>'valeur_estimee', '')::numeric,
         amo = coalesce(row_data->>'amo', ''),
         concurrence = coalesce(row_data->>'concurrence', ''),
         date_remise = nullif(row_data->>'date_remise', '')::date,
