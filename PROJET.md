@@ -123,8 +123,12 @@ Depuis le 2026-11-11, chaque onglet de service a ses propres colonnes
 - **Commerce** : A venir → A faire → Étude → Négociation → En attente de réponse →
   Gagné / Perdu / Abandonné
 - **Travaux** : A venir → A faire → Étude → En attente de réponse → Exécution →
-  Facturé / Fini (id `gagne`) / Perdu / Abandonné. `Exécution` compte comme
-  `Gagné` côté résultat et Reporting.
+  Facturé / Fini (id `gagne`) / Perdu / Abandonné. Depuis le 2026-11-13,
+  `Exécution` compte comme **En cours** (plus comme Gagné) : l'AO reste dans
+  le plan de charge et ne devient Gagné qu'en « Facturé / Fini ». Champs
+  `date_debut_exe` / `date_fin_exe` (`supabase/migrate_dates_execution.sql`),
+  affichés dans la fiche pour le service Travaux ; le début est posé
+  automatiquement au passage en Exécution (modifiable).
 
 Colonne `A faire` (id `a_faire`, ajoutée le 2026-11-11) entre `A venir` et
 `Étude` : `A venir` = AO pas encore sortis (veille), `A faire` = travail
@@ -474,6 +478,12 @@ est surlignée en rouge. Les colonnes se partagent la largeur de l'écran :
 toute la fenêtre est visible sans défilement horizontal. Lignes triées par
 date de remise ; les AO en cours sans les deux dates sont comptés sous le
 tableau.
+
+**Exécution Travaux (2026-11-13)** : sur la même ligne que l'étude, la
+période d'exécution (`date_debut_exe` → `date_fin_exe`) est remplie d'une
+autre couleur (violet, légende sous le tableau Travaux). Une ligne s'affiche
+dès qu'une des deux périodes est complète ; une exécution sans date de fin
+n'est pas tracée. Lignes triées par fin de la première période.
 
 ## 11. Travail futur demandé, pas commencé
 

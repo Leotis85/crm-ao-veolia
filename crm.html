@@ -235,6 +235,13 @@
   .gantt-cell.bar-end { opacity: 1; border-radius: 0 5px 5px 0; margin-right: 1px; }
   .gantt-cell.bar-start.bar-end { border-radius: 5px; }
 
+  .gantt-cell.filled.exe { background-color: #7c3aed; }
+  .gantt-row:hover .gantt-cell.filled.exe { background-color: #5b21b6; }
+  .gantt-legend { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--color-text-muted); margin: 6px 0 0; }
+  .gantt-legend-swatch { display: inline-block; width: 14px; height: 10px; border-radius: 3px; background: var(--color-primary); opacity: 0.55; margin-left: 8px; }
+  .gantt-legend-swatch:first-child { margin-left: 0; }
+  .gantt-legend-swatch.exe { background: #7c3aed; }
+
   .gantt-row.renego .gantt-cell.filled { background-color: #f59e0b; }
   .gantt-row.renego:hover .gantt-cell.filled { background-color: #b45309; }
   .gantt-row.renego-encours .gantt-cell.filled { background-color: #60a5fa; }
@@ -1165,7 +1172,7 @@
 
   .ao-taches { flex-shrink: 0; }
   .ao-contacts-group + .ao-contacts-group { margin-top: 10px; }
-  #f-syndic_id-wrap[hidden], #f-k-syndic_id-wrap[hidden], #f-contrat_id-wrap[hidden], .ao-contrat-warning[hidden], #ao-contrat-section[hidden], #contrat-aos-section[hidden] { display: none; }
+  #f-exe-wrap[hidden], #f-syndic_id-wrap[hidden], #f-k-syndic_id-wrap[hidden], #f-contrat_id-wrap[hidden], .ao-contrat-warning[hidden], #ao-contrat-section[hidden], #contrat-aos-section[hidden] { display: none; }
   .ao-contrat-warning { font-size: 12px; color: var(--color-danger); font-weight: 600; margin: 0 0 6px 118px; }
   .ao-contrat-line { font-size: 13px; margin-bottom: 6px; }
   .ao-contrat-line a { color: var(--color-primary); font-weight: 600; }
@@ -2339,6 +2346,14 @@
           <label class="ao-field" title="Posée automatiquement à la sortie de « A venir », modifiable">Entrée en étude
             <input type="date" id="f-date_entree_etude" data-ao-key="date_entree_etude">
           </label>
+          <div id="f-exe-wrap">
+            <label class="ao-field" title="Posée automatiquement au passage en Exécution, modifiable">Début exécution
+              <input type="date" id="f-date_debut_exe" data-ao-key="date_debut_exe">
+            </label>
+            <label class="ao-field">Fin exécution
+              <input type="date" id="f-date_fin_exe" data-ao-key="date_fin_exe">
+            </label>
+          </div>
         </section>
 
         <section class="ao-side-section">
@@ -3310,8 +3325,8 @@
     gagne: "Gagné",
     perdu: "Perdu",
     abandonne: "Abandonné",
-    // Travaux : un AO en exécution est déjà remporté.
-    execution: "Gagné",
+    // Travaux : l'Exécution compte comme "En cours" (2026-11-13), l'AO ne
+    // devient Gagné qu'en "Facturé / Fini".
   };
   function resultatForPhase(phase, currentResultat) {
     if (PHASE_TO_RESULTAT[phase]) return PHASE_TO_RESULTAT[phase];
@@ -3555,6 +3570,8 @@
       date_prise_effet: null,
       duree_contrat_mois: null,
       date_entree_etude: null,
+      date_debut_exe: null,
+      date_fin_exe: null,
       lieu: "",
       notes: "",
       fichiers: [],
@@ -3569,6 +3586,7 @@
     if (!PRE_ETUDE_PHASES.includes(ao.phase) && !ao.date_entree_etude) {
       ao.date_entree_etude = localDateKey(new Date());
     }
+    if (ao.phase === "execution" && !ao.date_debut_exe) ao.date_debut_exe = localDateKey(new Date());
     return ao;
   }
 
@@ -3715,6 +3733,10 @@
       // plan de charge, une seule fois (reste modifiable à la main ensuite).
       if (!PRE_ETUDE_PHASES.includes(record.phase) && !record.date_entree_etude) {
         record.date_entree_etude = localDateKey(new Date());
+      }
+      // Passage en Exécution (Travaux) -> début d'exécution, une seule fois.
+      if (record.phase === "execution" && !record.date_debut_exe) {
+        record.date_debut_exe = localDateKey(new Date());
       }
       stamp(record);
     });
@@ -4321,31 +4343,56 @@
     `;
   }
 
-  function renderGanttCells(start, end, weeks, todayKey) {
+  // periods : [{ start, end, cls }] sur une même ligne (ex. étude puis
+  // exécution) ; en cas de chevauchement, la dernière période l'emporte.
+  function renderGanttCells(start, end, weeks, todayKey, periods = [{ start, end, cls: "" }]) {
     return weeks.map((w, i) => {
       const classes = ["gantt-cell"];
       if (i === 0 || weeks[i - 1].monthKey !== w.monthKey) classes.push("month-start");
       if (todayKey >= w.startKey && todayKey <= w.endKey) classes.push("is-today");
-      const filled = start <= w.endKey && end >= w.startKey;
-      if (filled) {
+      const p = [...periods].reverse().find((x) => x.start && x.end && x.start <= w.endKey && x.end >= w.startKey);
+      if (p) {
         classes.push("filled");
-        if (start >= w.startKey && start <= w.endKey) classes.push("bar-start");
-        if (end >= w.startKey && end <= w.endKey) classes.push("bar-end");
+        if (p.cls) classes.push(p.cls);
+        if (p.start >= w.startKey && p.start <= w.endKey) classes.push("bar-start");
+        if (p.end >= w.startKey && p.end <= w.endKey) classes.push("bar-end");
       }
       return `<div class="${classes.join(" ")}"></div>`;
     }).join("");
   }
 
+  // Périodes d'un AO dans le plan de charge : étude (entrée en étude ->
+  // remise) puis exécution (Travaux), d'une autre couleur. Une exécution sans
+  // date de fin n'est pas affichée (on ne sait pas jusqu'où la tracer).
+  function aoGanttPeriods(ao) {
+    const periods = [];
+    if (ao.date_entree_etude && ao.date_remise) {
+      periods.push({ start: ao.date_entree_etude, end: ao.date_remise, cls: "" });
+    }
+    if (ao.date_debut_exe && ao.date_fin_exe) {
+      const [start, end] = ao.date_debut_exe <= ao.date_fin_exe
+        ? [ao.date_debut_exe, ao.date_fin_exe] : [ao.date_fin_exe, ao.date_debut_exe];
+      periods.push({ start, end, cls: "exe" });
+    }
+    return periods;
+  }
+
   function renderGanttRow(ao, weeks, todayKey) {
-    const start = ao.date_entree_etude;
-    const end = ao.date_remise;
-    const cells = renderGanttCells(start, end, weeks, todayKey);
-    const days = daysBetween(end);
-    const sub = [`remise ${formatDate(end)}`];
+    const periods = aoGanttPeriods(ao);
+    const cells = renderGanttCells(null, null, weeks, todayKey, periods);
+    const enExe = ao.phase === "execution";
+    const days = enExe ? null : daysBetween(ao.date_remise);
+    const sub = [];
+    if (ao.date_remise && !enExe) sub.push(`remise ${formatDate(ao.date_remise)}`);
+    const exe = periods.find((p) => p.cls === "exe");
+    if (exe) sub.push(`exé ${formatDate(exe.start)} → ${formatDate(exe.end)}`);
     if (ao.assigne_a.length) sub.push(ao.assigne_a.join(", "));
+    const titleParts = [];
+    if (ao.date_entree_etude && ao.date_remise) titleParts.push(`étude ${formatDate(ao.date_entree_etude)} → remise ${formatDate(ao.date_remise)}`);
+    if (exe) titleParts.push(`exécution ${formatDate(exe.start)} → ${formatDate(exe.end)}`);
     return `
       <div class="gantt-row" data-id="${ao.id}" style="grid-column: 1 / -1;"
-           title="${escapeHtml(ao.nom_projet || "")} — entrée en étude ${formatDate(start)} → remise ${formatDate(end)}">
+           title="${escapeHtml(ao.nom_projet || "")} — ${escapeHtml(titleParts.join(", "))}">
         <div class="gantt-label ${AO_PRIORITE_CLASS[ao.priorite] || ""}">
           <div class="gantt-label-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
           <div class="gantt-label-sub">
@@ -4374,11 +4421,13 @@
     const gridStyle = `grid-template-columns: var(--gantt-label-width) repeat(${weeks.length}, minmax(0, 1fr));`;
     container.innerHTML = services.map((service) => {
       const enCours = appData.aos.filter((ao) => ao.resultat === "En cours" && (ao.service || []).includes(service));
+      // Tri par fin de la première période (remise, ou fin d'exécution).
       const shown = enCours
-        .filter((ao) => ao.date_entree_etude && ao.date_remise &&
-          ao.date_entree_etude <= rangeEnd && ao.date_remise >= rangeStart)
-        .sort((a, b) => a.date_remise.localeCompare(b.date_remise) || a.date_entree_etude.localeCompare(b.date_entree_etude));
-      const sansDates = enCours.filter((ao) => !ao.date_entree_etude || !ao.date_remise).length;
+        .map((ao) => ({ ao, periods: aoGanttPeriods(ao) }))
+        .filter(({ periods }) => periods.some((p) => p.start <= rangeEnd && p.end >= rangeStart))
+        .sort((a, b) => a.periods[0].end.localeCompare(b.periods[0].end) || a.periods[0].start.localeCompare(b.periods[0].start))
+        .map(({ ao }) => ao);
+      const sansDates = enCours.filter((ao) => !aoGanttPeriods(ao).length).length;
       return `
         <div class="gantt-service-section">
           <h2>${escapeHtml(service)} <span class="todo-group-count">${shown.length}</span></h2>
@@ -4388,7 +4437,8 @@
               ? shown.map((ao) => renderGanttRow(ao, weeks, todayKey)).join("")
               : `<div class="gantt-empty" style="grid-column: 1 / -1;">Aucun AO en cours sur la période.</div>`}
           </div>
-          ${sansDates ? `<p class="gantt-footnote">${sansDates} AO en cours non affiché${sansDates > 1 ? "s" : ""} : date d'entrée en étude ou de remise manquante.</p>` : ""}
+          ${service === "Travaux" ? `<p class="gantt-legend"><span class="gantt-legend-swatch"></span> Étude <span class="gantt-legend-swatch exe"></span> Exécution</p>` : ""}
+          ${sansDates ? `<p class="gantt-footnote">${sansDates} AO en cours non affiché${sansDates > 1 ? "s" : ""} : date d'entrée en étude ou de remise manquante${service === "Travaux" ? " (ou début / fin d'exécution)" : ""}.</p>` : ""}
         </div>
       `;
     }).join("");
@@ -4624,6 +4674,12 @@
   const SYNDIC_ROLES = ["Syndic / Gestionnaire"];
   const SYNDIC_TYPE_CLIENT = "Habitat";
 
+  // Dates d'exécution : Travaux uniquement (ou déjà renseignées).
+  function updateAOExeFields() {
+    ficheEl("f-exe-wrap").hidden = ficheEl("f-service").value !== "Travaux"
+      && !ficheEl("f-date_debut_exe").value && !ficheEl("f-date_fin_exe").value;
+  }
+
   function updateAOSyndicField() {
     ficheEl("f-syndic_id-wrap").hidden = ficheEl("f-type_client").value !== SYNDIC_TYPE_CLIENT;
   }
@@ -4660,6 +4716,8 @@
       date_prise_effet: ficheEl("f-date_prise_effet").value || null,
       duree_contrat_mois: ficheEl("f-duree_contrat_mois").value ? Number(ficheEl("f-duree_contrat_mois").value) : null,
       date_entree_etude: ficheEl("f-date_entree_etude").value || null,
+      date_debut_exe: ficheEl("f-date_debut_exe").value || null,
+      date_fin_exe: ficheEl("f-date_fin_exe").value || null,
       resultat: ficheEl("f-resultat").value,
       motif_categorie: ficheEl("f-motif-categorie").value,
       motif: ficheEl("f-motif").value.trim(),
@@ -4710,6 +4768,9 @@
     set("date_prise_effet", () => { ficheEl("f-date_prise_effet").value = data.date_prise_effet || ""; });
     set("duree_contrat_mois", () => { ficheEl("f-duree_contrat_mois").value = data.duree_contrat_mois ?? ""; });
     set("date_entree_etude", () => { ficheEl("f-date_entree_etude").value = data.date_entree_etude || ""; });
+    set("date_debut_exe", () => { ficheEl("f-date_debut_exe").value = data.date_debut_exe || ""; });
+    set("date_fin_exe", () => { ficheEl("f-date_fin_exe").value = data.date_fin_exe || ""; });
+    updateAOExeFields();
     set("resultat", () => { ficheEl("f-resultat").value = data.resultat || RESULTAT_OPTIONS[0]; });
     set("motif_categorie", () => { ficheEl("f-motif-categorie").value = data.motif_categorie || ""; });
     set("motif", () => { ficheEl("f-motif").value = data.motif || ""; });
@@ -4830,7 +4891,7 @@
     scheduleAOSave(event.target.id === "f-notes" ? 1200 : 800);
   });
   ficheEl("ao-form").addEventListener("change", (event) => {
-    if (event.target.id === "f-service") renderPhaseStepper();
+    if (event.target.id === "f-service") { renderPhaseStepper(); updateAOExeFields(); }
     if (event.target.id === "f-type" || event.target.id === "f-contrat_id") updateAOContratField();
     if (event.target.id === "f-type_client") updateAOSyndicField();
     // Contrat choisi : reprend son syndic / AMO si l'AO n'en a pas.

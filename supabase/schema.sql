@@ -191,6 +191,10 @@ create table public.aos (
   -- PROJET.md) : pas d'historique fiable pour les AO déjà avancés avant
   -- l'ajout de ce champ.
   date_entree_etude date,
+  -- Travaux (2026-11-13, migrate_dates_execution.sql) : période
+  -- d'exécution, affichée dans le plan de charge sur la ligne de l'AO.
+  date_debut_exe date,
+  date_fin_exe date,
   lieu text not null default '',
   notes text not null default '',
   fichiers text[] not null default '{}',
@@ -522,7 +526,7 @@ begin
       insert into public.aos (
         id, nom_projet, type_client, priorite, syndic_id, amo_id, contrat_id, assigne_a, phase, type, type_marche, service,
         valeur_estimee_keur, amo, concurrence, date_remise, date_visite, date_prise_effet, duree_contrat_mois,
-        date_entree_etude,
+        date_entree_etude, date_debut_exe, date_fin_exe,
         lieu, notes, fichiers, resultat, motif_categorie, motif, rappel,
         contacts_lies, taches_liees, last_modified, modified_by
       ) values (
@@ -541,6 +545,7 @@ begin
         nullif(row_data->>'date_prise_effet', '')::date,
         nullif(row_data->>'duree_contrat_mois', '')::integer,
         nullif(row_data->>'date_entree_etude', '')::date,
+        nullif(row_data->>'date_debut_exe', '')::date, nullif(row_data->>'date_fin_exe', '')::date,
         coalesce(row_data->>'lieu', ''), coalesce(row_data->>'notes', ''),
         coalesce((select array(select jsonb_array_elements_text(row_data->'fichiers'))), '{}'),
         coalesce(row_data->>'resultat', 'En cours'), coalesce(row_data->>'motif_categorie', ''),
@@ -570,6 +575,8 @@ begin
         date_prise_effet = nullif(row_data->>'date_prise_effet', '')::date,
         duree_contrat_mois = nullif(row_data->>'duree_contrat_mois', '')::integer,
         date_entree_etude = nullif(row_data->>'date_entree_etude', '')::date,
+        date_debut_exe = nullif(row_data->>'date_debut_exe', '')::date,
+        date_fin_exe = nullif(row_data->>'date_fin_exe', '')::date,
         lieu = coalesce(row_data->>'lieu', ''),
         notes = coalesce(row_data->>'notes', ''),
         fichiers = coalesce((select array(select jsonb_array_elements_text(row_data->'fichiers'))), '{}'),
