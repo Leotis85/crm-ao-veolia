@@ -2575,7 +2575,7 @@
             <input type="number" id="f-k-duree_reconduction_mois" min="0" placeholder="—">
           </label>
           <label class="ao-field" title="Combien de mois avant l'échéance la renégociation doit apparaître">Alerte (mois avant)
-            <input type="number" id="f-k-alerte_mois" min="0" placeholder="12">
+            <input type="number" id="f-k-alerte_mois" min="0" placeholder="6">
           </label>
         </section>
 
@@ -3424,7 +3424,7 @@
     const { date } = contratProchaineEcheance(c);
     if (!date) return false;
     const today = localDateKey(new Date());
-    return date >= today && date <= addMonthsKey(today, Number(c.alerte_mois) || 12);
+    return date >= today && date <= addMonthsKey(today, Number(c.alerte_mois) || 6);
   }
 
   // AO de renouvellement encore en cours rattaché au contrat (pour ne pas
@@ -3648,7 +3648,7 @@
       date_fin: null,
       reconduction: "",
       duree_reconduction_mois: null,
-      alerte_mois: 12,
+      alerte_mois: 6,
       montant: null,
       lien: "",
       ao_origine_id: null,
@@ -4453,7 +4453,7 @@
       .filter((c) => c.statut === "Actif")
       .map((c) => {
         const { date } = contratProchaineEcheance(c);
-        return date ? { c, end: date, start: addMonthsKey(date, -(Number(c.alerte_mois) || 12)) } : null;
+        return date ? { c, end: date, start: addMonthsKey(date, -(Number(c.alerte_mois) || 6)) } : null;
       })
       .filter((x) => x && x.end >= rangeStart && x.start <= rangeEnd)
       .sort((a, b) => a.end.localeCompare(b.end));
@@ -6701,7 +6701,7 @@
       date_fin: kEl("f-k-date_fin").value || null,
       reconduction: kEl("f-k-reconduction").value,
       duree_reconduction_mois: numOrNull(kEl("f-k-duree_reconduction_mois").value),
-      alerte_mois: numOrNull(kEl("f-k-alerte_mois").value) ?? 12,
+      alerte_mois: numOrNull(kEl("f-k-alerte_mois").value) ?? 6,
       ao_origine_id: kEl("f-k-ao_origine_id").value || null,
       notes: kEl("f-k-notes").value,
       avenants: formAvenants
@@ -6738,7 +6738,7 @@
     populateSelect(kEl("f-k-reconduction"), CONTRAT_RECONDUCTIONS, "— Non renseignée —");
     kEl("f-k-reconduction").value = data.reconduction || "";
     kEl("f-k-duree_reconduction_mois").value = data.duree_reconduction_mois ?? "";
-    kEl("f-k-alerte_mois").value = data.alerte_mois ?? 12;
+    kEl("f-k-alerte_mois").value = data.alerte_mois ?? 6;
     const aos = [...appData.aos].sort((a, b) => (a.nom_projet || "").localeCompare(b.nom_projet || ""));
     kEl("f-k-ao_origine_id").innerHTML = `<option value="">— Aucun —</option>`
       + aos.map((a) => `<option value="${a.id}">${escapeHtml(a.nom_projet || "(sans nom)")}</option>`).join("");

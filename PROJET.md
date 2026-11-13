@@ -217,7 +217,7 @@ changer).
 | `statut` | liste | Actif, Terminé, Résilié |
 | `date_debut`, `duree_mois`, `date_fin` | date / nombre | fin = y compris reconductions déjà prévues |
 | `reconduction`, `duree_reconduction_mois` | liste / nombre | Tacite, Expresse, Non |
-| `alerte_mois` | nombre | défaut 12 : la renégociation apparaît N mois avant l'échéance |
+| `alerte_mois` | nombre | défaut 6 (12 avant le 2026-11-13) : la renégociation apparaît N mois avant l'échéance |
 | `montant` | nombre | € |
 | `lien` | texte | dossier Drive |
 | `ao_origine_id` | relation | AO dont il est issu |
