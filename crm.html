@@ -1172,7 +1172,7 @@
 
   .ao-taches { flex-shrink: 0; }
   .ao-contacts-group + .ao-contacts-group { margin-top: 10px; }
-  #f-exe-wrap[hidden], #f-syndic_id-wrap[hidden], #f-k-syndic_id-wrap[hidden], #f-contrat_id-wrap[hidden], .ao-contrat-warning[hidden], #ao-contrat-section[hidden], #contrat-aos-section[hidden] { display: none; }
+  .ao-commerce-only[hidden], #f-exe-wrap[hidden], #f-syndic_id-wrap[hidden], #f-k-syndic_id-wrap[hidden], #f-contrat_id-wrap[hidden], .ao-contrat-warning[hidden], #ao-contrat-section[hidden], #contrat-aos-section[hidden] { display: none; }
   .ao-contrat-warning { font-size: 12px; color: var(--color-danger); font-weight: 600; margin: 0 0 6px 118px; }
   .ao-contrat-line { font-size: 13px; margin-bottom: 6px; }
   .ao-contrat-line a { color: var(--color-primary); font-weight: 600; }
@@ -2319,7 +2319,7 @@
           <label class="ao-field">Concurrence
             <input type="text" id="f-concurrence" placeholder="—" data-ao-key="concurrence">
           </label>
-          <div class="ao-field ao-field-stack" data-ao-key="type_marche">
+          <div class="ao-field ao-field-stack ao-commerce-only" data-ao-key="type_marche">
             <span>Prestations</span>
             <div class="checkbox-group" id="f-type_marche"></div>
           </div>
@@ -2337,10 +2337,10 @@
           <label class="ao-field">Visite
             <input type="date" id="f-date_visite" data-ao-key="date_visite">
           </label>
-          <label class="ao-field">Prise d'effet
+          <label class="ao-field ao-commerce-only">Prise d'effet
             <input type="date" id="f-date_prise_effet" data-ao-key="date_prise_effet">
           </label>
-          <label class="ao-field" title="Durée du futur contrat, reprise dans la contrathèque si l'AO est gagné">Durée contrat (mois)
+          <label class="ao-field ao-commerce-only" title="Durée du futur contrat, reprise dans la contrathèque si l'AO est gagné">Durée contrat (mois)
             <input type="number" id="f-duree_contrat_mois" data-ao-key="duree_contrat_mois" min="0" placeholder="—">
           </label>
           <label class="ao-field" title="Posée automatiquement à la sortie de « A venir », modifiable">Entrée en étude
@@ -4640,8 +4640,9 @@
   function updateAOContratField() {
     const type = ficheEl("f-type").value;
     const contratId = ficheEl("f-contrat_id").value;
-    ficheEl("f-contrat_id-wrap").hidden = !AO_TYPES_AVEC_CONTRAT.includes(type) && !contratId;
-    ficheEl("f-contrat-warning").hidden = !(type === "Avenant" && !contratId);
+    const travaux = ficheEl("f-service").value === "Travaux";
+    ficheEl("f-contrat_id-wrap").hidden = (travaux || !AO_TYPES_AVEC_CONTRAT.includes(type)) && !contratId;
+    ficheEl("f-contrat-warning").hidden = !(type === "Avenant" && !contratId && !travaux);
   }
 
   // Bloc "Contrathèque" de la fiche AO : contrat issu de cet AO (ou à créer
@@ -4653,7 +4654,7 @@
     const rattache = findContrat(ao.contrat_id);
     if (rattache) parts.push(`<div class="ao-contrat-line">Rattaché à <a href="#" data-open-contrat="${rattache.id}">${escapeHtml(rattache.nom || "(sans nom)")}</a></div>`);
     if (issu) parts.push(`<div class="ao-contrat-line">Contrat issu de cet AO : <a href="#" data-open-contrat="${issu.id}">${escapeHtml(issu.nom || "(sans nom)")}</a></div>`);
-    if (!issu && ao.resultat === "Gagné" && ao.type !== "Avenant") {
+    if (!issu && ao.resultat === "Gagné" && ao.type !== "Avenant" && !isAOTravaux(ao)) {
       parts.push(`<button type="button" class="btn-secondary btn-small" id="ao-create-contrat">+ Créer le contrat</button>`);
     }
     section.hidden = !parts.length;
@@ -4674,10 +4675,21 @@
   const SYNDIC_ROLES = ["Syndic / Gestionnaire"];
   const SYNDIC_TYPE_CLIENT = "Habitat";
 
-  // Dates d'exécution : Travaux uniquement (ou déjà renseignées).
-  function updateAOExeFields() {
-    ficheEl("f-exe-wrap").hidden = ficheEl("f-service").value !== "Travaux"
+  // La contrathèque ne concerne que le Commerce (2026-11-13) : un AO
+  // Travaux ne crée pas de contrat et n'a ni prestations, ni prise d'effet,
+  // ni durée de contrat (champs masqués, valeurs éventuelles conservées).
+  function isAOTravaux(ao) {
+    return (ao.service || []).includes("Travaux");
+  }
+
+  // Champs propres au service de la fiche : dates d'exécution pour Travaux
+  // (ou déjà renseignées), champs "contrat" pour les autres.
+  function updateAOServiceFields() {
+    const travaux = ficheEl("f-service").value === "Travaux";
+    ficheEl("f-exe-wrap").hidden = !travaux
       && !ficheEl("f-date_debut_exe").value && !ficheEl("f-date_fin_exe").value;
+    document.querySelectorAll("#ao-form .ao-commerce-only").forEach((el) => { el.hidden = travaux; });
+    updateAOContratField();
   }
 
   function updateAOSyndicField() {
@@ -4770,7 +4782,7 @@
     set("date_entree_etude", () => { ficheEl("f-date_entree_etude").value = data.date_entree_etude || ""; });
     set("date_debut_exe", () => { ficheEl("f-date_debut_exe").value = data.date_debut_exe || ""; });
     set("date_fin_exe", () => { ficheEl("f-date_fin_exe").value = data.date_fin_exe || ""; });
-    updateAOExeFields();
+    updateAOServiceFields();
     set("resultat", () => { ficheEl("f-resultat").value = data.resultat || RESULTAT_OPTIONS[0]; });
     set("motif_categorie", () => { ficheEl("f-motif-categorie").value = data.motif_categorie || ""; });
     set("motif", () => { ficheEl("f-motif").value = data.motif || ""; });
@@ -4891,7 +4903,7 @@
     scheduleAOSave(event.target.id === "f-notes" ? 1200 : 800);
   });
   ficheEl("ao-form").addEventListener("change", (event) => {
-    if (event.target.id === "f-service") { renderPhaseStepper(); updateAOExeFields(); }
+    if (event.target.id === "f-service") { renderPhaseStepper(); updateAOServiceFields(); }
     if (event.target.id === "f-type" || event.target.id === "f-contrat_id") updateAOContratField();
     if (event.target.id === "f-type_client") updateAOSyndicField();
     // Contrat choisi : reprend son syndic / AMO si l'AO n'en a pas.
@@ -5026,7 +5038,7 @@
       ficheEl("f-nom_projet").focus();
       return;
     }
-    if (values.type === "Avenant" && !values.contrat_id) {
+    if (values.type === "Avenant" && !values.contrat_id && !isAOTravaux(values)) {
       setAOSaveStatus("Choisis le contrat de l'avenant", true);
       ficheEl("f-contrat_id").focus();
       return;
@@ -5107,6 +5119,7 @@
   // de son contrat, un renouvellement ouvre le contrat à mettre à jour, un
   // autre AO propose de créer son contrat.
   async function afterAOWon(ao) {
+    if (isAOTravaux(ao)) return; // Travaux : pas de contrathèque.
     if (ao.type === "Avenant") {
       const contrat = findContrat(ao.contrat_id);
       if (!contrat) {

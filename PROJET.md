@@ -129,6 +129,11 @@ Depuis le 2026-11-11, chaque onglet de service a ses propres colonnes
   `date_debut_exe` / `date_fin_exe` (`supabase/migrate_dates_execution.sql`),
   affichés dans la fiche pour le service Travaux ; le début est posé
   automatiquement au passage en Exécution (modifiable).
+  **La contrathèque ne concerne que le Commerce** : un AO Travaux gagné
+  (« Facturé / Fini ») ne propose pas de créer de contrat, et sa fiche masque
+  Prestations, Prise d'effet, Durée contrat et le lien vers un contrat (un
+  avenant Travaux n'a pas à être rattaché à un contrat). Les valeurs déjà
+  saisies sont conservées.
 
 Colonne `A faire` (id `a_faire`, ajoutée le 2026-11-11) entre `A venir` et
 `Étude` : `A venir` = AO pas encore sortis (veille), `A faire` = travail
