@@ -245,9 +245,10 @@ entreprise listent aussi leurs contrats.
 - Fiche contrat : liste des AO liés + « Lancer un avenant dans le
   pipeline » (AO Avenant créé en « A faire », rattaché au contrat).
 
-**Renégociations (2026-11-12)** : bloc « Renégociations à venir » à
-l'accueil (contrats dans leur fenêtre d'alerte, triés par échéance) ;
-bouton « Lancer le renouvellement » (accueil + bandeau de la fiche contrat)
+**Renégociations (2026-11-12)** : le bloc « Renégociations à venir » de
+l'accueil a été retiré le 2026-11-13 (illisible) ; les contrats à
+renégocier restent dans la Contrathèque (filtre « à renégocier ») et le
+plan de charge. Bouton « Lancer le renouvellement » (bandeau de la fiche contrat)
 qui crée l'AO « Renouvellement » en « A venir », même nom d'affaire,
 rattaché au contrat, prise d'effet = lendemain de l'échéance ; tant que cet
 AO est en cours, le contrat est marqué « Renouvellement en cours » et le

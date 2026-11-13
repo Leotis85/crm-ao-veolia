@@ -685,8 +685,6 @@
   .echeance-badge.echeance-renego { background: #f59e0b; color: #fff; font-weight: 600; }
   .echeance-badge.echeance-encours { background: #dbeafe; color: #1e40af; font-weight: 600; }
   .contrat-echeance-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .renego-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-  #accueil-renego-panel[hidden] { display: none; }
   .echeance-badge.echeance-verifier { background: var(--color-danger); color: #fff; }
   .echeance-badge.echeance-inconnue { background: transparent; color: var(--color-text-muted); padding-left: 0; }
 
@@ -2118,10 +2116,6 @@
   <section class="screen active" id="screen-accueil">
     <h1>Accueil</h1>
     <div class="stats-grid" id="accueil-stats"></div>
-    <div class="panel" id="accueil-renego-panel" hidden>
-      <h2>Renégociations à venir</h2>
-      <div class="list-panel" id="accueil-renego"></div>
-    </div>
     <div class="home-columns">
       <div class="panel">
         <h2>Échéances proches</h2>
@@ -4007,41 +4001,6 @@
       ? highPriority.map((t) => renderTacheItem(t)).join("")
       : `<div class="list-item-empty">Aucune tâche prioritaire en cours.</div>`;
     wireTacheItemEvents(prioritesEl);
-
-    renderAccueilRenego();
-  }
-
-  // Contrats entrés dans leur fenêtre d'alerte (contrathèque), triés par
-  // échéance, avec lancement du renouvellement en un clic.
-  function renderAccueilRenego() {
-    const items = (appData.contrats || []).filter(contratARenegocier)
-      .map((c) => ({ c, ech: contratProchaineEcheance(c), renouv: contratRenouvellementEnCours(c) }))
-      .sort((a, b) => a.ech.date.localeCompare(b.ech.date));
-    document.getElementById("accueil-renego-panel").hidden = !items.length;
-    const el = document.getElementById("accueil-renego");
-    el.innerHTML = items.map(({ c, ech, renouv }) => {
-      const months = Math.round(daysBetweenKeys(localDateKey(new Date()), ech.date) / 30.44);
-      return `
-        <div class="list-item clickable-item" data-contrat="${c.id}">
-          <div>
-            <div class="list-item-title">${escapeHtml(c.nom || "(sans nom)")}</div>
-            <div class="list-item-sub">${escapeHtml([entrepriseNom(c.syndic_id), (c.prestations || []).join(" "), c.montant ? formatEuros(c.montant) : ""].filter(Boolean).join(" · "))}</div>
-          </div>
-          <div class="renego-right">
-            <span class="days-badge ${months <= 3 ? "days-urgent" : months <= 6 ? "days-soon" : ""}">échéance ${formatDate(ech.date)} · ${months <= 0 ? "ce mois-ci" : `dans ${months} mois`}</span>
-            <button type="button" class="btn-small ${renouv ? "btn-secondary" : "btn-primary"}" data-renouv="${c.id}">${renouv ? "Voir l'AO" : "Lancer le renouvellement"}</button>
-          </div>
-        </div>
-      `;
-    }).join("");
-    el.querySelectorAll("[data-contrat]").forEach((row) => {
-      row.addEventListener("click", (event) => {
-        const c = findContrat(row.dataset.contrat);
-        if (!c) return;
-        if (event.target.closest("[data-renouv]")) lancerRenouvellement(c);
-        else openContratForm(c);
-      });
-    });
   }
 
   // ---------------------------------------------------------------------
