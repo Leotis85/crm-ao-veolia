@@ -2422,7 +2422,7 @@
           <thead>
             <tr>
               <th>Affaire</th><th>AMO / BE</th><th>Prestations</th><th>Secteur</th>
-              <th>Début</th><th>Prochaine échéance</th><th class="num">Montant</th><th class="num">Avenants</th>
+              <th>Début</th><th>Prochaine échéance</th><th class="num">CA annuel</th><th class="num">Avenants</th>
             </tr>
           </thead>
           <tbody id="contrats-tbody"></tbody>
@@ -2783,7 +2783,7 @@
           <label class="ao-field">Secteur
             <select id="f-k-secteur"></select>
           </label>
-          <label class="ao-field">Montant (€)
+          <label class="ao-field" title="CA annuel P1/P2/P3 du contrat">CA annuel (€)
             <input type="number" id="f-k-montant" step="0.01" placeholder="—">
           </label>
           <div class="ao-field ao-field-stack">
@@ -2898,7 +2898,7 @@
         <table class="contrats-table import-table">
           <thead><tr>
             <th></th><th>Affaire</th><th>Syndic</th><th>Statut</th><th>Secteur</th><th>Prestations</th>
-            <th>Début</th><th>Fin</th><th>Reconduction</th><th class="num">Montant</th><th class="num">Av.</th><th>À vérifier</th>
+            <th>Début</th><th>Fin</th><th>Reconduction</th><th class="num">CA annuel</th><th class="num">Av.</th><th>À vérifier</th>
           </tr></thead>
           <tbody id="import-contrats-body"></tbody>
         </table>
@@ -6959,7 +6959,7 @@
     const nbRenego = (appData.contrats || []).filter(contratARenegocier).length;
     document.getElementById("contrats-summary").innerHTML = `
       <span><strong>${list.length}</strong> contrat${list.length > 1 ? "s" : ""}</span>
-      ${total ? `<span>Montant total <strong>${formatEuros(total)}</strong></span>` : ""}
+      ${total ? `<span>CA annuel total <strong>${formatEuros(total)}</strong></span>` : ""}
       ${nbRenego ? `<button type="button" class="contrats-renego-link" id="contrats-renego-link">🔔 ${nbRenego} à renégocier</button>` : ""}
     `;
     const link = document.getElementById("contrats-renego-link");
@@ -7608,7 +7608,10 @@
           date_fin: p ? p.date_fin : null,
           reconduction: p ? p.reconduction : "",
           duree_reconduction_mois: p ? p.duree_reconduction_mois : null,
-          montant: p ? p.montant : null,
+          // Le « CA » du portefeuille n'est pas le CA annuel (référence : BDD,
+          // 2026-11-16) : on ne le reprend plus, à saisir dans la fiche ou la
+          // feuille de reprise.
+          montant: null,
           lien: g.base.lien,
           avenants: g.avenants.map((a) => ({
             id: generateId(), date: a.date, prestations: a.prestations.join(" "),
@@ -7672,7 +7675,7 @@
   const SHEET_HEADER = [
     "Type de ligne", "Importer", "Affaire", "Type de client", "Syndic", "Statut", "Secteur", "Prestations",
     "Date de début / d'effet", "Durée (mois)", "Date de fin", "Reconduction", "Durée reconduction (mois)",
-    "Montant (€)", "Lien Drive", "Nom de l'AO", "Notes", "À vérifier",
+    "CA annuel / montant (€)", "Lien Drive", "Nom de l'AO", "Notes", "À vérifier",
   ];
 
   function sheetDate(key) {
@@ -7746,7 +7749,7 @@
           date_fin: parseFrDate(at(r, "Date de fin")),
           reconduction: CONTRAT_RECONDUCTIONS.includes(at(r, "Reconduction")) ? at(r, "Reconduction") : "",
           duree_reconduction_mois: at(r, "Durée reconduction (mois)") ? Number(at(r, "Durée reconduction (mois)").replace(",", ".")) : null,
-          montant: parseEuros(at(r, "Montant (€)")),
+          montant: parseEuros(at(r, "CA annuel / montant (€)") || at(r, "Montant (€)")),
           lien: at(r, "Lien Drive"),
           avenants: [],
           warnings,
@@ -7770,7 +7773,7 @@
           nom: at(r, "Nom de l'AO") || affaire,
           contratId: c ? c.id : null,
           contratNom: c ? c.nom : "",
-          montant: parseEuros(at(r, "Montant (€)")),
+          montant: parseEuros(at(r, "CA annuel / montant (€)") || at(r, "Montant (€)")),
           date: parseFrDate(at(r, "Date de début / d'effet")),
           notes: at(r, "Notes"),
           warnings: renouv && !c ? ["contrat introuvable : à rattacher à la main"] : [],
@@ -8498,8 +8501,8 @@
     const r = computeExploitationData(appData);
     document.getElementById("exploit-stats").innerHTML = [
       [String(r.count), "Contrats actifs", `${r.avenants} avenant(s)`],
-      [formatEuros(r.total) || "0 €", "Volume d'affaires", "montant total des contrats actifs"],
-      [formatEuros(r.moyenne) || "0 €", "Montant moyen", "par contrat"],
+      [formatEuros(r.total) || "0 €", "CA annuel", "total des contrats actifs"],
+      [formatEuros(r.moyenne) || "0 €", "CA annuel moyen", "par contrat"],
       [String(r.echeancesAnnee), `Échéances en ${new Date().getFullYear()}`, "contrats arrivant à terme cette année"],
       [String(r.aRenegocier), "À renégocier", "dans leur fenêtre d'alerte"],
     ].map(([value, label, sub]) => `
@@ -8516,7 +8519,7 @@
     const topEl = document.getElementById("exploit-top");
     topEl.innerHTML = r.top.length ? `
       <table class="contrats-table">
-        <thead><tr><th>Affaire</th><th>Type de client</th><th>Secteur</th><th>Prestations</th><th>Prochaine échéance</th><th class="num">Montant</th></tr></thead>
+        <thead><tr><th>Affaire</th><th>Type de client</th><th>Secteur</th><th>Prestations</th><th>Prochaine échéance</th><th class="num">CA annuel</th></tr></thead>
         <tbody>
           ${r.top.map((c) => {
             const { date } = contratProchaineEcheance(c);

@@ -218,7 +218,7 @@ changer).
 | `date_debut`, `duree_mois`, `date_fin` | date / nombre | fin = y compris reconductions déjà prévues |
 | `reconduction`, `duree_reconduction_mois` | liste / nombre | Tacite, Expresse, Non |
 | `alerte_mois` | nombre | défaut 6 (12 avant le 2026-11-13, contrats existants à 12 passés à 6 par `supabase/migrate_alerte_6_mois.sql`) : la renégociation apparaît N mois avant l'échéance |
-| `montant` | nombre | € |
+| `montant` | nombre | **CA annuel** P1/P2/P3 en € (depuis le 2026-11-16 : référence = colonne « CA P1/P2/P3 /an » de la feuille BDD ; le « CA » du Portefeuille, un autre chiffre, n'est plus importé). Affiché « CA annuel » |
 | `lien` | texte | dossier Drive |
 | `ao_origine_id` | relation | AO dont il est issu |
 | `avenants` | liste | `[{id, date, prestations, statut, lien, notes, ao_id}]` |
