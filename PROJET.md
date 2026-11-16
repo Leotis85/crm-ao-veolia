@@ -379,7 +379,7 @@ projet »), quel que soit l'assigné, avec la mention des assignés.
 > - **Exploitation** : portefeuille de la contrathèque (contrats actifs) :
 >   nombre, volume d'affaires (somme des montants), montant moyen,
 >   échéances de l'année, à renégocier ; répartitions par secteur, type de
->   client, prestation, année d'échéance ; top 10 des contrats.
+>   client, BE / AMO, année d'échéance ; top 10 des contrats.
 - Taux de réussite global (gagnés / déposés).
 - Montant total gagné.
 - Répartition par type de marché.
