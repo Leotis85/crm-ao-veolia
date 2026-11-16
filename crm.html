@@ -2468,8 +2468,8 @@
       </div>
       <div class="reporting-columns">
         <div class="panel">
-          <h2>Par prestation <small>(nombre de contrats qui l'incluent)</small></h2>
-          <div class="value-bars" id="exploit-prestation"></div>
+          <h2>Par BE / AMO</h2>
+          <div class="value-bars" id="exploit-be"></div>
         </div>
         <div class="panel">
           <h2>Échéances à venir par année</h2>
@@ -8468,7 +8468,9 @@
       echeancesAnnee,
       parSecteur: group((c) => c.secteur, [...SECTEUR_OPTIONS, "Non renseigné"]),
       parTypeClient: group((c) => c.type_client, [...TYPE_CLIENT_OPTIONS, "Non renseigné"]),
-      parPrestation: group((c) => (c.prestations || []).length ? c.prestations : [""], [...PRESTATION_OPTIONS, "Non renseigné"]),
+      // BE / AMO du contrat ; "Sans BE / AMO" en dernier.
+      parBE: group((c) => entrepriseNom(c.amo_id) || "Sans BE / AMO")
+        .sort((a, b) => (a.label === "Sans BE / AMO") - (b.label === "Sans BE / AMO") || b.value - a.value || b.count - a.count),
       parEcheance: [...echeances.values()].sort((a, b) => a.sort - b.sort),
       top: [...actifs].sort((a, b) => montant(b) - montant(a)).slice(0, 10),
     };
@@ -8514,7 +8516,7 @@
     `).join("");
     renderValueBars("exploit-secteur", r.parSecteur);
     renderValueBars("exploit-type-client", r.parTypeClient);
-    renderValueBars("exploit-prestation", r.parPrestation, { byCount: true });
+    renderValueBars("exploit-be", r.parBE);
     renderValueBars("exploit-echeances", r.parEcheance);
     const topEl = document.getElementById("exploit-top");
     topEl.innerHTML = r.top.length ? `
