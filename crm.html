@@ -7086,6 +7086,7 @@
       tacite: columnIndex(header, (c) => c === "tacite reconduction"),
       fin: columnIndex(header, (c) => c.startsWith("date de fin y/c") && c.includes("reconduction")),
       ca: columnIndex(header, (c) => c.startsWith("ca p1")),
+      typologie: columnIndex(header, (c) => c === "typologie client"),
     };
     const map = new Map();
     rows.slice(h + 1).forEach((r) => {
@@ -7101,6 +7102,7 @@
         duree_reconduction_mois: parseDureeMois(r[col.dureeRecon]),
         date_fin: parseFrDate(r[col.fin]),
         montant: parseEuros(r[col.ca]),
+        type_client: importTypologieToTypeClient(r[col.typologie]),
         // Colonne sans titre après "Date de fin y/c TR" : résilié, en cours…
         remarque: (r[col.ca + 2] || "").trim(),
       });
@@ -7157,6 +7159,17 @@
 
   // Type de client proposé : Habitat pour une résidence / copropriété
   // (le syndic, inconnu des fichiers, est à saisir), vide sinon.
+  // "Typologie client" du Portefeuille -> type de client de l'app.
+  const IMPORT_TYPOLOGIE_MAP = {
+    "copropriete": "Habitat", "bailleur social": "Habitat", "collectivite": "Collectivité",
+    "sante": "Santé", "tertiaire": "Tertiaire", "enseignement": "Enseignement",
+    "industriel": "Autre", "industrie": "Autre",
+  };
+
+  function importTypologieToTypeClient(v) {
+    return IMPORT_TYPOLOGIE_MAP[normalizeSearchText(v || "").trim()] || "";
+  }
+
   function importTypeClient(client) {
     const org = client.split("_")[0].trim().replace(/\s+/g, " ");
     return /^(RES|SDC|ASL|RC)\b/i.test(org) ? "Habitat" : "";
@@ -7203,7 +7216,8 @@
           key,
           selected,
           nom,
-          type_client: importTypeClient(g.client),
+          // Typologie du portefeuille en priorité, sinon déduite du nom.
+          type_client: (p && p.type_client) || importTypeClient(g.client),
           syndic: "",
           statut,
           secteur: SECTEUR_OPTIONS.includes(g.base.secteur) ? g.base.secteur : "",
