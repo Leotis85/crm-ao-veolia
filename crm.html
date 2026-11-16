@@ -242,10 +242,6 @@
   .gantt-legend-swatch:first-child { margin-left: 0; }
   .gantt-legend-swatch.exe { background: #7c3aed; }
 
-  .gantt-row.renego .gantt-cell.filled { background-color: #f59e0b; }
-  .gantt-row.renego:hover .gantt-cell.filled { background-color: #b45309; }
-  .gantt-row.renego-encours .gantt-cell.filled { background-color: #60a5fa; }
-  .gantt-row.renego-encours:hover .gantt-cell.filled { background-color: #2563eb; }
 
   .gantt-empty, .gantt-footnote {
     font-size: 13px;
@@ -434,6 +430,176 @@
 
   @media (max-width: 700px) {
     .home-columns { grid-template-columns: 1fr; }
+  }
+
+  /* --- Accueil personnel (refonte 2026-11-16) --- */
+  .home-hero {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 22px 24px;
+    margin-bottom: 18px;
+    border-radius: 14px;
+    background: linear-gradient(120deg, #0f766e 0%, #115e59 55%, #134e4a 100%);
+    color: #fff;
+  }
+  .home-hello { margin: 0; font-size: 26px; font-weight: 700; color: #fff; }
+  .home-date { margin-top: 4px; font-size: 14px; opacity: 0.85; }
+  .home-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .home-actions .btn-primary { background: #fff; color: #0f766e; }
+  .home-actions .btn-primary:hover { background: #ecfdf5; }
+  .home-actions .btn-secondary { background: rgba(255, 255, 255, 0.14); color: #fff; border: 1px solid rgba(255, 255, 255, 0.35); }
+  .home-actions .btn-secondary:hover { background: rgba(255, 255, 255, 0.24); }
+
+  .home-kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .home-kpi {
+    --tone: #0f766e;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    text-align: left;
+    padding: 16px 18px;
+    border: 1px solid var(--color-border);
+    border-top: 4px solid var(--tone);
+    border-radius: 12px;
+    background: var(--color-surface);
+    cursor: pointer;
+    transition: box-shadow 0.15s, transform 0.15s;
+  }
+  .home-kpi:hover { box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08); transform: translateY(-1px); }
+  .home-kpi.tone-amber { --tone: #f59e0b; }
+  .home-kpi.tone-red { --tone: #dc2626; }
+  .home-kpi-value { font-size: 30px; font-weight: 800; line-height: 1; color: var(--tone); }
+  .home-kpi-label { font-size: 13px; font-weight: 600; color: var(--color-text); }
+  .home-kpi-sub { font-size: 12px; color: var(--color-text-muted); min-height: 1em; }
+
+  .home-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 18px;
+    margin-bottom: 18px;
+    align-items: start;
+  }
+  .home-side { display: flex; flex-direction: column; gap: 18px; }
+  .home-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .home-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 12px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+  }
+  .home-empty { font-size: 13px; color: var(--color-text-muted); padding: 6px 0; }
+
+  .home-legend { display: flex; gap: 14px; flex-wrap: wrap; margin: -4px 0 12px; font-size: 11px; color: var(--color-text-muted); }
+  .home-legend i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; background: var(--kind); }
+  .kind-remise { --kind: #0f766e; }
+  .kind-visite { --kind: #2563eb; }
+  .kind-effet { --kind: #16a34a; }
+  .kind-tache { --kind: #f59e0b; }
+
+  .home-day { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 10px 0; border-top: 1px solid var(--color-border); }
+  .home-day:first-child { border-top: none; padding-top: 0; }
+  .home-day-label { font-size: 13px; font-weight: 700; color: var(--color-text); padding-top: 6px; }
+  .home-day.is-today .home-day-label { color: var(--color-primary); }
+  .home-day-items { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .home-event {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: var(--color-bg);
+    border-left: 3px solid var(--kind);
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .home-event:hover { background: #f0fdfa; }
+  .home-event-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--kind); flex-shrink: 0; }
+  .home-event-check { width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
+  .home-event-kind { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--kind); flex-shrink: 0; }
+  .home-event-title { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .home-event .badge-prio { margin: 0 0 0 auto; }
+
+  .home-task-group + .home-task-group { margin-top: 12px; }
+  .home-task-group-title { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+  .home-task-group.overdue .home-task-group-title { color: var(--color-danger); }
+  .home-quick-task { margin-top: 12px; }
+  .home-quick-task input {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 13px;
+    border: 1px dashed var(--color-border);
+    border-radius: 8px;
+    background: var(--color-bg);
+  }
+  .home-quick-task input:focus { outline: none; border-style: solid; border-color: var(--color-primary); background: var(--color-surface); }
+
+  .home-wait {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 0;
+    border-top: 1px solid var(--color-border);
+    cursor: pointer;
+  }
+  .home-wait:first-child { border-top: none; padding-top: 0; }
+  .home-wait:hover .home-wait-title { color: var(--color-primary); }
+  .home-wait-main { min-width: 0; }
+  .home-wait-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .home-wait-sub { font-size: 12px; color: var(--color-text-muted); }
+  .home-wait-age { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--color-border); white-space: nowrap; }
+  .home-wait.is-late .home-wait-age { background: #fef3c7; color: #92400e; font-weight: 700; }
+
+  .home-pipeline { display: flex; gap: 8px; }
+  .home-pipe-step {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 12px 14px;
+    border: none;
+    border-radius: 10px;
+    background: #ecfdf5;
+    cursor: pointer;
+    text-align: left;
+  }
+  .home-pipe-step:hover { background: #d1fae5; }
+  .home-pipe-step.is-empty { background: var(--color-bg); }
+  .home-pipe-count { font-size: 22px; font-weight: 800; color: var(--color-primary); line-height: 1.1; }
+  .home-pipe-step.is-empty .home-pipe-count { color: var(--color-text-muted); }
+  .home-pipe-label { font-size: 12px; font-weight: 600; color: var(--color-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .home-pipe-sum { font-size: 11px; color: var(--color-text-muted); }
+
+  @media (max-width: 1000px) {
+    .home-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .home-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .home-day { grid-template-columns: 1fr; gap: 4px; }
+    .home-pipeline { flex-wrap: wrap; }
+    .home-pipe-step { flex: 1 1 45%; }
   }
 
   .reporting-columns {
@@ -2111,18 +2277,52 @@
 
 <main>
   <section class="screen active" id="screen-accueil">
-    <h1>Accueil</h1>
-    <div class="stats-grid" id="accueil-stats"></div>
-    <div class="home-columns">
-      <div class="panel">
-        <h2>Échéances proches</h2>
-        <div class="list-panel" id="accueil-echeances"></div>
+    <div class="home-hero">
+      <div>
+        <h1 class="home-hello" id="home-hello">Bonjour</h1>
+        <div class="home-date" id="home-date"></div>
       </div>
-      <div class="panel">
-        <h2>Tâches prioritaires</h2>
-        <div class="list-panel" id="accueil-priorites"></div>
+      <div class="home-actions">
+        <button type="button" class="btn-primary" id="home-new-ao">+ AO</button>
+        <button type="button" class="btn-secondary" id="home-new-tache">+ Tâche</button>
+        <button type="button" class="btn-secondary" id="home-new-contact">+ Contact</button>
       </div>
     </div>
+
+    <div class="home-kpis" id="home-kpis"></div>
+
+    <div class="home-grid">
+      <section class="home-card home-agenda-card">
+        <h2 class="home-card-title">Mes 14 prochains jours</h2>
+        <div class="home-legend">
+          <span class="kind-remise"><i></i>Remise</span>
+          <span class="kind-visite"><i></i>Visite</span>
+          <span class="kind-effet"><i></i>Prise d'effet</span>
+          <span class="kind-tache"><i></i>Tâche</span>
+        </div>
+        <div id="home-agenda"></div>
+      </section>
+
+      <div class="home-side">
+        <section class="home-card">
+          <h2 class="home-card-title">Mes tâches</h2>
+          <div id="home-taches"></div>
+          <form class="home-quick-task" id="home-quick-task">
+            <input type="text" id="home-quick-task-input" placeholder="+ Tâche pour aujourd'hui… (Entrée)" autocomplete="off">
+          </form>
+        </section>
+
+        <section class="home-card">
+          <h2 class="home-card-title">En attente de réponse <span class="todo-group-count" id="home-attente-count">0</span></h2>
+          <div id="home-attente"></div>
+        </section>
+      </div>
+    </div>
+
+    <section class="home-card home-pipeline-card">
+      <h2 class="home-card-title">Mon pipeline</h2>
+      <div class="home-pipeline" id="home-pipeline"></div>
+    </section>
   </section>
 
   <section class="screen" id="screen-pipeline">
@@ -2144,7 +2344,7 @@
 
   <section class="screen" id="screen-plan-charge">
     <h1>Plan de charge</h1>
-    <p class="placeholder-hint">Une ligne par AO en cours : cases remplies de la semaine d'entrée en étude à celle de la remise (repère foncé). Colonne rouge = semaine en cours. Renégociations : de l'ouverture de l'alerte à l'échéance du contrat (orange = à lancer, bleu = renouvellement en cours).</p>
+    <p class="placeholder-hint">Une ligne par AO en cours : cases remplies de la semaine d'entrée en étude à celle de la remise (repère foncé). Colonne rouge = semaine en cours.</p>
     <div class="gantt-scroll" id="gantt-scroll">
       <div id="gantt-container"></div>
     </div>
@@ -3914,62 +4114,235 @@
     return "";
   }
 
+  // ---------------------------------------------------------------------
+  // Accueil personnel (refonte 2026-11-16) : uniquement MES AO (assigné) et
+  // MES tâches. En-tête + actions rapides, 4 indicateurs cliquables, agenda
+  // des 14 prochains jours, mes tâches (en retard / aujourd'hui), AO en
+  // attente de réponse, bandeau pipeline.
+  // ---------------------------------------------------------------------
+
+  const HOME_AGENDA_DAYS = 14;
+  const HOME_RELANCE_DAYS = 30;
+
+  function homeMe() {
+    return currentProfile ? currentProfile.display_name : "";
+  }
+
+  function mesAOs() {
+    const me = homeMe();
+    return appData.aos.filter((a) => (a.assigne_a || []).includes(me));
+  }
+
+  // Ouvre le pipeline filtré sur mes AO.
+  function homeOpenPipeline() {
+    pipelineFilters.assigne_a = homeMe();
+    showScreen("pipeline");
+    renderPipeline();
+    const sel = document.getElementById("filter-assigne_a");
+    if (sel) sel.value = homeMe();
+  }
+
+  function homeOpenTodo() {
+    todoFilters.personne = "";
+    showScreen("todo");
+    renderTodo();
+  }
+
+  function homeDayLabel(key, todayKey) {
+    if (key === todayKey) return "Aujourd'hui";
+    if (key === addDaysToKey(todayKey, 1)) return "Demain";
+    const label = parseDateKey(key).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+
   function renderAccueil() {
-    const data = appData;
+    if (!currentProfile) return;
+    const me = homeMe();
+    const todayKey = localDateKey(new Date());
+    const agendaEnd = addDaysToKey(todayKey, HOME_AGENDA_DAYS - 1);
+    const aos = mesAOs();
+    const enCours = aos.filter((a) => a.resultat === "En cours");
+    const avantRemise = enCours.filter((a) => {
+      const idx = PHASE_OPTIONS.indexOf(a.phase);
+      return idx === -1 || idx < PHASE_POST_REMISE_INDEX;
+    });
+    const taches = mesTaches(appData.taches).filter((t) => !isTacheDone(t));
+    const enRetard = taches.filter((t) => t.echeance && t.echeance < todayKey);
+    const aujourdhui = taches.filter((t) => t.echeance === todayKey);
+    const attente = enCours.filter((a) => a.phase === "attente_reponse")
+      .map((a) => ({ ao: a, depuis: a.date_remise ? daysBetweenKeys(a.date_remise, todayKey) : null }))
+      .sort((x, y) => (y.depuis ?? -1) - (x.depuis ?? -1));
+    const remises7 = avantRemise.filter((a) => a.date_remise && a.date_remise >= todayKey && a.date_remise <= addDaysToKey(todayKey, 7));
 
-    const aoEnCours = data.aos.filter((a) => a.resultat === "En cours").length;
-    const echeancesAO = data.aos
-      .filter((a) => {
-        const idx = PHASE_OPTIONS.indexOf(a.phase);
-        return idx === -1 || idx < PHASE_POST_REMISE_INDEX;
-      })
-      .map((a) => ({ ao: a, days: daysBetween(a.date_remise) }))
-      .filter((x) => x.days !== null);
-    const echeances7j = echeancesAO.filter((x) => x.days >= 0 && x.days <= 7).length;
-    const tachesOuvertes = mesTaches(data.taches).filter((t) => !isTacheDone(t)).length;
-    const aoEnAttente = data.aos.filter((a) => a.phase === "attente_reponse").length;
+    // En-tête
+    const prenom = (me || "").split(/\s+/)[0];
+    const dateLabel = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+    document.getElementById("home-hello").textContent = `Bonjour ${prenom}`;
+    document.getElementById("home-date").textContent = dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
 
-    document.getElementById("accueil-stats").innerHTML = [
-      ["AO en cours", aoEnCours],
-      ["Échéances < 7 j", echeances7j],
-      ["Tâches ouvertes", tachesOuvertes],
-      ["AO en attente de réponse", aoEnAttente],
-    ].map(([label, value]) => `
-      <div class="stat-card">
-        <div class="stat-value">${value}</div>
-        <div class="stat-label">${escapeHtml(label)}</div>
-      </div>
+    // Indicateurs
+    const montant = enCours.reduce((sum, a) => sum + (Number(a.valeur_estimee) || 0), 0);
+    const proches = remises7.filter((a) => a.date_remise <= addDaysToKey(todayKey, 1)).length;
+    const aRelancer = attente.filter((x) => x.depuis !== null && x.depuis > HOME_RELANCE_DAYS).length;
+    const kpis = [
+      { id: "aos", tone: "teal", value: enCours.length, label: "AO en cours", sub: montant ? formatEuros(montant) : "" },
+      { id: "remises", tone: remises7.length ? "amber" : "teal", value: remises7.length, label: "Remises ≤ 7 jours", sub: proches ? `${proches} aujourd'hui ou demain` : "" },
+      { id: "taches", tone: enRetard.length ? "red" : "teal", value: taches.length, label: "Tâches ouvertes", sub: enRetard.length ? `dont ${enRetard.length} en retard` : "aucune en retard" },
+      { id: "attente", tone: aRelancer ? "amber" : "teal", value: attente.length, label: "En attente de réponse", sub: aRelancer ? `${aRelancer} à relancer (> ${HOME_RELANCE_DAYS} j)` : "" },
+    ];
+    const kpiEl = document.getElementById("home-kpis");
+    kpiEl.innerHTML = kpis.map((k) => `
+      <button type="button" class="home-kpi tone-${k.tone}" data-kpi="${k.id}">
+        <span class="home-kpi-value">${k.value}</span>
+        <span class="home-kpi-label">${escapeHtml(k.label)}</span>
+        <span class="home-kpi-sub">${escapeHtml(k.sub)}</span>
+      </button>
     `).join("");
+    kpiEl.querySelectorAll("[data-kpi]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.dataset.kpi === "taches") homeOpenTodo();
+        else homeOpenPipeline();
+      });
+    });
 
-    const upcoming = echeancesAO.filter((x) => x.days <= 30).sort((a, b) => a.days - b.days);
-    const echeancesEl = document.getElementById("accueil-echeances");
-    echeancesEl.innerHTML = upcoming.length
-      ? upcoming.map(({ ao, days }) => `
-          <div class="list-item clickable-item" data-id="${ao.id}">
-            <div>
-              <div class="list-item-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
-              <div class="list-item-sub">${escapeHtml(ao.type_client)} · remise le ${formatDate(ao.date_remise)}</div>
+    // Agenda : remises, visites, prises d'effet de mes AO + échéances de mes
+    // tâches, sur les 14 prochains jours.
+    const events = [];
+    enCours.forEach((a) => {
+      const inRange = (k) => k && k >= todayKey && k <= agendaEnd;
+      if (inRange(a.date_remise) && avantRemise.includes(a)) events.push({ date: a.date_remise, kind: "remise", label: "Remise", ao: a });
+      if (inRange(a.date_visite)) events.push({ date: a.date_visite, kind: "visite", label: "Visite", ao: a });
+    });
+    aos.forEach((a) => {
+      if (a.date_prise_effet && a.date_prise_effet >= todayKey && a.date_prise_effet <= agendaEnd && a.resultat !== "Perdu" && a.resultat !== "Abandonné") {
+        events.push({ date: a.date_prise_effet, kind: "effet", label: "Prise d'effet", ao: a });
+      }
+    });
+    taches.forEach((t) => {
+      if (t.echeance && t.echeance > todayKey && t.echeance <= agendaEnd) events.push({ date: t.echeance, kind: "tache", label: "Tâche", tache: t });
+    });
+    const ORDER = { remise: 0, visite: 1, effet: 2, tache: 3 };
+    events.sort((x, y) => x.date.localeCompare(y.date) || ORDER[x.kind] - ORDER[y.kind]);
+    const byDay = new Map();
+    events.forEach((e) => {
+      if (!byDay.has(e.date)) byDay.set(e.date, []);
+      byDay.get(e.date).push(e);
+    });
+    const agendaEl = document.getElementById("home-agenda");
+    agendaEl.innerHTML = byDay.size
+      ? [...byDay.entries()].map(([day, list]) => `
+          <div class="home-day${day === todayKey ? " is-today" : ""}">
+            <div class="home-day-label">${escapeHtml(homeDayLabel(day, todayKey))}</div>
+            <div class="home-day-items">
+              ${list.map((e) => e.tache ? `
+                <div class="home-event kind-tache" data-tache="${e.tache.id}">
+                  <input type="checkbox" class="home-event-check" data-tache="${e.tache.id}" title="Marquer comme terminée">
+                  <span class="home-event-kind">${e.label}</span>
+                  <span class="home-event-title">${escapeHtml(e.tache.tache || "(sans titre)")}</span>
+                </div>
+              ` : `
+                <div class="home-event kind-${e.kind}" data-ao="${e.ao.id}">
+                  <span class="home-event-dot"></span>
+                  <span class="home-event-kind">${e.label}</span>
+                  <span class="home-event-title">${escapeHtml(e.ao.nom_projet || "(sans nom)")}</span>
+                  ${e.ao.priorite === "Haute" ? `<span class="badge-prio prio-haute">Haute</span>` : ""}
+                </div>
+              `).join("")}
             </div>
-            <span class="days-badge ${joursRestantsClass(days)}">${joursRestantsLabel(days)}</span>
           </div>
         `).join("")
-      : `<div class="list-item-empty">Aucune échéance dans les 30 prochains jours.</div>`;
-    echeancesEl.querySelectorAll(".clickable-item").forEach((row) => {
+      : `<div class="home-empty">Rien de prévu sur les ${HOME_AGENDA_DAYS} prochains jours.</div>`;
+    agendaEl.querySelectorAll("[data-ao]").forEach((row) => {
       row.addEventListener("click", () => {
-        const ao = data.aos.find((a) => a.id === row.dataset.id);
+        const ao = appData.aos.find((a) => a.id === row.dataset.ao);
+        if (ao) openAOForm(ao);
+      });
+    });
+    agendaEl.querySelectorAll(".home-event[data-tache]").forEach((row) => {
+      row.addEventListener("click", (event) => {
+        if (event.target.closest(".home-event-check")) return;
+        const t = appData.taches.find((x) => x.id === row.dataset.tache);
+        if (t) openTacheForm(t);
+      });
+    });
+    agendaEl.querySelectorAll(".home-event-check").forEach((cb) => {
+      cb.addEventListener("change", async () => {
+        const t = appData.taches.find((x) => x.id === cb.dataset.tache);
+        if (t && !(await saveTacheChange(t, { statut: "Terminé" }))) cb.checked = false;
+      });
+    });
+
+    // Mes tâches : en retard puis aujourd'hui.
+    const tachesEl = document.getElementById("home-taches");
+    const groups = [
+      { title: "En retard", cls: "overdue", items: sortTaches(enRetard) },
+      { title: "Aujourd'hui", cls: "", items: sortTaches(aujourdhui) },
+    ].filter((g) => g.items.length);
+    tachesEl.innerHTML = groups.length
+      ? groups.map((g) => `
+          <div class="home-task-group ${g.cls}">
+            <div class="home-task-group-title">${g.title} <span class="todo-group-count">${g.items.length}</span></div>
+            <div class="list-panel">${g.items.map((t) => renderTacheItem(t)).join("")}</div>
+          </div>
+        `).join("")
+      : `<div class="home-empty">Rien en retard ni pour aujourd'hui. 👌</div>`;
+    wireTacheItemEvents(tachesEl);
+
+    // AO en attente de réponse, du plus ancien au plus récent.
+    const attenteEl = document.getElementById("home-attente");
+    document.getElementById("home-attente-count").textContent = attente.length;
+    attenteEl.innerHTML = attente.length
+      ? attente.map(({ ao, depuis }) => `
+          <div class="home-wait${depuis !== null && depuis > HOME_RELANCE_DAYS ? " is-late" : ""}" data-ao="${ao.id}">
+            <div class="home-wait-main">
+              <div class="home-wait-title">${escapeHtml(ao.nom_projet || "(sans nom)")}</div>
+              <div class="home-wait-sub">${escapeHtml([entrepriseNom(ao.syndic_id || ao.maitre_ouvrage_id), ao.valeur_estimee ? formatEuros(ao.valeur_estimee) : ""].filter(Boolean).join(" · "))}</div>
+            </div>
+            <span class="home-wait-age">${depuis === null ? "remise ?" : depuis <= 0 ? "remis aujourd'hui" : `remis il y a ${depuis} j`}</span>
+          </div>
+        `).join("")
+      : `<div class="home-empty">Aucun AO en attente de réponse.</div>`;
+    attenteEl.querySelectorAll("[data-ao]").forEach((row) => {
+      row.addEventListener("click", () => {
+        const ao = appData.aos.find((a) => a.id === row.dataset.ao);
         if (ao) openAOForm(ao);
       });
     });
 
-    const highPriority = mesTaches(data.taches)
-      .filter((t) => t.priorite === "Haute" && !isTacheDone(t))
-      .sort((a, b) => (a.echeance || "").localeCompare(b.echeance || ""));
-    const prioritesEl = document.getElementById("accueil-priorites");
-    prioritesEl.innerHTML = highPriority.length
-      ? highPriority.map((t) => renderTacheItem(t)).join("")
-      : `<div class="list-item-empty">Aucune tâche prioritaire en cours.</div>`;
-    wireTacheItemEvents(prioritesEl);
+    // Bandeau pipeline : mes AO en cours par phase (hors phases finales).
+    const phases = PHASES.map((p) => p.id).filter((id) => !AO_TERMINAL_PHASES.includes(id));
+    const pipeEl = document.getElementById("home-pipeline");
+    pipeEl.innerHTML = phases.map((id) => {
+      const list = enCours.filter((a) => a.phase === id);
+      if (!list.length && (id === "execution" || id === "negociation")) return "";
+      const sum = list.reduce((s, a) => s + (Number(a.valeur_estimee) || 0), 0);
+      return `
+        <button type="button" class="home-pipe-step${list.length ? "" : " is-empty"}">
+          <span class="home-pipe-count">${list.length}</span>
+          <span class="home-pipe-label">${escapeHtml(phaseLabel(id))}</span>
+          <span class="home-pipe-sum">${sum ? formatEuros(sum) : "&nbsp;"}</span>
+        </button>
+      `;
+    }).join("");
+    pipeEl.querySelectorAll(".home-pipe-step").forEach((b) => b.addEventListener("click", homeOpenPipeline));
   }
+
+  document.getElementById("home-new-ao").addEventListener("click", () => { showScreen("pipeline"); openAOForm(null); });
+  document.getElementById("home-new-tache").addEventListener("click", () => openTacheForm(null));
+  document.getElementById("home-new-contact").addEventListener("click", () => openContactForm(null));
+  document.getElementById("home-quick-task").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = document.getElementById("home-quick-task-input");
+    const tache = input.value.trim();
+    if (!tache) return;
+    try {
+      await addTache({ tache, echeance: localDateKey(new Date()), assigne_a: [homeMe()] });
+      input.value = "";
+      document.getElementById("home-quick-task-input").focus();
+    } catch (err) {
+      alert("Erreur lors de l'enregistrement : " + err.message);
+    }
+  });
 
   // ---------------------------------------------------------------------
   // Pipeline Kanban (étape 5, voir PROJET.md §5.2).
@@ -4374,48 +4747,8 @@
       `;
     }).join("");
 
-    // Renégociations (contrathèque) : de l'ouverture de la fenêtre d'alerte
-    // jusqu'à l'échéance, pour anticiper la charge qu'elles vont créer.
-    const renegos = (appData.contrats || [])
-      .filter((c) => c.statut === "Actif")
-      .map((c) => {
-        const { date } = contratProchaineEcheance(c);
-        return date ? { c, end: date, start: addMonthsKey(date, -(Number(c.alerte_mois) || 6)) } : null;
-      })
-      .filter((x) => x && x.end >= rangeStart && x.start <= rangeEnd)
-      .sort((a, b) => a.end.localeCompare(b.end));
-    if (renegos.length) {
-      container.insertAdjacentHTML("beforeend", `
-        <div class="gantt-service-section">
-          <h2>Renégociations <span class="todo-group-count">${renegos.length}</span></h2>
-          <div class="gantt-table" style="${gridStyle}">
-            ${renderGanttHeader(weeks, todayKey)}
-            ${renegos.map(({ c, start, end }) => {
-              const renouv = contratRenouvellementEnCours(c);
-              const sub = [`échéance ${formatDate(end)}`, entrepriseNom(c.syndic_id), renouv ? "renouvellement en cours" : ""].filter(Boolean);
-              return `
-                <div class="gantt-row renego${renouv ? " renego-encours" : ""}" data-contrat="${c.id}" style="grid-column: 1 / -1;"
-                     title="${escapeHtml(c.nom || "")} — alerte à partir du ${formatDate(start)}, échéance ${formatDate(end)}">
-                  <div class="gantt-label">
-                    <div class="gantt-label-title">${escapeHtml(c.nom || "(sans nom)")}</div>
-                    <div class="gantt-label-sub">${escapeHtml(sub.join(" · "))}</div>
-                  </div>
-                  ${renderGanttCells(start, end, weeks, todayKey)}
-                </div>
-              `;
-            }).join("")}
-          </div>
-        </div>
-      `);
-    }
-
     container.querySelectorAll(".gantt-row").forEach((row) => {
       row.addEventListener("click", () => {
-        if (row.dataset.contrat) {
-          const c = findContrat(row.dataset.contrat);
-          if (c) openContratForm(c);
-          return;
-        }
         const ao = appData.aos.find((a) => a.id === row.dataset.id);
         if (ao) openAOForm(ao);
       });

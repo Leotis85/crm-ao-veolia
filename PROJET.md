@@ -295,6 +295,17 @@ Un rappel est un petit objet porté par un AO, une Tâche ou un Contact :
 ## 5. Fonctionnalités à construire
 
 ### 5.1 Écran d'accueil (récap)
+
+> Refonte du 2026-11-16 : accueil **personnel** (seulement mes AO, où je suis
+> assigné, et mes tâches). Bandeau d'en-tête (bonjour + date, boutons + AO /
+> + Tâche / + Contact), 4 indicateurs cliquables (AO en cours + montant,
+> remises à 7 jours, tâches ouvertes / en retard, AO en attente de réponse
+> dont ceux à relancer après 30 j), agenda des 14 prochains jours (remises,
+> visites, prises d'effet, échéances de tâches, à cocher sur place), mes
+> tâches en retard / du jour avec ajout rapide, AO en attente de réponse
+> triés par ancienneté, bandeau « Mon pipeline » (nombre et montant par
+> phase). Pas de renégociations sur l'accueil ni dans le plan de charge
+> (retirées à la demande de Mathis, emplacement à redéfinir).
 - Compteurs : AO en cours, échéances < 7 jours, tâches ouvertes, AO en attente de résultat.
 - Liste des échéances proches (calcul automatique des jours restants).
 - Rappels actifs du jour (issus des AO, tâches, contacts).
