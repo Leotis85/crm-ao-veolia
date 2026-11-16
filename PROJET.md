@@ -387,6 +387,10 @@ projet »), quel que soit l'assigné, avec la mention des assignés.
   l'AO A et l'AO B en même temps ne doit jamais créer de conflit.
 - **Sauvegarde.** Prévoir un export JSON complet manuel à tout moment (filet de
   sécurité, et mécanisme de partage en phase LocalStorage).
+  > Boutons Exporter / Importer (JSON complet) de l'en-tête retirés le
+  > 2026-11-16 à la demande de Mathis : les données vivent dans Supabase. Il
+  > reste des exports CSV ciblés (pipeline, Contacts > « Exporter CSV » :
+  > personnes ou entreprises affichées).
 - **Compatible Chromebook.** HTML/CSS/JS standard, aucune API non supportée par
   ChromeOS, aucune install requise.
 

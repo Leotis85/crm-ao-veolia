@@ -2100,9 +2100,6 @@
     <button data-screen="reporting">Reporting</button>
   </nav>
   <div class="header-actions">
-    <button id="btn-export">⬇ Exporter</button>
-    <button id="btn-import">⬆ Importer</button>
-    <input type="file" id="file-import" accept="application/json" hidden>
     <div class="user-wrap">
       <span id="current-user-name"></span>
       <button id="btn-change-password" title="Changer mon mot de passe">Mot de passe</button>
@@ -2229,6 +2226,7 @@
       <input type="search" id="filter-contact-search" class="contacts-search" placeholder="🔍 Rechercher" autocomplete="off">
       <button type="button" class="btn-primary" id="btn-new-contact">+ Nouveau contact</button>
       <button type="button" class="btn-secondary" id="btn-new-entreprise">+ Nouvelle entreprise</button>
+      <button type="button" class="btn-secondary" id="btn-export-contacts" title="Exporte la liste affichée (vue, recherche et catégorie en cours)">⬇ Exporter CSV</button>
     </div>
     <div class="contact-category-chips" id="contact-category-chips"></div>
     <div class="contacts-grid" id="contacts-list"></div>
@@ -3048,24 +3046,9 @@
   const storageAdapter = assertStorageAdapter(new SupabaseAdapter(supabaseClient));
 
   // ---------------------------------------------------------------------
-  // Export / import JSON manuel (filet de sécurité, §6).
+  // Exports CSV (pipeline, contacts). L'export / import JSON complet de
+  // l'en-tête a été retiré le 2026-11-16 : les données vivent dans Supabase.
   // ---------------------------------------------------------------------
-
-  function isValidCrmData(data) {
-    return data && Array.isArray(data.aos) && Array.isArray(data.taches) && Array.isArray(data.contacts);
-  }
-
-  function downloadJSON(data) {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `crm-ao-export-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
 
   // Séparateur ; et BOM UTF-8 : ouverture directe dans Excel FR sans étape
   // d'import manuelle (le séparateur , casse l'auto-détection en locale FR).
@@ -3085,21 +3068,6 @@
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-  }
-
-  function readJSONFile(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          resolve(JSON.parse(reader.result));
-        } catch (err) {
-          reject(err);
-        }
-      };
-      reader.onerror = () => reject(reader.error);
-      reader.readAsText(file);
-    });
   }
 
   // ---------------------------------------------------------------------
@@ -6343,6 +6311,35 @@
   });
   document.getElementById("btn-new-entreprise").addEventListener("click", () => openEntrepriseForm(null));
 
+  // Export CSV de la liste affichée : personnes ou entreprises selon la vue,
+  // avec la recherche et la catégorie en cours (tout, depuis les tuiles).
+  document.getElementById("btn-export-contacts").addEventListener("click", () => {
+    const model = directoryModel();
+    const items = model.items
+      .filter((x) => contactMatchesSearch(x, model))
+      .filter((x) => contactMatchesCategory(x, model))
+      .slice()
+      .sort((a, b) => model.nameOf(a).localeCompare(model.nameOf(b)));
+    const today = new Date().toISOString().slice(0, 10);
+    if (contactsView === "entreprises") {
+      downloadCSV(`crm-entreprises-${today}.csv`, [
+        ["Entreprise", "Rôle", "Nombre de contacts", "Contacts", "Notes"],
+        ...items.map((e) => {
+          const contacts = entrepriseContacts(e.id).map((c) => c.nom).filter(Boolean).sort();
+          return [e.nom || "", e.role || "", contacts.length, contacts.join(", "), e.notes || ""];
+        }),
+      ]);
+      return;
+    }
+    downloadCSV(`crm-contacts-${today}.csv`, [
+      ["Nom", "Fonction", "Entreprise", "Catégorie", "Téléphone", "Email", "Adresse", "Notes"],
+      ...items.map((c) => [
+        c.nom || "", c.fonction || "", contactOrganisme(c), contactCategorie(c),
+        c.telephone || "", c.email || "", c.adresse || "", c.notes || "",
+      ]),
+    ]);
+  });
+
   // --- Fiche Entreprise (référentiel, 2026-11-12) ---
 
   let currentEditingEntreprise = null;
@@ -8006,10 +8003,6 @@
     refreshEntrepriseForm();
   }
 
-  document.getElementById("btn-export").addEventListener("click", () => {
-    downloadJSON(appData);
-  });
-
   // Respecte les filtres Pipeline en cours : exporter la vue affichée à
   // l'écran, pas systématiquement tous les AO.
   document.getElementById("btn-export-ao-csv").addEventListener("click", () => {
@@ -8041,36 +8034,6 @@
   document.getElementById("filter-reporting-period").addEventListener("change", (e) => {
     reportingPeriod = e.target.value;
     renderReporting();
-  });
-
-  document.getElementById("btn-import").addEventListener("click", () => {
-    document.getElementById("file-import").click();
-  });
-
-  document.getElementById("file-import").addEventListener("change", async (event) => {
-    const file = event.target.files[0];
-    event.target.value = "";
-    if (!file) return;
-
-    let imported;
-    try {
-      imported = await readJSONFile(file);
-    } catch (err) {
-      alert("Fichier JSON invalide : impossible de le lire.");
-      return;
-    }
-    if (!isValidCrmData(imported)) {
-      alert("Ce fichier ne correspond pas au format attendu (aos / taches / contacts).");
-      return;
-    }
-    if (!confirm("Importer ce fichier va remplacer toutes les données actuelles. Continuer ?")) {
-      return;
-    }
-
-    await storageAdapter.load();
-    await storageAdapter.save(imported);
-    await refreshFromStorage();
-    alert("Import terminé.");
   });
 
   // ---------------------------------------------------------------------
