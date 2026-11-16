@@ -369,6 +369,17 @@ projet »), quel que soit l'assigné, avec la mention des assignés.
 - Possibilité de poser un rappel de relance sur un contact.
 
 ### 5.5 Reporting
+
+> Depuis le 2026-11-16, trois onglets :
+> - **Commerce** / **Travaux** : les KPI des AO du service (taux de
+>   réussite, montant gagné / signé, pipeline en cours, déposés, type de
+>   client, motifs de perte, évolution mensuelle ; filtre par année). Un AO
+>   sans service compte dans les deux. Travaux affiche en plus « En
+>   exécution » et « Facturé / Fini » (montant et nombre de chantiers).
+> - **Exploitation** : portefeuille de la contrathèque (contrats actifs) :
+>   nombre, volume d'affaires (somme des montants), montant moyen,
+>   échéances de l'année, à renégocier ; répartitions par secteur, type de
+>   client, prestation, année d'échéance ; top 10 des contrats.
 - Taux de réussite global (gagnés / déposés).
 - Montant total gagné.
 - Répartition par type de marché.

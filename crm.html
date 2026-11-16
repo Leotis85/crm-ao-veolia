@@ -602,6 +602,21 @@
     .home-pipe-step { flex: 1 1 45%; }
   }
 
+  /* --- Reporting : onglets + barres de valeur (2026-11-16) --- */
+  .reporting-tabs { margin-bottom: 0; }
+  #reporting-exploitation[hidden], #reporting-ao[hidden], #filter-reporting-period[hidden] { display: none; }
+  .panel h2 small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .value-bars { display: flex; flex-direction: column; gap: 10px; }
+  .value-bar-row { display: grid; grid-template-columns: 140px 1fr 190px; gap: 10px; align-items: center; font-size: 13px; }
+  .value-bar-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .value-bar-track { height: 12px; border-radius: 999px; background: var(--color-bg); overflow: hidden; }
+  .value-bar-fill { height: 100%; border-radius: 999px; background: var(--color-primary); }
+  .value-bar-figures { font-size: 12px; color: var(--color-text-muted); display: flex; flex-direction: column; line-height: 1.3; }
+  .value-bar-figures strong { color: var(--color-text); }
+  @media (max-width: 700px) {
+    .value-bar-row { grid-template-columns: 1fr; gap: 4px; }
+  }
+
   .reporting-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2435,8 +2450,39 @@
   <section class="screen" id="screen-reporting">
     <h1>Reporting</h1>
     <div class="toolbar">
+      <div class="pipeline-service-tabs reporting-tabs" id="reporting-tabs"></div>
       <select id="filter-reporting-period"></select>
     </div>
+
+    <div id="reporting-exploitation" hidden>
+      <div class="stats-grid" id="exploit-stats"></div>
+      <div class="reporting-columns">
+        <div class="panel">
+          <h2>Par secteur</h2>
+          <div class="value-bars" id="exploit-secteur"></div>
+        </div>
+        <div class="panel">
+          <h2>Par type de client</h2>
+          <div class="value-bars" id="exploit-type-client"></div>
+        </div>
+      </div>
+      <div class="reporting-columns">
+        <div class="panel">
+          <h2>Par prestation <small>(nombre de contrats qui l'incluent)</small></h2>
+          <div class="value-bars" id="exploit-prestation"></div>
+        </div>
+        <div class="panel">
+          <h2>Échéances à venir par année</h2>
+          <div class="value-bars" id="exploit-echeances"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Principaux contrats <small>(par montant)</small></h2>
+        <div id="exploit-top"></div>
+      </div>
+    </div>
+
+    <div id="reporting-ao">
     <div class="stats-grid" id="reporting-stats"></div>
 
     <div class="reporting-columns">
@@ -2456,6 +2502,7 @@
       <h2>Évolution mensuelle des dépôts</h2>
       <div class="status-legend" id="reporting-monthly-legend"></div>
       <div class="monthly-chart" id="reporting-monthly"></div>
+    </div>
     </div>
   </section>
 </main>
@@ -8061,6 +8108,15 @@
   // ---------------------------------------------------------------------
 
   let reportingPeriod = "all";
+  // Onglet du reporting (2026-11-16) : "Commerce" / "Travaux" (KPI des AO du
+  // service) ou "Exploitation" (portefeuille de contrats de la contrathèque).
+  let reportingTab = "Commerce";
+
+  // Même règle que le pipeline : un AO sans service compte partout.
+  function aoInService(a, service) {
+    const services = a.service || [];
+    return !service || !services.length || services.includes(service);
+  }
 
   function reportingAvailableYears(data) {
     const years = new Set(
@@ -8095,13 +8151,14 @@
     return new Date(y, m - 1, 1).toLocaleDateString("fr-FR", { month: "short", year: "2-digit" });
   }
 
-  function computeReportingData(data, period = "all") {
+  function computeReportingData(data, period = "all", service = "") {
     // Les AO encore "A venir" / "A faire" ne sont pas encore engagés (pas
     // d'étude en cours) : on les exclut de tout le reporting, KPI compris. Le filtre de
     // période restreint ensuite sur l'année de date_remise (les AO sans date
     // ne peuvent être rattachés à une année, donc n'apparaissent que sur
     // "Toutes les années").
     const aos = data.aos.filter((a) => {
+      if (!aoInService(a, service)) return false;
       if (PRE_ETUDE_PHASES.includes(a.phase)) return false;
       if (period !== "all" && a.date_remise?.slice(0, 4) !== period) return false;
       return true;
@@ -8160,7 +8217,17 @@
       .filter((x) => x.value > 0)
       .sort((a, b) => b.value - a.value);
 
-    return { gagnesCount: gagnes.length, deposes, tauxReussite, montantGagne, montantPipelineEnCours, parTypeClient, evolutionMensuelle, parMotifPerte };
+    // Travaux : un AO gagné est soit en exécution, soit facturé / fini.
+    const execution = gagnes.filter((a) => a.phase === "execution");
+    const factures = gagnes.filter((a) => a.phase === "gagne");
+    const sum = (list) => list.reduce((s, a) => s + (Number(a.valeur_estimee) || 0), 0);
+
+    return {
+      gagnesCount: gagnes.length, deposes, tauxReussite, montantGagne, montantPipelineEnCours, enCoursCount: enCours.length,
+      executionCount: execution.length, montantExecution: sum(execution),
+      facturesCount: factures.length, montantFacture: sum(factures),
+      parTypeClient, evolutionMensuelle, parMotifPerte,
+    };
   }
 
   function showChartTooltip(target, text) {
@@ -8196,12 +8263,21 @@
   }
 
   function renderReportingStats(r) {
-    document.getElementById("reporting-stats").innerHTML = [
-      [r.tauxReussite !== null ? r.tauxReussite + "%" : "—", "Taux de réussite", `${r.gagnesCount} gagné(s) / ${r.deposes} déposé(s)`],
-      [formatEuros(r.montantGagne), "Montant gagné", `sur ${r.gagnesCount} AO gagné(s)`],
-      [formatEuros(r.montantPipelineEnCours), "Pipeline en cours", "AO encore en cours"],
-      [String(r.deposes), "AO déposés", "gagnés + perdus"],
-    ].map(([value, label, sub]) => `
+    const tiles = reportingTab === "Travaux"
+      ? [
+        [r.tauxReussite !== null ? r.tauxReussite + "%" : "—", "Taux de réussite", `${r.gagnesCount} gagnée(s) / ${r.deposes} déposée(s)`],
+        [formatEuros(r.montantGagne) || "0 €", "Montant signé", `sur ${r.gagnesCount} proposition(s) gagnée(s)`],
+        [formatEuros(r.montantExecution) || "0 €", "En exécution", `${r.executionCount} chantier(s)`],
+        [formatEuros(r.montantFacture) || "0 €", "Facturé / Fini", `${r.facturesCount} chantier(s)`],
+        [formatEuros(r.montantPipelineEnCours) || "0 €", "Pipeline en cours", `${r.enCoursCount} proposition(s) en cours`],
+      ]
+      : [
+        [r.tauxReussite !== null ? r.tauxReussite + "%" : "—", "Taux de réussite", `${r.gagnesCount} gagné(s) / ${r.deposes} déposé(s)`],
+        [formatEuros(r.montantGagne) || "0 €", "Montant gagné", `sur ${r.gagnesCount} AO gagné(s)`],
+        [formatEuros(r.montantPipelineEnCours) || "0 €", "Pipeline en cours", `${r.enCoursCount} AO en cours`],
+        [String(r.deposes), "AO déposés", "gagnés + perdus"],
+      ];
+    document.getElementById("reporting-stats").innerHTML = tiles.map(([value, label, sub]) => `
       <div class="stat-card">
         <div class="stat-value">${escapeHtml(value)}</div>
         <div class="stat-label">${escapeHtml(label)}</div>
@@ -8327,9 +8403,157 @@
     wireChartTooltips(el, ".segment", (seg) => `${seg.dataset.label} — ${seg.dataset.status} : ${seg.dataset.value}`);
   }
 
+  function renderReportingTabs() {
+    const tabs = [...availablePipelineServices(), "Exploitation"];
+    if (!tabs.includes(reportingTab)) reportingTab = tabs[0];
+    const wrap = document.getElementById("reporting-tabs");
+    wrap.innerHTML = tabs.map((t) => `
+      <button type="button" class="${t === reportingTab ? "active" : ""}" data-tab="${escapeHtml(t)}">${escapeHtml(t)}</button>
+    `).join("");
+    wrap.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        reportingTab = btn.dataset.tab;
+        renderReporting();
+      });
+    });
+  }
+
+  // --- Exploitation : portefeuille de contrats (contrathèque) ---
+
+  function computeExploitationData(data) {
+    const actifs = (data.contrats || []).filter((c) => c.statut === "Actif");
+    const montant = (c) => Number(c.montant) || 0;
+    const total = actifs.reduce((s, c) => s + montant(c), 0);
+    const group = (keyFn, order) => {
+      const map = new Map();
+      actifs.forEach((c) => {
+        const keys = [].concat(keyFn(c));
+        keys.forEach((k) => {
+          const key = k || "Non renseigné";
+          if (!map.has(key)) map.set(key, { label: key, count: 0, value: 0 });
+          const g = map.get(key);
+          g.count += 1;
+          g.value += montant(c);
+        });
+      });
+      const list = [...map.values()];
+      if (order) list.sort((a, b) => (order.indexOf(a.label) === -1 ? 99 : order.indexOf(a.label)) - (order.indexOf(b.label) === -1 ? 99 : order.indexOf(b.label)));
+      else list.sort((a, b) => b.value - a.value || b.count - a.count);
+      return list;
+    };
+    const todayKey = localDateKey(new Date());
+    const year = new Date().getFullYear();
+    const echeances = new Map();
+    let echeancesAnnee = 0;
+    actifs.forEach((c) => {
+      const { date } = contratProchaineEcheance(c);
+      if (!date || date < todayKey) return;
+      const y = Number(date.slice(0, 4));
+      if (y === year) echeancesAnnee += 1;
+      const label = y >= year + 5 ? `${year + 5} et après` : String(y);
+      if (!echeances.has(label)) echeances.set(label, { label, count: 0, value: 0, sort: Math.min(y, year + 5) });
+      const g = echeances.get(label);
+      g.count += 1;
+      g.value += montant(c);
+    });
+    return {
+      count: actifs.length,
+      total,
+      moyenne: actifs.length ? total / actifs.length : 0,
+      avenants: actifs.reduce((s, c) => s + (c.avenants || []).length, 0),
+      aRenegocier: actifs.filter(contratARenegocier).length,
+      echeancesAnnee,
+      parSecteur: group((c) => c.secteur, [...SECTEUR_OPTIONS, "Non renseigné"]),
+      parTypeClient: group((c) => c.type_client, [...TYPE_CLIENT_OPTIONS, "Non renseigné"]),
+      parPrestation: group((c) => (c.prestations || []).length ? c.prestations : [""], [...PRESTATION_OPTIONS, "Non renseigné"]),
+      parEcheance: [...echeances.values()].sort((a, b) => a.sort - b.sort),
+      top: [...actifs].sort((a, b) => montant(b) - montant(a)).slice(0, 10),
+    };
+  }
+
+  // Barres horizontales : largeur proportionnelle au montant (ou au nombre
+  // si aucun montant), nombre de contrats et montant affichés.
+  function renderValueBars(elId, items, { byCount = false } = {}) {
+    const el = document.getElementById(elId);
+    if (!items.length) {
+      el.innerHTML = `<div class="list-item-empty">Aucune donnée.</div>`;
+      return;
+    }
+    const metric = (i) => (byCount ? i.count : i.value || 0);
+    const max = Math.max(...items.map(metric), 1);
+    const totalValue = items.reduce((s, i) => s + (i.value || 0), 0);
+    el.innerHTML = items.map((i) => `
+      <div class="value-bar-row">
+        <div class="value-bar-label">${escapeHtml(i.label)}</div>
+        <div class="value-bar-track"><div class="value-bar-fill" style="width:${Math.max((metric(i) / max) * 100, 2)}%"></div></div>
+        <div class="value-bar-figures">
+          <span><strong>${i.count}</strong> contrat${i.count > 1 ? "s" : ""}</span>
+          ${!byCount && i.value ? `<span>${formatEuros(i.value)}${totalValue ? ` · ${Math.round((i.value / totalValue) * 100)} %` : ""}</span>` : ""}
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function renderExploitation() {
+    const r = computeExploitationData(appData);
+    document.getElementById("exploit-stats").innerHTML = [
+      [String(r.count), "Contrats actifs", `${r.avenants} avenant(s)`],
+      [formatEuros(r.total) || "0 €", "Volume d'affaires", "montant total des contrats actifs"],
+      [formatEuros(r.moyenne) || "0 €", "Montant moyen", "par contrat"],
+      [String(r.echeancesAnnee), `Échéances en ${new Date().getFullYear()}`, "contrats arrivant à terme cette année"],
+      [String(r.aRenegocier), "À renégocier", "dans leur fenêtre d'alerte"],
+    ].map(([value, label, sub]) => `
+      <div class="stat-card">
+        <div class="stat-value">${escapeHtml(value)}</div>
+        <div class="stat-label">${escapeHtml(label)}</div>
+        <div class="stat-sub">${escapeHtml(sub)}</div>
+      </div>
+    `).join("");
+    renderValueBars("exploit-secteur", r.parSecteur);
+    renderValueBars("exploit-type-client", r.parTypeClient);
+    renderValueBars("exploit-prestation", r.parPrestation, { byCount: true });
+    renderValueBars("exploit-echeances", r.parEcheance);
+    const topEl = document.getElementById("exploit-top");
+    topEl.innerHTML = r.top.length ? `
+      <table class="contrats-table">
+        <thead><tr><th>Affaire</th><th>Type de client</th><th>Secteur</th><th>Prestations</th><th>Prochaine échéance</th><th class="num">Montant</th></tr></thead>
+        <tbody>
+          ${r.top.map((c) => {
+            const { date } = contratProchaineEcheance(c);
+            return `
+              <tr class="contrat-row" data-id="${c.id}">
+                <td><div class="contrat-nom">${escapeHtml(c.nom || "(sans nom)")}</div><div class="contrat-sub">${escapeHtml(entrepriseNom(c.syndic_id))}</div></td>
+                <td>${escapeHtml(c.type_client || "")}</td>
+                <td>${escapeHtml(c.secteur || "")}</td>
+                <td>${escapeHtml((c.prestations || []).join(" "))}</td>
+                <td>${date ? formatDate(date) : ""}</td>
+                <td class="num">${formatEuros(c.montant)}</td>
+              </tr>
+            `;
+          }).join("")}
+        </tbody>
+      </table>
+    ` : `<div class="list-item-empty">Aucun contrat actif.</div>`;
+    topEl.querySelectorAll(".contrat-row").forEach((row) => {
+      row.addEventListener("click", () => {
+        const c = findContrat(row.dataset.id);
+        if (c) openContratForm(c);
+      });
+    });
+  }
+
   function renderReporting() {
+    renderReportingTabs();
+    const exploitation = reportingTab === "Exploitation";
+    document.getElementById("reporting-exploitation").hidden = !exploitation;
+    document.getElementById("reporting-ao").hidden = exploitation;
+    document.getElementById("filter-reporting-period").hidden = exploitation;
+    if (exploitation) {
+      renderExploitation();
+      return;
+    }
     renderReportingPeriodFilter(appData);
-    const r = computeReportingData(appData, reportingPeriod);
+    const r = computeReportingData(appData, reportingPeriod, reportingTab);
     renderReportingStats(r);
     renderStatusLegend("reporting-client-legend");
     renderClientChart(r.parTypeClient);
